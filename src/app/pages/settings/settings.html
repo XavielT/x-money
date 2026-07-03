@@ -46,6 +46,64 @@
     </div>
   </section>
 
+  <!-- Recurring transactions -->
+  <section class="settings-section">
+    <h2>Recurring transactions</h2>
+    <p class="settings-hint" *ngIf="!recurringService.recurring().length">
+      None yet. When adding a transaction, set "Repeat" to make it recurring.
+    </p>
+
+    <div class="settings-recurring x-card" *ngFor="let rule of recurringService.recurring()">
+      <span class="settings-recurring-icon">{{ categoryService.byId(rule.categoryId)?.icon || '❓' }}</span>
+      <div class="settings-recurring-info">
+        <span>
+          {{ categoryService.byId(rule.categoryId)?.name || 'Unknown' }}
+          · {{ rule.type === 'income' ? '+' : '-' }}{{ settingsService.currency() }}{{ rule.amount | number:'1.2-2' }}
+        </span>
+        <small>
+          {{ frequencyLabel(rule.frequency) }} · next {{ rule.nextDate }}
+          <ng-container *ngIf="!rule.active"> · paused</ng-container>
+        </small>
+      </div>
+      <button
+        class="settings-recurring-toggle"
+        (click)="recurringService.toggleActive(rule.id)"
+        [attr.aria-label]="rule.active ? 'Pause' : 'Resume'"
+      >
+        {{ rule.active ? '⏸' : '▶' }}
+      </button>
+      <button class="settings-account-delete" (click)="removeRecurring(rule.id)" aria-label="Delete recurring">✕</button>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="settings-section">
+    <h2>Categories</h2>
+    <p class="settings-hint">Create new categories from the "New" tile when adding a transaction. Custom ones can be deleted here.</p>
+
+    <div class="settings-cat-toggle">
+      <button [class.active]="catType === 'expense'" (click)="catType = 'expense'">Expense</button>
+      <button [class.active]="catType === 'income'" (click)="catType = 'income'">Income</button>
+    </div>
+
+    <div class="settings-cat-list x-card">
+      <div class="settings-cat-row" *ngFor="let cat of categoryService.ofType(catType)">
+        <span class="settings-cat-dot" [style.background]="cat.color"></span>
+        <span class="settings-cat-icon">{{ cat.icon }}</span>
+        <span class="settings-cat-name">{{ cat.name }}</span>
+        <small class="settings-cat-tag" *ngIf="categoryService.isCustom(cat.id)">custom</small>
+        <button
+          class="settings-account-delete"
+          *ngIf="categoryService.isCustom(cat.id)"
+          (click)="removeCategory(cat.id)"
+          aria-label="Delete category"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- Data -->
   <section class="settings-section">
     <h2>Your data</h2>

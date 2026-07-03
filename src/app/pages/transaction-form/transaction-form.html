@@ -49,6 +49,31 @@
       <span class="transaction-form-category-icon">{{ cat.icon }}</span>
       <span class="transaction-form-category-name">{{ cat.name }}</span>
     </button>
+    <button class="transaction-form-category transaction-form-category-new" (click)="toggleNewCategory()">
+      <span class="transaction-form-category-icon">➕</span>
+      <span class="transaction-form-category-name">New</span>
+    </button>
+  </div>
+
+  <!-- Inline new category creator -->
+  <div class="transaction-form-newcat x-card" *ngIf="showNewCategory()">
+    <input class="x-input" type="text" maxlength="20" placeholder="Category name" [(ngModel)]="newCatName" name="newCatName" />
+    <div class="transaction-form-newcat-row">
+      <input class="x-input transaction-form-newcat-emoji" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="newCatIcon" name="newCatIcon" />
+      <div class="transaction-form-newcat-emojis">
+        <button *ngFor="let emoji of emojiSuggestions" (click)="newCatIcon = emoji">{{ emoji }}</button>
+      </div>
+    </div>
+    <div class="transaction-form-newcat-colors">
+      <button
+        *ngFor="let color of categoryColors"
+        [style.background]="color"
+        [class.active]="newCatColor === color"
+        (click)="newCatColor = color"
+        [attr.aria-label]="'Color ' + color"
+      ></button>
+    </div>
+    <button class="x-btn" [disabled]="!newCatName.trim()" (click)="createCategory()">Create category</button>
   </div>
 
   <!-- Account -->
@@ -63,6 +88,18 @@
   <label class="transaction-form-label">Date</label>
   <input class="x-input" type="date" [(ngModel)]="date" name="date" />
 
+  <!-- Repeat (only for new transactions) -->
+  <ng-container *ngIf="!editId">
+    <label class="transaction-form-label">Repeat</label>
+    <select class="x-input" [(ngModel)]="repeat" name="repeat">
+      <option value="none">Never</option>
+      <option value="daily">Every day</option>
+      <option value="weekly">Every week</option>
+      <option value="monthly">Every month</option>
+      <option value="yearly">Every year</option>
+    </select>
+  </ng-container>
+
   <!-- Note -->
   <label class="transaction-form-label">Note (optional)</label>
   <input class="x-input" type="text" maxlength="80" placeholder="e.g. Lunch with friends" [(ngModel)]="note" name="note" />
@@ -70,7 +107,7 @@
   <!-- Actions -->
   <div class="transaction-form-actions">
     <button class="x-btn" [disabled]="!isValid()" (click)="save()">
-      {{ editId ? 'Save changes' : 'Add transaction' }}
+      {{ editId ? 'Save changes' : (repeat !== 'none' ? 'Add recurring transaction' : 'Add transaction') }}
     </button>
     <button class="x-btn x-btn-danger" *ngIf="editId" (click)="delete()">Delete</button>
   </div>

@@ -143,6 +143,70 @@
   max-width: 100%;
 }
 
+.transaction-form-category-new {
+  border-style: dashed;
+  color: var(--main-ultra-light);
+}
+
+// Inline new category creator
+.transaction-form-newcat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+.transaction-form-newcat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.transaction-form-newcat-emoji {
+  width: 64px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.transaction-form-newcat-emojis {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+
+  button {
+    background: var(--secondary);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 6px 8px;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+
+    &:active {
+      transform: scale(0.92);
+    }
+  }
+}
+
+.transaction-form-newcat-colors {
+  display: flex;
+  gap: 8px;
+
+  button {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transition: all 0.15s ease;
+
+    &.active {
+      border-color: var(--text);
+      transform: scale(1.12);
+    }
+  }
+}
+
 .transaction-form-actions {
   display: flex;
   flex-direction: column;

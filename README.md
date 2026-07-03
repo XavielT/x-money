@@ -8,6 +8,8 @@ Built with Angular (standalone components + Signals), SCSS, and localStorage. Se
 ## Features
 
 - ➕ Fast expense/income entry with categories, accounts, date and notes
+- 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; pause/resume/delete in Settings
+- 🏷️ 26 built-in categories (incl. Hobby, Car project) + create your own with custom name, emoji and color
 - 📆 Transaction history grouped by day, navigable by month
 - 🏠 Dashboard: total balance, monthly income vs expenses, top spending, recent movements
 - 📊 Stats: category donut chart per month (expenses or income)

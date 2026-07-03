@@ -1,9 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TransactionType } from '../../../shared/models/transaction.model';
 import { AccountService } from '../../../shared/services/account.service';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { SettingsService } from '../../../shared/services/settings.service';
+import { CategoryService } from '../../../shared/services/category.service';
+import { RecurringService } from '../../../shared/services/recurring.service';
 
 @Component({
   selector: 'app-settings',
@@ -21,11 +24,36 @@ export class SettingsComponent {
   newIcon = '💵';
   newBalance: number | null = 0;
 
+  // Category management
+  catType: TransactionType = 'expense';
+
   constructor(
     public accountService: AccountService,
     public transactionService: TransactionService,
-    public settingsService: SettingsService
+    public settingsService: SettingsService,
+    public categoryService: CategoryService,
+    public recurringService: RecurringService
   ) {}
+
+  frequencyLabel(frequency: string): string {
+    const labels: Record<string, string> = {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+      yearly: 'Yearly',
+    };
+    return labels[frequency] ?? frequency;
+  }
+
+  removeRecurring(id: string): void {
+    if (!confirm('Delete this recurring transaction? Already posted movements stay.')) return;
+    this.recurringService.remove(id);
+  }
+
+  removeCategory(id: string): void {
+    if (!confirm('Delete this category? Its transactions will show as "Unknown".')) return;
+    this.categoryService.remove(id);
+  }
 
   abs(value: number): number {
     return Math.abs(value);

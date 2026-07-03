@@ -95,6 +95,110 @@
   }
 }
 
+// Recurring rules
+.settings-recurring {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.settings-recurring-icon {
+  font-size: 1.2rem;
+}
+
+.settings-recurring-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  span {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.72rem;
+  }
+}
+
+.settings-recurring-toggle {
+  background: var(--secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  width: 30px;
+  height: 30px;
+  font-size: 0.75rem;
+  transition: all 0.15s ease;
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+// Category management
+.settings-cat-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+
+  button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--main-ultra-light);
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.settings-cat-list {
+  padding: 6px 14px;
+}
+
+.settings-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.settings-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.settings-cat-icon {
+  font-size: 1rem;
+}
+
+.settings-cat-name {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.settings-cat-tag {
+  color: var(--Hub);
+  font-size: 0.65rem;
+  border: 1px solid var(--Hub-translucid);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
 .settings-hint {
   font-size: 0.8rem;
   color: var(--main-ultra-light);

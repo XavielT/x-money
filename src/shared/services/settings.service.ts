@@ -6,7 +6,7 @@ interface SettingsState {
 }
 
 // Keys that make up a full backup snapshot
-const DATA_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'settings'] as const;
+const DATA_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {

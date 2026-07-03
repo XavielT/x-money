@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionType } from '../../../shared/models/transaction.model';
+import { RecurringFrequency } from '../../../shared/models/recurring.model';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { AccountService } from '../../../shared/services/account.service';
 import { SettingsService } from '../../../shared/services/settings.service';
+import { RecurringService } from '../../../shared/services/recurring.service';
 
 @Component({
   selector: 'app-transaction-form',
@@ -24,6 +26,15 @@ export class TransactionFormComponent {
   accountId = '';
   date = '';
   note = '';
+  repeat: RecurringFrequency | 'none' = 'none';
+
+  // Inline "new category" mini form
+  showNewCategory = signal(false);
+  newCatName = '';
+  newCatIcon = '';
+  newCatColor = '#ff7043';
+  categoryColors = ['#ff7043', '#ffca28', '#66bb6a', '#26a69a', '#42a5f5', '#7e57c2', '#ec407a', '#8d6e63'];
+  emojiSuggestions = ['🎨', '🛠️', '🎸', '☕', '🎬', '📱', '🧰', '⚽', '🌮', '💡'];
 
   categoriesForType = computed(() => this.categoryService.ofType(this.type()));
 
@@ -31,6 +42,7 @@ export class TransactionFormComponent {
     private route: ActivatedRoute,
     private router: Router,
     private transactionService: TransactionService,
+    private recurringService: RecurringService,
     public categoryService: CategoryService,
     public accountService: AccountService,
     public settings: SettingsService
@@ -64,6 +76,21 @@ export class TransactionFormComponent {
     this.categoryId.set(id);
   }
 
+  toggleNewCategory(): void {
+    this.showNewCategory.update((open) => !open);
+  }
+
+  createCategory(): void {
+    const name = this.newCatName.trim();
+    const icon = this.newCatIcon.trim() || '🏷️';
+    if (!name) return;
+    const category = this.categoryService.add(name, icon, this.newCatColor, this.type());
+    this.categoryId.set(category.id);
+    this.newCatName = '';
+    this.newCatIcon = '';
+    this.showNewCategory.set(false);
+  }
+
   isValid(): boolean {
     return (
       this.amount != null &&
@@ -86,6 +113,10 @@ export class TransactionFormComponent {
     };
     if (this.editId) {
       this.transactionService.update({ ...data, id: this.editId });
+    } else if (this.repeat !== 'none') {
+      // The recurring rule posts the first occurrence itself (if already due)
+      const { date, ...rule } = data;
+      this.recurringService.add({ ...rule, frequency: this.repeat, startDate: date });
     } else {
       this.transactionService.add(data);
     }

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Navbar } from '../shared/components/navbar/navbar';
+import { RecurringService } from '../shared/services/recurring.service';
 
 @Component({
   selector: 'app-root',
@@ -9,4 +10,7 @@ import { Navbar } from '../shared/components/navbar/navbar';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {}
+export class App {
+  // Injecting RecurringService here posts any due recurring transactions on startup
+  constructor(private recurringService: RecurringService) {}
+}
