@@ -24,24 +24,27 @@ npm start        # dev server on http://localhost:4200
 npm run build    # production build → dist/x-money/browser
 ```
 
-## Install on your phone
+## Install on your phone (Android APK)
 
-The production build is static files; the service worker makes it installable and offline-capable.
-
-**Option A — free static hosting (recommended):**
-Deploy `dist/x-money/browser` to GitHub Pages, Netlify or Vercel, open the URL on your phone,
-then browser menu → **Add to Home Screen / Install app**. Data still stays on the device.
-
-**Option B — same Wi-Fi:**
+The app ships as a native Android app via [Capacitor](https://capacitorjs.com). To build the APK:
 
 ```bash
-npm run build
-npx http-server dist/x-money/browser -p 8080
+npm run build                # rebuild web assets
+npx cap sync android         # copy them into the native project
+cd android
+gradlew.bat assembleDebug    # needs Android SDK (Android Studio) + JDK 17+
 ```
 
-Open `http://<your-pc-ip>:8080` on the phone and add it to the home screen.
-Note: the service worker (full offline mode) requires HTTPS or localhost, so prefer Option A
-for a true installed-app experience.
+The APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`.
+Copy it to your phone (USB, Drive, WhatsApp-to-yourself...), open it, and allow
+"install from unknown sources" when Android asks. That's it — X Money appears as
+a normal app, fully offline.
+
+> If `JAVA_HOME` is not set, point it at Android Studio's bundled JDK:
+> `C:\Program Files\Android\Android Studio\jbr`
+
+**Alternative (no APK):** deploy `dist/x-money/browser` to any static host (GitHub Pages,
+Netlify, Vercel), open it on the phone and use "Add to Home Screen" — same app as a PWA.
 
 ## Data & backups
 
