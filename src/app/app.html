@@ -3,3 +3,21 @@
   <router-outlet />
 </main>
 <app-navbar></app-navbar>
+
+<!-- PIN lock overlay -->
+<div class="app-lock" *ngIf="lock.locked()">
+  <span class="app-lock-brand">X <span>Money</span></span>
+  <span class="app-lock-icon">🔒</span>
+  <input
+    class="x-input app-lock-input"
+    type="password"
+    inputmode="numeric"
+    maxlength="8"
+    [placeholder]="'Enter PIN' | t"
+    [(ngModel)]="pin"
+    (keyup.enter)="tryUnlock()"
+    name="pin"
+  />
+  <p class="app-lock-error" *ngIf="pinError()">{{ 'Wrong PIN' | t }}</p>
+  <button class="x-btn app-lock-btn" (click)="tryUnlock()">{{ 'Unlock' | t }}</button>
+</div>

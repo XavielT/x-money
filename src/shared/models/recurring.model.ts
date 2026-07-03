@@ -1,13 +1,14 @@
-import { TransactionType } from './transaction.model';
+import { TransactionKind } from './transaction.model';
 
 export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface RecurringModel {
   id: string;
-  type: TransactionType;
+  type: TransactionKind;
   amount: number;
-  categoryId: string;
+  categoryId?: string; // absent on transfers
   accountId: string;
+  toAccountId?: string; // transfers only
   note?: string;
   frequency: RecurringFrequency;
   startDate: string; // ISO yyyy-MM-dd, first occurrence (anchors the day of month)

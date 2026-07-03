@@ -1,17 +1,32 @@
 <!-- One transaction row, taps through to the edit form -->
 <a class="transaction-item" [routerLink]="['/edit', transaction.id]">
-  <span class="transaction-item-icon" [style.background]="category?.color + '26'">
-    {{ category?.icon || '❓' }}
-  </span>
-
-  <span class="transaction-item-info">
-    <span class="transaction-item-category">{{ category?.name || 'Unknown' }}</span>
-    <span class="transaction-item-meta">
-      {{ account?.name }}<ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
+  <!-- Transfer row -->
+  <ng-container *ngIf="transaction.type === 'transfer'; else normalRow">
+    <span class="transaction-item-icon transaction-item-icon-transfer">🔁</span>
+    <span class="transaction-item-info">
+      <span class="transaction-item-category">{{ 'Transfer' | t }}</span>
+      <span class="transaction-item-meta">
+        {{ account?.name || '?' }} → {{ toAccount?.name || '?' }}<ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
+      </span>
     </span>
-  </span>
+    <span class="transaction-item-amount transfer">
+      {{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
+    </span>
+  </ng-container>
 
-  <span class="transaction-item-amount" [class.income]="transaction.type === 'income'">
-    {{ transaction.type === 'income' ? '+' : '-' }}{{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
-  </span>
+  <!-- Income / expense row -->
+  <ng-template #normalRow>
+    <span class="transaction-item-icon" [style.background]="category?.color + '26'">
+      {{ category?.icon || '❓' }}
+    </span>
+    <span class="transaction-item-info">
+      <span class="transaction-item-category">{{ category?.name || ('Unknown' | t) }}</span>
+      <span class="transaction-item-meta">
+        {{ account?.name }}<ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
+      </span>
+    </span>
+    <span class="transaction-item-amount" [class.income]="transaction.type === 'income'">
+      {{ transaction.type === 'income' ? '+' : '-' }}{{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
+    </span>
+  </ng-template>
 </a>

@@ -51,4 +51,12 @@
   &.income {
     color: var(--income);
   }
+
+  &.transfer {
+    color: var(--Hub);
+  }
+}
+
+.transaction-item-icon-transfer {
+  background: var(--Hub-translucid);
 }

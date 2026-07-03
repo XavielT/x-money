@@ -2,27 +2,24 @@
   <!-- Header -->
   <header class="transaction-form-header">
     <button class="transaction-form-back" (click)="cancel()" aria-label="Back">←</button>
-    <h1 class="x-page-title">{{ editId ? 'Edit transaction' : 'New transaction' }}</h1>
+    <h1 class="x-page-title">{{ (editId ? 'Edit transaction' : 'New transaction') | t }}</h1>
   </header>
 
-  <!-- Type toggle -->
+  <!-- Kind toggle -->
   <div class="transaction-form-toggle">
-    <button
-      [class.active-expense]="type() === 'expense'"
-      (click)="setType('expense')"
-    >
-      Expense
+    <button [class.active-expense]="kind() === 'expense'" (click)="setKind('expense')">
+      {{ 'Expense' | t }}
     </button>
-    <button
-      [class.active-income]="type() === 'income'"
-      (click)="setType('income')"
-    >
-      Income
+    <button [class.active-income]="kind() === 'income'" (click)="setKind('income')">
+      {{ 'Income' | t }}
+    </button>
+    <button [class.active-transfer]="kind() === 'transfer'" (click)="setKind('transfer')">
+      {{ 'Transfer' | t }}
     </button>
   </div>
 
   <!-- Amount -->
-  <label class="transaction-form-label">Amount</label>
+  <label class="transaction-form-label">{{ 'Amount' | t }}</label>
   <div class="transaction-form-amount">
     <span>{{ settings.currency() }}</span>
     <input
@@ -36,79 +33,90 @@
     />
   </div>
 
-  <!-- Category grid -->
-  <label class="transaction-form-label">Category</label>
-  <div class="transaction-form-categories">
-    <button
-      *ngFor="let cat of categoriesForType()"
-      class="transaction-form-category"
-      [class.active]="categoryId() === cat.id"
-      [style.border-color]="categoryId() === cat.id ? cat.color : ''"
-      (click)="selectCategory(cat.id)"
-    >
-      <span class="transaction-form-category-icon">{{ cat.icon }}</span>
-      <span class="transaction-form-category-name">{{ cat.name }}</span>
-    </button>
-    <button class="transaction-form-category transaction-form-category-new" (click)="toggleNewCategory()">
-      <span class="transaction-form-category-icon">➕</span>
-      <span class="transaction-form-category-name">New</span>
-    </button>
-  </div>
-
-  <!-- Inline new category creator -->
-  <div class="transaction-form-newcat x-card" *ngIf="showNewCategory()">
-    <input class="x-input" type="text" maxlength="20" placeholder="Category name" [(ngModel)]="newCatName" name="newCatName" />
-    <div class="transaction-form-newcat-row">
-      <input class="x-input transaction-form-newcat-emoji" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="newCatIcon" name="newCatIcon" />
-      <div class="transaction-form-newcat-emojis">
-        <button *ngFor="let emoji of emojiSuggestions" (click)="newCatIcon = emoji">{{ emoji }}</button>
-      </div>
-    </div>
-    <div class="transaction-form-newcat-colors">
+  <!-- Category grid (not for transfers) -->
+  <ng-container *ngIf="kind() !== 'transfer'">
+    <label class="transaction-form-label">{{ 'Category' | t }}</label>
+    <div class="transaction-form-categories">
       <button
-        *ngFor="let color of categoryColors"
-        [style.background]="color"
-        [class.active]="newCatColor === color"
-        (click)="newCatColor = color"
-        [attr.aria-label]="'Color ' + color"
-      ></button>
+        *ngFor="let cat of categoriesForType()"
+        class="transaction-form-category"
+        [class.active]="categoryId() === cat.id"
+        [style.border-color]="categoryId() === cat.id ? cat.color : ''"
+        (click)="selectCategory(cat.id)"
+      >
+        <span class="transaction-form-category-icon">{{ cat.icon }}</span>
+        <span class="transaction-form-category-name">{{ cat.name }}</span>
+      </button>
+      <button class="transaction-form-category transaction-form-category-new" (click)="toggleNewCategory()">
+        <span class="transaction-form-category-icon">➕</span>
+        <span class="transaction-form-category-name">{{ 'New' | t }}</span>
+      </button>
     </div>
-    <button class="x-btn" [disabled]="!newCatName.trim()" (click)="createCategory()">Create category</button>
-  </div>
 
-  <!-- Account -->
-  <label class="transaction-form-label">Account</label>
+    <!-- Inline new category creator -->
+    <div class="transaction-form-newcat x-card" *ngIf="showNewCategory()">
+      <input class="x-input" type="text" maxlength="20" [placeholder]="'Category name' | t" [(ngModel)]="newCatName" name="newCatName" />
+      <div class="transaction-form-newcat-row">
+        <input class="x-input transaction-form-newcat-emoji" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="newCatIcon" name="newCatIcon" />
+        <div class="transaction-form-newcat-emojis">
+          <button *ngFor="let emoji of emojiSuggestions" (click)="newCatIcon = emoji">{{ emoji }}</button>
+        </div>
+      </div>
+      <div class="transaction-form-newcat-colors">
+        <button
+          *ngFor="let color of categoryColors"
+          [style.background]="color"
+          [class.active]="newCatColor === color"
+          (click)="newCatColor = color"
+          [attr.aria-label]="'Color ' + color"
+        ></button>
+      </div>
+      <button class="x-btn" [disabled]="!newCatName.trim()" (click)="createCategory()">{{ 'Create category' | t }}</button>
+    </div>
+  </ng-container>
+
+  <!-- Accounts -->
+  <label class="transaction-form-label">{{ (kind() === 'transfer' ? 'From account' : 'Account') | t }}</label>
   <select class="x-input" [(ngModel)]="accountId" name="accountId">
     <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
       {{ acc.icon }} {{ acc.name }}
     </option>
   </select>
 
+  <ng-container *ngIf="kind() === 'transfer'">
+    <label class="transaction-form-label">{{ 'To account' | t }}</label>
+    <select class="x-input" [(ngModel)]="toAccountId" name="toAccountId">
+      <option *ngFor="let acc of accountService.accounts()" [value]="acc.id" [disabled]="acc.id === accountId">
+        {{ acc.icon }} {{ acc.name }}
+      </option>
+    </select>
+  </ng-container>
+
   <!-- Date -->
-  <label class="transaction-form-label">Date</label>
+  <label class="transaction-form-label">{{ 'Date' | t }}</label>
   <input class="x-input" type="date" [(ngModel)]="date" name="date" />
 
   <!-- Repeat (only for new transactions) -->
   <ng-container *ngIf="!editId">
-    <label class="transaction-form-label">Repeat</label>
+    <label class="transaction-form-label">{{ 'Repeat' | t }}</label>
     <select class="x-input" [(ngModel)]="repeat" name="repeat">
-      <option value="none">Never</option>
-      <option value="daily">Every day</option>
-      <option value="weekly">Every week</option>
-      <option value="monthly">Every month</option>
-      <option value="yearly">Every year</option>
+      <option value="none">{{ 'Never' | t }}</option>
+      <option value="daily">{{ 'Every day' | t }}</option>
+      <option value="weekly">{{ 'Every week' | t }}</option>
+      <option value="monthly">{{ 'Every month' | t }}</option>
+      <option value="yearly">{{ 'Every year' | t }}</option>
     </select>
   </ng-container>
 
   <!-- Note -->
-  <label class="transaction-form-label">Note (optional)</label>
-  <input class="x-input" type="text" maxlength="80" placeholder="e.g. Lunch with friends" [(ngModel)]="note" name="note" />
+  <label class="transaction-form-label">{{ 'Note (optional)' | t }}</label>
+  <input class="x-input" type="text" maxlength="80" [placeholder]="'e.g. Lunch with friends' | t" [(ngModel)]="note" name="note" />
 
   <!-- Actions -->
   <div class="transaction-form-actions">
     <button class="x-btn" [disabled]="!isValid()" (click)="save()">
-      {{ editId ? 'Save changes' : (repeat !== 'none' ? 'Add recurring transaction' : 'Add transaction') }}
+      {{ (editId ? 'Save changes' : (repeat !== 'none' ? 'Add recurring transaction' : 'Add transaction')) | t }}
     </button>
-    <button class="x-btn x-btn-danger" *ngIf="editId" (click)="delete()">Delete</button>
+    <button class="x-btn x-btn-danger" *ngIf="editId" (click)="delete()">{{ 'Delete' | t }}</button>
   </div>
 </div>

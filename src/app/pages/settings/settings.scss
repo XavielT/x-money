@@ -96,12 +96,43 @@
 }
 
 // Recurring rules
+.settings-recurring-card {
+  margin-bottom: 10px;
+}
+
 .settings-recurring {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  margin-bottom: 10px;
+}
+
+.settings-recurring-edit {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 12px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  select {
+    flex: 1.2;
+    min-width: 0;
+  }
+
+  .x-btn {
+    width: auto;
+    padding: 10px 16px;
+  }
+}
+
+.settings-lock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
 }
 
 .settings-recurring-icon {

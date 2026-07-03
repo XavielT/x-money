@@ -51,6 +51,12 @@
       border-color: var(--income);
       color: var(--income);
     }
+
+    &.active-transfer {
+      background: var(--Hub-translucid);
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
   }
 }
 

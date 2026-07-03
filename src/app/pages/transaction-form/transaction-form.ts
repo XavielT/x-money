@@ -2,28 +2,31 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TransactionType } from '../../../shared/models/transaction.model';
+import { TransactionKind } from '../../../shared/models/transaction.model';
 import { RecurringFrequency } from '../../../shared/models/recurring.model';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { AccountService } from '../../../shared/services/account.service';
 import { SettingsService } from '../../../shared/services/settings.service';
 import { RecurringService } from '../../../shared/services/recurring.service';
+import { TranslateService } from '../../../shared/services/translate.service';
 
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './transaction-form.html',
   styleUrl: './transaction-form.scss',
 })
 export class TransactionFormComponent {
   editId: string | null = null;
 
-  type = signal<TransactionType>('expense');
+  kind = signal<TransactionKind>('expense');
   categoryId = signal<string>('');
   amount: number | null = null;
   accountId = '';
+  toAccountId = '';
   date = '';
   note = '';
   repeat: RecurringFrequency | 'none' = 'none';
@@ -36,28 +39,35 @@ export class TransactionFormComponent {
   categoryColors = ['#ff7043', '#ffca28', '#66bb6a', '#26a69a', '#42a5f5', '#7e57c2', '#ec407a', '#8d6e63'];
   emojiSuggestions = ['🎨', '🛠️', '🎸', '☕', '🎬', '📱', '🧰', '⚽', '🌮', '💡'];
 
-  categoriesForType = computed(() => this.categoryService.ofType(this.type()));
+  categoriesForType = computed(() => {
+    const kind = this.kind();
+    return kind === 'transfer' ? [] : this.categoryService.ofType(kind);
+  });
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private transactionService: TransactionService,
     private recurringService: RecurringService,
+    private translate: TranslateService,
     public categoryService: CategoryService,
     public accountService: AccountService,
     public settings: SettingsService
   ) {
     this.date = this.todayIso();
-    this.accountId = this.accountService.accounts()[0]?.id ?? '';
+    const accounts = this.accountService.accounts();
+    this.accountId = accounts[0]?.id ?? '';
+    this.toAccountId = accounts[1]?.id ?? accounts[0]?.id ?? '';
 
     this.editId = this.route.snapshot.paramMap.get('id');
     if (this.editId) {
       const existing = this.transactionService.byId(this.editId);
       if (existing) {
-        this.type.set(existing.type);
-        this.categoryId.set(existing.categoryId);
+        this.kind.set(existing.type);
+        this.categoryId.set(existing.categoryId ?? '');
         this.amount = existing.amount;
         this.accountId = existing.accountId;
+        this.toAccountId = existing.toAccountId ?? this.toAccountId;
         this.date = existing.date;
         this.note = existing.note ?? '';
       } else {
@@ -66,10 +76,11 @@ export class TransactionFormComponent {
     }
   }
 
-  setType(type: TransactionType): void {
-    if (this.type() === type) return;
-    this.type.set(type);
-    this.categoryId.set(''); // categories differ per type
+  setKind(kind: TransactionKind): void {
+    if (this.kind() === kind) return;
+    this.kind.set(kind);
+    this.categoryId.set(''); // categories differ per type; transfers have none
+    this.showNewCategory.set(false);
   }
 
   selectCategory(id: string): void {
@@ -83,8 +94,9 @@ export class TransactionFormComponent {
   createCategory(): void {
     const name = this.newCatName.trim();
     const icon = this.newCatIcon.trim() || '🏷️';
-    if (!name) return;
-    const category = this.categoryService.add(name, icon, this.newCatColor, this.type());
+    const kind = this.kind();
+    if (!name || kind === 'transfer') return;
+    const category = this.categoryService.add(name, icon, this.newCatColor, kind);
     this.categoryId.set(category.id);
     this.newCatName = '';
     this.newCatIcon = '';
@@ -92,22 +104,23 @@ export class TransactionFormComponent {
   }
 
   isValid(): boolean {
-    return (
-      this.amount != null &&
-      this.amount > 0 &&
-      !!this.categoryId() &&
-      !!this.accountId &&
-      !!this.date
-    );
+    const base = this.amount != null && this.amount > 0 && !!this.accountId && !!this.date;
+    if (!base) return false;
+    if (this.kind() === 'transfer') {
+      return !!this.toAccountId && this.toAccountId !== this.accountId;
+    }
+    return !!this.categoryId();
   }
 
   save(): void {
     if (!this.isValid()) return;
+    const isTransfer = this.kind() === 'transfer';
     const data = {
-      type: this.type(),
+      type: this.kind(),
       amount: Number(this.amount),
-      categoryId: this.categoryId(),
+      categoryId: isTransfer ? undefined : this.categoryId(),
       accountId: this.accountId,
+      toAccountId: isTransfer ? this.toAccountId : undefined,
       date: this.date,
       note: this.note.trim() || undefined,
     };
@@ -125,7 +138,7 @@ export class TransactionFormComponent {
 
   delete(): void {
     if (!this.editId) return;
-    if (!confirm('Delete this transaction?')) return;
+    if (!confirm(this.translate.instant('Delete this transaction?'))) return;
     this.transactionService.remove(this.editId);
     this.router.navigate(['/transactions']);
   }

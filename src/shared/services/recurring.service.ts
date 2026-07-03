@@ -32,6 +32,7 @@ export class RecurringService {
           amount: rule.amount,
           categoryId: rule.categoryId,
           accountId: rule.accountId,
+          toAccountId: rule.toAccountId,
           date: next,
           note: rule.note,
         });
@@ -58,6 +59,14 @@ export class RecurringService {
     this._recurring.update((list) => [...list, rule]);
     this.persist();
     this.processDue();
+  }
+
+  // Edit amount and/or frequency of an existing rule
+  update(id: string, amount: number, frequency: RecurringFrequency): void {
+    this._recurring.update((list) =>
+      list.map((r) => (r.id === id ? { ...r, amount, frequency } : r))
+    );
+    this.persist();
   }
 
   toggleActive(id: string): void {

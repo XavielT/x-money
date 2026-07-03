@@ -8,8 +8,14 @@ Built with Angular (standalone components + Signals), SCSS, and localStorage. Se
 ## Features
 
 - ➕ Fast expense/income entry with categories, accounts, date and notes
-- 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; pause/resume/delete in Settings
+- 🔄 Transfers between accounts (excluded from income/expense stats)
+- 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; edit/pause/delete in Settings
 - 🏷️ 26 built-in categories (incl. Hobby, Car project) + create your own with custom name, emoji and color
+- 🔎 Search and filter history by text, category, or account
+- 📈 6-month income vs expense trend chart · ⚠️ over-budget alerts on Home
+- 🔐 Optional PIN app lock (locks on start and on background)
+- 🌎 English / Español
+- 🛡️ Data mirrored to native storage (survives WebView cache clearing) · CSV export via Android share sheet
 - 📆 Transaction history grouped by day, navigable by month
 - 🏠 Dashboard: total balance, monthly income vs expenses, top spending, recent movements
 - 📊 Stats: category donut chart per month (expenses or income)

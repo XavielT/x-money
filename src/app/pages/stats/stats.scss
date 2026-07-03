@@ -84,6 +84,94 @@
   fill: var(--main-ultra-light);
 }
 
+// 6-month trend bars
+.stats-trends {
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.stats-trends-title {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.stats-trends-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  height: 120px;
+}
+
+.stats-trends-month {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.stats-trends-bars {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 100%;
+  justify-content: center;
+}
+
+.stats-trends-bar {
+  width: 10px;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  transition: all 0.3s ease;
+
+  &.income {
+    background: var(--income);
+  }
+
+  &.expense {
+    background: var(--expense);
+  }
+}
+
+.stats-trends-label {
+  font-size: 0.65rem;
+  color: var(--main-ultra-light);
+}
+
+.stats-trends-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.72rem;
+  color: var(--main-ultra-light);
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  i {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+
+    &.income {
+      background: var(--income);
+    }
+
+    &.expense {
+      background: var(--expense);
+    }
+  }
+}
+
 .stats-list {
   display: flex;
   flex-direction: column;

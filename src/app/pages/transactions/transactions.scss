@@ -56,6 +56,22 @@
   color: var(--expense);
 }
 
+.transactions-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.transactions-filters-row {
+  display: flex;
+  gap: 8px;
+
+  select {
+    min-width: 0;
+  }
+}
+
 .transactions-empty {
   display: flex;
   flex-direction: column;

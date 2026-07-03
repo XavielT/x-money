@@ -1,5 +1,5 @@
 <div class="x-page stats">
-  <h1 class="x-page-title">Stats</h1>
+  <h1 class="x-page-title">{{ 'Stats' | t }}</h1>
 
   <!-- Month navigation -->
   <div class="stats-month">
@@ -10,13 +10,13 @@
 
   <!-- Type toggle -->
   <div class="stats-toggle">
-    <button [class.active-expense]="type() === 'expense'" (click)="setType('expense')">Expenses</button>
-    <button [class.active-income]="type() === 'income'" (click)="setType('income')">Income</button>
+    <button [class.active-expense]="type() === 'expense'" (click)="setType('expense')">{{ 'Expenses' | t }}</button>
+    <button [class.active-income]="type() === 'income'" (click)="setType('income')">{{ 'Income' | t }}</button>
   </div>
 
   <!-- Empty state -->
   <div class="stats-empty x-card" *ngIf="!slices().length">
-    <p>Nothing to show for this month.</p>
+    <p>{{ 'Nothing to show for this month.' | t }}</p>
   </div>
 
   <!-- Donut chart -->
@@ -38,7 +38,7 @@
         {{ settings.currency() }}{{ grandTotal() | number:'1.0-0' }}
       </text>
       <text x="18" y="21.5" text-anchor="middle" class="stats-donut-label">
-        {{ type() === 'expense' ? 'spent' : 'earned' }}
+        {{ (type() === 'expense' ? 'spent' : 'earned') | t }}
       </text>
     </svg>
 
@@ -47,10 +47,28 @@
       <div class="stats-row" *ngFor="let slice of slices()">
         <span class="stats-row-dot" [style.background]="slice.category?.color"></span>
         <span class="stats-row-icon">{{ slice.category?.icon }}</span>
-        <span class="stats-row-name">{{ slice.category?.name || 'Unknown' }}</span>
+        <span class="stats-row-name">{{ slice.category?.name || ('Unknown' | t) }}</span>
         <span class="stats-row-percent">{{ slice.percent }}%</span>
         <strong class="stats-row-amount">{{ settings.currency() }}{{ slice.total | number:'1.2-2' }}</strong>
       </div>
+    </div>
+  </div>
+
+  <!-- 6-month trend -->
+  <div class="stats-trends x-card" *ngIf="hasTrendData()">
+    <h2 class="stats-trends-title">{{ 'Last 6 months' | t }}</h2>
+    <div class="stats-trends-chart">
+      <div class="stats-trends-month" *ngFor="let m of trends()">
+        <div class="stats-trends-bars">
+          <div class="stats-trends-bar income" [style.height.%]="m.incomeHeight"></div>
+          <div class="stats-trends-bar expense" [style.height.%]="m.expenseHeight"></div>
+        </div>
+        <span class="stats-trends-label">{{ m.label }}</span>
+      </div>
+    </div>
+    <div class="stats-trends-legend">
+      <span><i class="income"></i>{{ 'Income' | t }}</span>
+      <span><i class="expense"></i>{{ 'Expenses' | t }}</span>
     </div>
   </div>
 </div>

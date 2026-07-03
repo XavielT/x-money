@@ -1,9 +1,9 @@
 <div class="x-page settings">
-  <h1 class="x-page-title">Settings</h1>
+  <h1 class="x-page-title">{{ 'Settings' | t }}</h1>
 
   <!-- Currency -->
   <section class="settings-section">
-    <h2>Currency</h2>
+    <h2>{{ 'Currency' | t }}</h2>
     <div class="settings-currencies">
       <button
         *ngFor="let symbol of currencies"
@@ -15,16 +15,25 @@
     </div>
   </section>
 
+  <!-- Language -->
+  <section class="settings-section">
+    <h2>{{ 'Language' | t }}</h2>
+    <div class="settings-currencies">
+      <button [class.active]="translate.lang() === 'en'" (click)="setLanguage('en')">English</button>
+      <button [class.active]="translate.lang() === 'es'" (click)="setLanguage('es')">Español</button>
+    </div>
+  </section>
+
   <!-- Accounts -->
   <section class="settings-section">
-    <h2>Accounts</h2>
+    <h2>{{ 'Accounts' | t }}</h2>
 
     <div class="settings-account x-card" *ngFor="let acc of accountService.accounts()">
       <span class="settings-account-icon">{{ acc.icon }}</span>
       <div class="settings-account-info">
         <span>{{ acc.name }}</span>
         <small>
-          Balance: {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settingsService.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.2-2' }}
+          {{ 'Balance:' | t }} {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settingsService.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.2-2' }}
         </small>
       </div>
       <button class="settings-account-delete" (click)="removeAccount(acc.id)" aria-label="Remove account">✕</button>
@@ -40,50 +49,67 @@
           {{ icon }}
         </button>
       </div>
-      <input class="x-input" type="text" maxlength="24" placeholder="Account name" [(ngModel)]="newName" name="newName" />
-      <input class="x-input" type="number" inputmode="decimal" step="0.01" placeholder="Initial balance" [(ngModel)]="newBalance" name="newBalance" />
-      <button class="x-btn" [disabled]="!newName.trim()" (click)="addAccount()">Add account</button>
+      <input class="x-input" type="text" maxlength="24" [placeholder]="'Account name' | t" [(ngModel)]="newName" name="newName" />
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" [placeholder]="'Initial balance' | t" [(ngModel)]="newBalance" name="newBalance" />
+      <button class="x-btn" [disabled]="!newName.trim()" (click)="addAccount()">{{ 'Add account' | t }}</button>
     </div>
   </section>
 
   <!-- Recurring transactions -->
   <section class="settings-section">
-    <h2>Recurring transactions</h2>
+    <h2>{{ 'Recurring transactions' | t }}</h2>
     <p class="settings-hint" *ngIf="!recurringService.recurring().length">
-      None yet. When adding a transaction, set "Repeat" to make it recurring.
+      {{ 'None yet. When adding a transaction, set "Repeat" to make it recurring.' | t }}
     </p>
 
-    <div class="settings-recurring x-card" *ngFor="let rule of recurringService.recurring()">
-      <span class="settings-recurring-icon">{{ categoryService.byId(rule.categoryId)?.icon || '❓' }}</span>
-      <div class="settings-recurring-info">
-        <span>
-          {{ categoryService.byId(rule.categoryId)?.name || 'Unknown' }}
-          · {{ rule.type === 'income' ? '+' : '-' }}{{ settingsService.currency() }}{{ rule.amount | number:'1.2-2' }}
+    <div class="x-card settings-recurring-card" *ngFor="let rule of recurringService.recurring()">
+      <div class="settings-recurring">
+        <span class="settings-recurring-icon">
+          {{ rule.type === 'transfer' ? '🔁' : (categoryService.byId(rule.categoryId || '')?.icon || '❓') }}
         </span>
-        <small>
-          {{ frequencyLabel(rule.frequency) }} · next {{ rule.nextDate }}
-          <ng-container *ngIf="!rule.active"> · paused</ng-container>
-        </small>
+        <div class="settings-recurring-info">
+          <span>
+            {{ rule.type === 'transfer' ? ('Transfer' | t) : (categoryService.byId(rule.categoryId || '')?.name || ('Unknown' | t)) }}
+            · {{ rule.type === 'income' ? '+' : (rule.type === 'expense' ? '-' : '') }}{{ settingsService.currency() }}{{ rule.amount | number:'1.2-2' }}
+          </span>
+          <small>
+            {{ frequencyLabel(rule.frequency) }} · {{ 'next' | t }} {{ rule.nextDate }}
+            <ng-container *ngIf="!rule.active"> · {{ 'paused' | t }}</ng-container>
+          </small>
+        </div>
+        <button class="settings-recurring-toggle" (click)="startEditRecurring(rule)" aria-label="Edit recurring">✎</button>
+        <button
+          class="settings-recurring-toggle"
+          (click)="recurringService.toggleActive(rule.id)"
+          [attr.aria-label]="rule.active ? 'Pause' : 'Resume'"
+        >
+          {{ rule.active ? '⏸' : '▶' }}
+        </button>
+        <button class="settings-account-delete" (click)="removeRecurring(rule.id)" aria-label="Delete recurring">✕</button>
       </div>
-      <button
-        class="settings-recurring-toggle"
-        (click)="recurringService.toggleActive(rule.id)"
-        [attr.aria-label]="rule.active ? 'Pause' : 'Resume'"
-      >
-        {{ rule.active ? '⏸' : '▶' }}
-      </button>
-      <button class="settings-account-delete" (click)="removeRecurring(rule.id)" aria-label="Delete recurring">✕</button>
+
+      <!-- Inline edit -->
+      <div class="settings-recurring-edit" *ngIf="editingRuleId === rule.id">
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="editAmount" name="editAmount" />
+        <select class="x-input" [(ngModel)]="editFrequency" name="editFrequency">
+          <option value="daily">{{ 'Every day' | t }}</option>
+          <option value="weekly">{{ 'Every week' | t }}</option>
+          <option value="monthly">{{ 'Every month' | t }}</option>
+          <option value="yearly">{{ 'Every year' | t }}</option>
+        </select>
+        <button class="x-btn" [disabled]="!editAmount || editAmount <= 0" (click)="saveEditRecurring()">{{ 'Save' | t }}</button>
+      </div>
     </div>
   </section>
 
   <!-- Categories -->
   <section class="settings-section">
-    <h2>Categories</h2>
-    <p class="settings-hint">Create new categories from the "New" tile when adding a transaction. Custom ones can be deleted here.</p>
+    <h2>{{ 'Categories' | t }}</h2>
+    <p class="settings-hint">{{ 'Create new categories from the "New" tile when adding a transaction. Custom ones can be deleted here.' | t }}</p>
 
     <div class="settings-cat-toggle">
-      <button [class.active]="catType === 'expense'" (click)="catType = 'expense'">Expense</button>
-      <button [class.active]="catType === 'income'" (click)="catType = 'income'">Income</button>
+      <button [class.active]="catType === 'expense'" (click)="catType = 'expense'">{{ 'Expense' | t }}</button>
+      <button [class.active]="catType === 'income'" (click)="catType = 'income'">{{ 'Income' | t }}</button>
     </div>
 
     <div class="settings-cat-list x-card">
@@ -91,7 +117,7 @@
         <span class="settings-cat-dot" [style.background]="cat.color"></span>
         <span class="settings-cat-icon">{{ cat.icon }}</span>
         <span class="settings-cat-name">{{ cat.name }}</span>
-        <small class="settings-cat-tag" *ngIf="categoryService.isCustom(cat.id)">custom</small>
+        <small class="settings-cat-tag" *ngIf="categoryService.isCustom(cat.id)">{{ 'custom' | t }}</small>
         <button
           class="settings-account-delete"
           *ngIf="categoryService.isCustom(cat.id)"
@@ -104,19 +130,52 @@
     </div>
   </section>
 
-  <!-- Data -->
+  <!-- App lock -->
   <section class="settings-section">
-    <h2>Your data</h2>
-    <p class="settings-hint">Everything is stored only on this device. Export a backup before changing phone.</p>
-    <div class="settings-data">
-      <button class="x-btn" (click)="exportData()">Export backup (JSON)</button>
-      <label class="x-btn settings-import">
-        Import backup
-        <input type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
-      </label>
-      <button class="x-btn x-btn-danger" (click)="wipeData()">Delete all data</button>
+    <h2>{{ 'App lock' | t }}</h2>
+    <p class="settings-hint">{{ 'Protect the app with a PIN. It locks on start and when going to background.' | t }}</p>
+
+    <div class="settings-lock x-card" *ngIf="!lock.enabled()">
+      <input
+        class="x-input"
+        type="password"
+        inputmode="numeric"
+        maxlength="8"
+        [placeholder]="'New PIN (4-8 digits)' | t"
+        [(ngModel)]="lockPin"
+        name="lockPin"
+      />
+      <button class="x-btn" [disabled]="lockPin.trim().length < 4" (click)="enableLock()">{{ 'Enable lock' | t }}</button>
+    </div>
+
+    <div class="settings-lock x-card" *ngIf="lock.enabled()">
+      <input
+        class="x-input"
+        type="password"
+        inputmode="numeric"
+        maxlength="8"
+        [placeholder]="'Current PIN' | t"
+        [(ngModel)]="unlockPin"
+        name="unlockPin"
+      />
+      <button class="x-btn x-btn-danger" [disabled]="!unlockPin.trim()" (click)="disableLock()">{{ 'Disable lock' | t }}</button>
     </div>
   </section>
 
-  <p class="settings-version">X Money · local-first · v1.0</p>
+  <!-- Data -->
+  <section class="settings-section">
+    <h2>{{ 'Your data' | t }}</h2>
+    <p class="settings-hint">{{ 'Everything is stored only on this device. Export a backup before changing phone.' | t }}</p>
+    <div class="settings-data">
+      <button class="x-btn" (click)="exportData()">{{ 'Export backup (JSON)' | t }}</button>
+      <button class="x-btn" (click)="exportCsv()">{{ 'Export CSV (Excel)' | t }}</button>
+      <label class="x-btn settings-import">
+        {{ 'Import backup' | t }}
+        <input type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
+      </label>
+      <button class="x-btn x-btn-danger" (click)="wipeData()">{{ 'Delete all data' | t }}</button>
+    </div>
+  </section>
+
+  <p class="settings-version">X Money · local-first · v2.0</p>
 </div>

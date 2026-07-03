@@ -23,15 +23,17 @@ export class TransactionService {
     [...this._transactions()].sort((a, b) => b.date.localeCompare(a.date))
   );
 
-  // Total balance across all accounts = initial balances + income − expenses
+  // Total balance across all accounts = initial balances + income − expenses.
+  // Transfers move money between accounts, so they don't change the total.
   totalBalance = computed(() => {
     const initial = this.accountService
       .accounts()
       .reduce((sum, a) => sum + a.initialBalance, 0);
-    return this._transactions().reduce(
-      (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount),
-      initial
-    );
+    return this._transactions().reduce((sum, t) => {
+      if (t.type === 'income') return sum + t.amount;
+      if (t.type === 'expense') return sum - t.amount;
+      return sum;
+    }, initial);
   });
 
   constructor(
@@ -73,18 +75,18 @@ export class TransactionService {
     return this.forMonth(year, month).reduce(
       (acc, t) => {
         if (t.type === 'income') acc.income += t.amount;
-        else acc.expense += t.amount;
+        else if (t.type === 'expense') acc.expense += t.amount;
         return acc;
       },
       { income: 0, expense: 0 }
     );
   }
 
-  // Totals per category for a month and type, biggest first
+  // Totals per category for a month and type, biggest first (transfers excluded)
   categoryTotals(year: number, month: number, type: TransactionType): CategoryTotal[] {
     const totals = new Map<string, number>();
     for (const t of this.forMonth(year, month)) {
-      if (t.type !== type) continue;
+      if (t.type !== type || !t.categoryId) continue;
       totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
     }
     return [...totals.entries()]
@@ -94,9 +96,15 @@ export class TransactionService {
 
   accountBalance(accountId: string): number {
     const initial = this.accountService.byId(accountId)?.initialBalance ?? 0;
-    return this._transactions()
-      .filter((t) => t.accountId === accountId)
-      .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount), initial);
+    return this._transactions().reduce((sum, t) => {
+      if (t.type === 'transfer') {
+        if (t.accountId === accountId) sum -= t.amount;
+        if (t.toAccountId === accountId) sum += t.amount;
+        return sum;
+      }
+      if (t.accountId !== accountId) return sum;
+      return sum + (t.type === 'income' ? t.amount : -t.amount);
+    }, initial);
   }
 
   private persist(): void {

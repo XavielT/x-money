@@ -12,35 +12,47 @@
 
   <!-- Balance card -->
   <section class="home-balance x-card">
-    <span class="home-balance-label">Total balance</span>
+    <span class="home-balance-label">{{ 'Total balance' | t }}</span>
     <span class="home-balance-amount">
       {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
     </span>
 
     <div class="home-balance-month">
       <div class="home-balance-pill">
-        <span>{{ monthLabel }} income</span>
+        <span>{{ monthLabel }} {{ 'income' | t }}</span>
         <strong class="income">+{{ settings.currency() }}{{ summary().income | number:'1.2-2' }}</strong>
       </div>
       <div class="home-balance-pill">
-        <span>{{ monthLabel }} expenses</span>
+        <span>{{ monthLabel }} {{ 'expenses' | t }}</span>
         <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
       </div>
     </div>
   </section>
 
+  <!-- Budget alerts -->
+  <section class="home-alerts" *ngIf="budgetAlerts().length">
+    <a
+      routerLink="/budgets"
+      class="home-alert x-card"
+      *ngFor="let alert of budgetAlerts()"
+      [class.over]="alert.over"
+    >
+      ⚠️ {{ alert.category?.icon }} {{ alert.category?.name }} · {{ alert.percent }}% {{ 'of budget used' | t }}
+    </a>
+  </section>
+
   <!-- Empty state -->
   <section class="home-empty x-card" *ngIf="!hasTransactions()">
     <span class="home-empty-icon">🪙</span>
-    <p>No movements yet.</p>
-    <a routerLink="/add" class="x-btn home-empty-btn">Add your first transaction</a>
+    <p>{{ 'No movements yet.' | t }}</p>
+    <a routerLink="/add" class="x-btn home-empty-btn">{{ 'Add your first transaction' | t }}</a>
   </section>
 
   <!-- Top spending -->
   <section class="home-section" *ngIf="topCategories().length">
     <div class="home-section-head">
-      <h2>Top spending</h2>
-      <a routerLink="/stats">See stats</a>
+      <h2>{{ 'Top spending' | t }}</h2>
+      <a routerLink="/stats">{{ 'See stats' | t }}</a>
     </div>
     <div class="home-top x-card">
       <div class="home-top-row" *ngFor="let item of topCategories()">
@@ -61,8 +73,8 @@
   <!-- Recent transactions -->
   <section class="home-section" *ngIf="recent().length">
     <div class="home-section-head">
-      <h2>Recent</h2>
-      <a routerLink="/transactions">See all</a>
+      <h2>{{ 'Recent' | t }}</h2>
+      <a routerLink="/transactions">{{ 'See all' | t }}</a>
     </div>
     <div class="home-recent x-card">
       <app-transaction-item *ngFor="let t of recent()" [transaction]="t"></app-transaction-item>

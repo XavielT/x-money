@@ -1,5 +1,5 @@
 <div class="x-page transactions">
-  <h1 class="x-page-title">Transactions</h1>
+  <h1 class="x-page-title">{{ 'Transactions' | t }}</h1>
 
   <!-- Month navigation -->
   <div class="transactions-month">
@@ -11,25 +11,51 @@
   <!-- Month summary -->
   <div class="transactions-summary x-card">
     <div>
-      <span>Income</span>
+      <span>{{ 'Income' | t }}</span>
       <strong class="income">+{{ settings.currency() }}{{ summary().income | number:'1.2-2' }}</strong>
     </div>
     <div>
-      <span>Expenses</span>
+      <span>{{ 'Expenses' | t }}</span>
       <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
     </div>
     <div>
-      <span>Net</span>
+      <span>{{ 'Net' | t }}</span>
       <strong [class.income]="net() >= 0" [class.expense]="net() < 0">
         {{ net() >= 0 ? '+' : '-' }}{{ settings.currency() }}{{ abs(net()) | number:'1.2-2' }}
       </strong>
     </div>
   </div>
 
+  <!-- Search & filters -->
+  <div class="transactions-filters">
+    <input
+      class="x-input"
+      type="search"
+      [placeholder]="'Search note or category…' | t"
+      [ngModel]="searchText()"
+      (ngModelChange)="searchText.set($event)"
+      name="search"
+    />
+    <div class="transactions-filters-row">
+      <select class="x-input" [ngModel]="filterCategoryId()" (ngModelChange)="filterCategoryId.set($event)" name="filterCategory">
+        <option value="">{{ 'All categories' | t }}</option>
+        <option *ngFor="let cat of categoryService.categories()" [value]="cat.id">
+          {{ cat.icon }} {{ cat.name }}
+        </option>
+      </select>
+      <select class="x-input" [ngModel]="filterAccountId()" (ngModelChange)="filterAccountId.set($event)" name="filterAccount">
+        <option value="">{{ 'All accounts' | t }}</option>
+        <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
+          {{ acc.icon }} {{ acc.name }}
+        </option>
+      </select>
+    </div>
+  </div>
+
   <!-- Empty state -->
   <div class="transactions-empty x-card" *ngIf="!groups().length">
-    <p>No transactions this month.</p>
-    <a routerLink="/add" class="x-btn">Add transaction</a>
+    <p>{{ 'No transactions this month.' | t }}</p>
+    <a routerLink="/add" class="x-btn">{{ 'Add transaction' | t }}</a>
   </div>
 
   <!-- Day groups -->

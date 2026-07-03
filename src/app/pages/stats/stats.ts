@@ -2,9 +2,11 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TransactionType } from '../../../shared/models/transaction.model';
 import { CategoryModel } from '../../../shared/models/category.model';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { SettingsService } from '../../../shared/services/settings.service';
+import { TranslateService } from '../../../shared/services/translate.service';
 
 interface StatSlice {
   category: CategoryModel | undefined;
@@ -14,10 +16,18 @@ interface StatSlice {
   dashoffset: number;
 }
 
+interface TrendMonth {
+  label: string;
+  income: number;
+  expense: number;
+  incomeHeight: number; // 0-100
+  expenseHeight: number; // 0-100
+}
+
 @Component({
   selector: 'app-stats',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
@@ -28,11 +38,35 @@ export class StatsComponent {
   type = signal<TransactionType>('expense');
 
   monthLabel = computed(() =>
-    new Date(this.year(), this.month() - 1, 1).toLocaleString('en-US', {
+    new Date(this.year(), this.month() - 1, 1).toLocaleString(this.translate.locale(), {
       month: 'long',
       year: 'numeric',
     })
   );
+
+  // Income vs expense for the last 6 months, bar heights scaled to the max
+  trends = computed<TrendMonth[]>(() => {
+    const months: TrendMonth[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(this.now.getFullYear(), this.now.getMonth() - i, 1);
+      const summary = this.transactionService.monthSummary(d.getFullYear(), d.getMonth() + 1);
+      months.push({
+        label: d.toLocaleString(this.translate.locale(), { month: 'short' }),
+        income: summary.income,
+        expense: summary.expense,
+        incomeHeight: 0,
+        expenseHeight: 0,
+      });
+    }
+    const max = Math.max(...months.map((m) => Math.max(m.income, m.expense)), 1);
+    return months.map((m) => ({
+      ...m,
+      incomeHeight: Math.round((m.income / max) * 100),
+      expenseHeight: Math.round((m.expense / max) * 100),
+    }));
+  });
+
+  hasTrendData = computed(() => this.trends().some((m) => m.income > 0 || m.expense > 0));
 
   grandTotal = computed(() =>
     this.transactionService
@@ -62,6 +96,7 @@ export class StatsComponent {
   });
 
   constructor(
+    private translate: TranslateService,
     public transactionService: TransactionService,
     public categoryService: CategoryService,
     public settings: SettingsService
