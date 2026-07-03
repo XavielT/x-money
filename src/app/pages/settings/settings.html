@@ -27,32 +27,14 @@
   <!-- Accounts -->
   <section class="settings-section">
     <h2>{{ 'Accounts' | t }}</h2>
-
-    <div class="settings-account x-card" *ngFor="let acc of accountService.accounts()">
-      <span class="settings-account-icon">{{ acc.icon }}</span>
-      <div class="settings-account-info">
-        <span>{{ acc.name }}</span>
-        <small>
-          {{ 'Balance:' | t }} {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settingsService.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.2-2' }}
-        </small>
+    <a routerLink="/accounts" class="settings-link x-card">
+      <span>🏦</span>
+      <div class="settings-link-info">
+        <strong>{{ 'Manage accounts' | t }}</strong>
+        <small>{{ 'Banks, cards, cash and balances' | t }}</small>
       </div>
-      <button class="settings-account-delete" (click)="removeAccount(acc.id)" aria-label="Remove account">✕</button>
-    </div>
-
-    <div class="settings-new-account x-card">
-      <div class="settings-new-account-icons">
-        <button
-          *ngFor="let icon of accountIcons"
-          [class.active]="newIcon === icon"
-          (click)="newIcon = icon"
-        >
-          {{ icon }}
-        </button>
-      </div>
-      <input class="x-input" type="text" maxlength="24" [placeholder]="'Account name' | t" [(ngModel)]="newName" name="newName" />
-      <input class="x-input" type="number" inputmode="decimal" step="0.01" [placeholder]="'Initial balance' | t" [(ngModel)]="newBalance" name="newBalance" />
-      <button class="x-btn" [disabled]="!newName.trim()" (click)="addAccount()">{{ 'Add account' | t }}</button>
-    </div>
+      <span class="settings-link-arrow">›</span>
+    </a>
   </section>
 
   <!-- Recurring transactions -->

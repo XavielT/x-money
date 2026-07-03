@@ -1,7 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TransactionModel } from '../../../shared/models/transaction.model';
 import { TransactionItem } from '../../../shared/components/transaction-item/transaction-item';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -85,12 +85,17 @@ export class TransactionsComponent {
   });
 
   constructor(
+    private route: ActivatedRoute,
     private translate: TranslateService,
     public transactionService: TransactionService,
     public categoryService: CategoryService,
     public accountService: AccountService,
     public settings: SettingsService
-  ) {}
+  ) {
+    // Deep link from the accounts page: /transactions?account=<id>
+    const account = this.route.snapshot.queryParamMap.get('account');
+    if (account) this.filterAccountId.set(account);
+  }
 
   abs(value: number): number {
     return Math.abs(value);

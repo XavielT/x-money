@@ -1,0 +1,103 @@
+<div class="x-page accounts">
+  <!-- Header -->
+  <header class="accounts-header">
+    <button class="accounts-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Accounts' | t }}</h1>
+  </header>
+
+  <!-- Total -->
+  <div class="accounts-total x-card">
+    <span>{{ 'Total balance' | t }}</span>
+    <strong>
+      {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
+    </strong>
+  </div>
+
+  <!-- Account cards -->
+  <div
+    class="accounts-card x-card"
+    *ngFor="let acc of accountService.accounts()"
+    (click)="openEdit(acc)"
+  >
+    <app-bank-badge [account]="acc"></app-bank-badge>
+    <div class="accounts-card-info">
+      <span class="accounts-card-name">{{ acc.name }}</span>
+      <small>
+        {{ typeLabel(acc.type) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container>
+      </small>
+    </div>
+    <div class="accounts-card-right">
+      <strong [class.negative]="balanceOf(acc.id) < 0">
+        {{ balanceOf(acc.id) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc.id)) | number:'1.2-2' }}
+      </strong>
+      <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Add button -->
+  <button class="x-btn accounts-add" *ngIf="!showForm()" (click)="openAdd()">{{ 'Add account' | t }}</button>
+
+  <!-- Add / edit form -->
+  <div class="accounts-form x-card" *ngIf="showForm()">
+    <h2>{{ (editingId ? 'Edit account' : 'New account') | t }}</h2>
+
+    <!-- Type -->
+    <label class="accounts-form-label">{{ 'Account type' | t }}</label>
+    <div class="accounts-form-types">
+      <button
+        *ngFor="let t of accountTypes"
+        [class.active]="formType() === t.type"
+        (click)="setType(t.type)"
+      >
+        <span>{{ t.icon }}</span>
+        <small>{{ t.label | t }}</small>
+      </button>
+    </div>
+
+    <!-- Name -->
+    <label class="accounts-form-label">{{ 'Account name' | t }}</label>
+    <input class="x-input" type="text" maxlength="24" [placeholder]="'e.g. Payroll account' | t" [(ngModel)]="formName" name="formName" />
+
+    <!-- Bank picker -->
+    <ng-container *ngIf="formType() !== 'cash'">
+      <label class="accounts-form-label">{{ 'Bank' | t }}</label>
+      <div class="accounts-form-banks">
+        <button
+          *ngFor="let bank of banks"
+          class="accounts-form-bank"
+          [class.active]="formBankId() === bank.id"
+          [style.border-color]="formBankId() === bank.id ? bank.color : ''"
+          (click)="selectBank(bank.id)"
+        >
+          <span class="accounts-form-bank-logo" [style.background]="bank.color" [style.color]="bank.textColor">
+            {{ bank.short }}
+          </span>
+          <small>{{ bank.name }}</small>
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Card last 4 -->
+    <ng-container *ngIf="formType() === 'card'">
+      <label class="accounts-form-label">{{ 'Card last 4 digits (optional)' | t }}</label>
+      <input class="x-input" type="text" inputmode="numeric" maxlength="4" placeholder="1234" [(ngModel)]="formLast4" name="formLast4" />
+    </ng-container>
+
+    <!-- Initial balance -->
+    <label class="accounts-form-label">{{ 'Initial balance' | t }}</label>
+    <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
+
+    <div class="accounts-form-actions">
+      <button class="x-btn" [disabled]="!isValid()" (click)="save()">
+        {{ (editingId ? 'Save changes' : 'Add account') | t }}
+      </button>
+      <button class="x-btn accounts-form-cancel" (click)="cancelForm()">{{ 'Cancel' | t }}</button>
+      <button class="x-btn x-btn-danger" *ngIf="editingId" (click)="delete()">{{ 'Delete account' | t }}</button>
+    </div>
+  </div>
+</div>

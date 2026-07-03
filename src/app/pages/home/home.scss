@@ -86,6 +86,61 @@
   }
 }
 
+// Accounts strip (horizontal scroll)
+.home-accounts {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.home-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.home-account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  strong {
+    font-size: 0.88rem;
+
+    &.negative {
+      color: var(--expense);
+    }
+  }
+}
+
+.home-account-add {
+  justify-content: center;
+  color: var(--Hub);
+  font-size: 1.2rem;
+  font-weight: 700;
+  min-width: 52px;
+}
+
 // Budget alerts
 .home-alerts {
   display: flex;

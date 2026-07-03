@@ -1,0 +1,18 @@
+.bank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+  font-family: var(--font-heading);
+}
+
+.bank-badge-emoji {
+  background: var(--secondary);
+  font-size: 1.15rem;
+}

@@ -10,8 +10,8 @@
     </a>
   </header>
 
-  <!-- Balance card -->
-  <section class="home-balance x-card">
+  <!-- Balance card (taps through to accounts) -->
+  <section class="home-balance x-card" routerLink="/accounts">
     <span class="home-balance-label">{{ 'Total balance' | t }}</span>
     <span class="home-balance-amount">
       {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
@@ -27,6 +27,20 @@
         <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
       </div>
     </div>
+  </section>
+
+  <!-- Accounts strip -->
+  <section class="home-accounts">
+    <a routerLink="/accounts" class="home-account x-card" *ngFor="let acc of accountService.accounts()">
+      <app-bank-badge [account]="acc"></app-bank-badge>
+      <div class="home-account-info">
+        <small>{{ acc.name }}</small>
+        <strong [class.negative]="transactionService.accountBalance(acc.id) < 0">
+          {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.0-0' }}
+        </strong>
+      </div>
+    </a>
+    <a routerLink="/accounts" class="home-account home-account-add x-card" aria-label="Manage accounts">＋</a>
   </section>
 
   <!-- Budget alerts -->

@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TransactionType } from '../../../shared/models/transaction.model';
 import { RecurringFrequency, RecurringModel } from '../../../shared/models/recurring.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -16,18 +17,12 @@ import { AppLanguage, TranslateService } from '../../../shared/services/translat
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
 export class SettingsComponent {
   currencies = ['$', 'RD$', '€', '£', '¥'];
-  accountIcons = ['💵', '💳', '🏦', '💰', '🪙', '📱'];
-
-  // New account form
-  newName = '';
-  newIcon = '💵';
-  newBalance: number | null = 0;
 
   // Category management
   catType: TransactionType = 'expense';
@@ -64,23 +59,6 @@ export class SettingsComponent {
     if (this.translate.lang() === lang) return;
     this.translate.setLanguage(lang);
     location.reload(); // re-render everything in the new language
-  }
-
-  addAccount(): void {
-    const name = this.newName.trim();
-    if (!name) return;
-    this.accountService.add(name, this.newIcon, Number(this.newBalance) || 0);
-    this.newName = '';
-    this.newBalance = 0;
-  }
-
-  removeAccount(id: string): void {
-    if (this.accountService.accounts().length <= 1) {
-      alert(this.translate.instant('You need at least one account.'));
-      return;
-    }
-    if (!confirm(this.translate.instant('Remove this account? Its transactions will keep showing as "Unknown" account.'))) return;
-    this.accountService.remove(id);
   }
 
   frequencyLabel(frequency: string): string {

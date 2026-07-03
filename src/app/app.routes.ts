@@ -5,6 +5,7 @@ import { TransactionFormComponent } from './pages/transaction-form/transaction-f
 import { StatsComponent } from './pages/stats/stats';
 import { BudgetsComponent } from './pages/budgets/budgets';
 import { SettingsComponent } from './pages/settings/settings';
+import { AccountsComponent } from './pages/accounts/accounts';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -14,5 +15,6 @@ export const routes: Routes = [
   { path: 'stats', component: StatsComponent },
   { path: 'budgets', component: BudgetsComponent },
   { path: 'settings', component: SettingsComponent },
+  { path: 'accounts', component: AccountsComponent },
   { path: '**', redirectTo: '' },
 ];

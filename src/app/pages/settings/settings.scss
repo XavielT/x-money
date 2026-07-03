@@ -30,6 +30,44 @@
   }
 }
 
+// Link card to the accounts page
+.settings-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  transition: all 0.3s ease;
+
+  > span:first-child {
+    font-size: 1.3rem;
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.settings-link-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    font-size: 0.92rem;
+  }
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.72rem;
+  }
+}
+
+.settings-link-arrow {
+  color: var(--main-ultra-light);
+  font-size: 1.2rem;
+}
+
 .settings-account {
   display: flex;
   align-items: center;

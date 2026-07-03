@@ -8,6 +8,7 @@ Built with Angular (standalone components + Signals), SCSS, and localStorage. Se
 ## Features
 
 - ➕ Fast expense/income entry with categories, accounts, date and notes
+- 🏦 Full account management: cash, bank accounts, cards (with last-4) and savings, linked to a catalog of 17 banks (Dominican + international) with branded logo badges; per-account balances and transaction history
 - 🔄 Transfers between accounts (excluded from income/expense stats)
 - 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; edit/pause/delete in Settings
 - 🏷️ 26 built-in categories (incl. Hobby, Car project) + create your own with custom name, emoji and color

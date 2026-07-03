@@ -2,17 +2,19 @@ import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TransactionItem } from '../../../shared/components/transaction-item/transaction-item';
+import { BankBadge } from '../../../shared/ui/bank-badge/bank-badge';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { SettingsService } from '../../../shared/services/settings.service';
 import { BudgetService } from '../../../shared/services/budget.service';
+import { AccountService } from '../../../shared/services/account.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, TransactionItem, TranslatePipe],
+  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -63,6 +65,7 @@ export class HomeComponent {
     private translate: TranslateService,
     public transactionService: TransactionService,
     public categoryService: CategoryService,
+    public accountService: AccountService,
     public settings: SettingsService
   ) {
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });

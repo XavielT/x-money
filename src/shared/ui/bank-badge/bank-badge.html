@@ -1,0 +1,11 @@
+<span
+  class="bank-badge"
+  *ngIf="bank; else emojiBadge"
+  [style.background]="bank!.color"
+  [style.color]="bank!.textColor"
+>
+  {{ bank!.short }}
+</span>
+<ng-template #emojiBadge>
+  <span class="bank-badge bank-badge-emoji">{{ account.icon || '💵' }}</span>
+</ng-template>
