@@ -9,6 +9,7 @@ import { CategoryService } from '../../../shared/services/category.service';
 import { SettingsService } from '../../../shared/services/settings.service';
 import { BudgetService } from '../../../shared/services/budget.service';
 import { AccountService } from '../../../shared/services/account.service';
+import { InsightsService } from '../../../shared/services/insights.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 @Component({
@@ -60,8 +61,15 @@ export class HomeComponent {
 
   hasTransactions = computed(() => this.transactionService.transactions().length > 0);
 
+  // Ant-expenses warning when small purchases are a big slice of the month
+  antAlert = computed(() => {
+    const insight = this.insights.antExpenses(this.year, this.month);
+    return insight.count >= 8 && insight.percent >= 10 ? insight : null;
+  });
+
   constructor(
     private budgetService: BudgetService,
+    private insights: InsightsService,
     private translate: TranslateService,
     public transactionService: TransactionService,
     public categoryService: CategoryService,

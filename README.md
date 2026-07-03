@@ -9,6 +9,10 @@ Built with Angular (standalone components + Signals), SCSS, and localStorage. Se
 
 - ➕ Fast expense/income entry with categories, accounts, date and notes
 - 🏦 Full account management: cash, bank accounts, credit & debit cards (with last-4) and savings, linked to a catalog of 17 banks (Dominican + international) with real logos bundled offline; per-account balances and transaction history
+- 🔗 Debit cards can be linked to a bank account — card purchases deduct from the bank account (Money Manager-style)
+- 💱 Accounts in RD$ or US$; credit cards can be dual-currency with per-transaction currency and separate US$ balances (no fake conversions)
+- 🐜 Insights: "gastos hormiga" detection, real cost of recurring services (monthly/yearly), and month-over-month spending warnings
+- 📅 Stats in Month or Year mode with a 12-month yearly report and per-account filtering
 - 🔄 Transfers between accounts (excluded from income/expense stats)
 - 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; edit/pause/delete in Settings
 - 🏷️ 26 built-in categories (incl. Hobby, Car project) + create your own with custom name, emoji and color

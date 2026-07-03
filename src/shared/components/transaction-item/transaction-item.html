@@ -10,7 +10,7 @@
       </span>
     </span>
     <span class="transaction-item-amount transfer">
-      {{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
+      {{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
     </span>
   </ng-container>
 
@@ -26,7 +26,7 @@
       </span>
     </span>
     <span class="transaction-item-amount" [class.income]="transaction.type === 'income'">
-      {{ transaction.type === 'income' ? '+' : '-' }}{{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
+      {{ transaction.type === 'income' ? '+' : '-' }}{{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
     </span>
   </ng-template>
 </a>

@@ -31,6 +31,10 @@ export class AccountService {
           migrated = true;
           account = { ...account, cardKind: 'debit' };
         }
+        if (!account.currency) {
+          migrated = true;
+          account = { ...account, currency: 'DOP' };
+        }
         return account;
       });
       this._accounts.set(withTypes);
@@ -43,6 +47,20 @@ export class AccountService {
 
   byId(id: string): AccountModel | undefined {
     return this._accounts().find((a) => a.id === id);
+  }
+
+  // Linked debit cards spend the money of their bank account: balances of the
+  // card's transactions belong to the linked account
+  effectiveOwnerId(accountId: string): string {
+    const account = this.byId(accountId);
+    return account?.linkedAccountId && this.byId(account.linkedAccountId)
+      ? account.linkedAccountId
+      : accountId;
+  }
+
+  // Accounts a debit card can link to
+  linkableAccounts(excludeId?: string): AccountModel[] {
+    return this._accounts().filter((a) => a.type === 'bank' && a.id !== excludeId);
   }
 
   iconForType(type: AccountType): string {

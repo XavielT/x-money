@@ -2,7 +2,8 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TransactionKind } from '../../../shared/models/transaction.model';
+import { TransactionCurrency, TransactionKind } from '../../../shared/models/transaction.model';
+import { AccountModel } from '../../../shared/models/account.model';
 import { RecurringFrequency } from '../../../shared/models/recurring.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
@@ -24,6 +25,7 @@ export class TransactionFormComponent {
 
   kind = signal<TransactionKind>('expense');
   categoryId = signal<string>('');
+  txCurrency = signal<TransactionCurrency>('DOP');
   amount: number | null = null;
   accountId = '';
   toAccountId = '';
@@ -68,12 +70,14 @@ export class TransactionFormComponent {
         this.amount = existing.amount;
         this.accountId = existing.accountId;
         this.toAccountId = existing.toAccountId ?? this.toAccountId;
+        this.txCurrency.set(existing.currency ?? 'DOP');
         this.date = existing.date;
         this.note = existing.note ?? '';
       } else {
         this.editId = null;
       }
     }
+    if (!this.editId) this.syncCurrencyToAccount();
   }
 
   setKind(kind: TransactionKind): void {
@@ -81,6 +85,39 @@ export class TransactionFormComponent {
     this.kind.set(kind);
     this.categoryId.set(''); // categories differ per type; transfers have none
     this.showNewCategory.set(false);
+  }
+
+  // ----- Currency handling -----
+
+  private accountOf(id: string): AccountModel | undefined {
+    return this.accountService.byId(id);
+  }
+
+  accountChanged(id: string): void {
+    this.accountId = id;
+    this.syncCurrencyToAccount();
+  }
+
+  private syncCurrencyToAccount(): void {
+    const currency = this.accountOf(this.accountId)?.currency ?? 'DOP';
+    if (currency === 'USD') this.txCurrency.set('USD');
+    else if (currency === 'DOP') this.txCurrency.set('DOP');
+    // dual: keep whatever the user picked
+  }
+
+  // Dual accounts let the user pick the currency per transaction
+  showCurrencyToggle(): boolean {
+    return (this.accountOf(this.accountId)?.currency ?? 'DOP') === 'dual';
+  }
+
+  setTxCurrency(currency: TransactionCurrency): void {
+    this.txCurrency.set(currency);
+  }
+
+  // An account can move money in a currency if it matches or is dual
+  private accountAccepts(id: string, currency: TransactionCurrency): boolean {
+    const accountCurrency = this.accountOf(id)?.currency ?? 'DOP';
+    return accountCurrency === 'dual' || accountCurrency === currency;
   }
 
   selectCategory(id: string): void {
@@ -106,8 +143,13 @@ export class TransactionFormComponent {
   isValid(): boolean {
     const base = this.amount != null && this.amount > 0 && !!this.accountId && !!this.date;
     if (!base) return false;
+    if (!this.accountAccepts(this.accountId, this.txCurrency())) return false;
     if (this.kind() === 'transfer') {
-      return !!this.toAccountId && this.toAccountId !== this.accountId;
+      return (
+        !!this.toAccountId &&
+        this.toAccountId !== this.accountId &&
+        this.accountAccepts(this.toAccountId, this.txCurrency())
+      );
     }
     return !!this.categoryId();
   }
@@ -121,6 +163,7 @@ export class TransactionFormComponent {
       categoryId: isTransfer ? undefined : this.categoryId(),
       accountId: this.accountId,
       toAccountId: isTransfer ? this.toAccountId : undefined,
+      currency: this.txCurrency(),
       date: this.date,
       note: this.note.trim() || undefined,
     };

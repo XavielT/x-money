@@ -16,6 +16,9 @@
     <span class="home-balance-amount">
       {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
     </span>
+    <span class="home-balance-usd" *ngIf="transactionService.totalBalanceUsd() !== 0">
+      {{ transactionService.totalBalanceUsd() < 0 ? '-' : '+' }}US${{ abs(transactionService.totalBalanceUsd()) | number:'1.2-2' }}
+    </span>
 
     <div class="home-balance-month">
       <div class="home-balance-pill">
@@ -43,8 +46,8 @@
     <a routerLink="/accounts" class="home-account home-account-add x-card" aria-label="Manage accounts">＋</a>
   </section>
 
-  <!-- Budget alerts -->
-  <section class="home-alerts" *ngIf="budgetAlerts().length">
+  <!-- Budget & insight alerts -->
+  <section class="home-alerts" *ngIf="budgetAlerts().length || antAlert()">
     <a
       routerLink="/budgets"
       class="home-alert x-card"
@@ -52,6 +55,9 @@
       [class.over]="alert.over"
     >
       ⚠️ {{ alert.category?.icon }} {{ alert.category?.name }} · {{ alert.percent }}% {{ 'of budget used' | t }}
+    </a>
+    <a routerLink="/stats" class="home-alert x-card" *ngIf="antAlert() as ant">
+      🐜 {{ 'Ant expenses' | t }}: {{ settings.currency() }}{{ ant.total | number:'1.0-0' }} ({{ ant.percent }}% {{ 'of your expenses this month' | t }})
     </a>
   </section>
 

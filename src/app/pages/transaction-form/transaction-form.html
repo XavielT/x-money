@@ -21,7 +21,7 @@
   <!-- Amount -->
   <label class="transaction-form-label">{{ 'Amount' | t }}</label>
   <div class="transaction-form-amount">
-    <span>{{ settings.currency() }}</span>
+    <span>{{ txCurrency() === 'USD' ? 'US$' : settings.currency() }}</span>
     <input
       type="number"
       inputmode="decimal"
@@ -77,11 +77,20 @@
 
   <!-- Accounts -->
   <label class="transaction-form-label">{{ (kind() === 'transfer' ? 'From account' : 'Account') | t }}</label>
-  <select class="x-input" [(ngModel)]="accountId" name="accountId">
+  <select class="x-input" [ngModel]="accountId" (ngModelChange)="accountChanged($event)" name="accountId">
     <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
       {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
     </option>
   </select>
+
+  <!-- Currency (dual-currency accounts only) -->
+  <ng-container *ngIf="showCurrencyToggle()">
+    <label class="transaction-form-label">{{ 'Currency' | t }}</label>
+    <div class="transaction-form-toggle">
+      <button [class.active-transfer]="txCurrency() === 'DOP'" (click)="setTxCurrency('DOP')">{{ settings.currency() }}</button>
+      <button [class.active-transfer]="txCurrency() === 'USD'" (click)="setTxCurrency('USD')">US$</button>
+    </div>
+  </ng-container>
 
   <ng-container *ngIf="kind() === 'transfer'">
     <label class="transaction-form-label">{{ 'To account' | t }}</label>

@@ -23,13 +23,18 @@
     <div class="accounts-card-info">
       <span class="accounts-card-name">{{ acc.name }}</span>
       <small>
-        {{ typeLabel(acc) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container>
+        {{ typeLabel(acc) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container> · {{ currencyTag(acc) }}<ng-container *ngIf="linkedName(acc)"> · → {{ linkedName(acc) }}</ng-container>
       </small>
     </div>
     <div class="accounts-card-right">
-      <strong [class.negative]="balanceOf(acc.id) < 0">
-        {{ balanceOf(acc.id) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc.id)) | number:'1.2-2' }}
-      </strong>
+      <div class="accounts-card-balances">
+        <strong *ngIf="showDop(acc)" [class.negative]="balanceOf(acc) < 0">
+          {{ balanceOf(acc) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc)) | number:'1.2-2' }}
+        </strong>
+        <strong *ngIf="showUsd(acc)" class="usd" [class.negative]="usdBalanceOf(acc) < 0">
+          {{ usdBalanceOf(acc) < 0 ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
+        </strong>
+      </div>
       <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -86,9 +91,35 @@
       <input class="x-input" type="text" inputmode="numeric" maxlength="4" placeholder="1234" [(ngModel)]="formLast4" name="formLast4" />
     </ng-container>
 
-    <!-- Initial balance -->
-    <label class="accounts-form-label">{{ 'Initial balance' | t }}</label>
-    <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
+    <!-- Currency -->
+    <label class="accounts-form-label">{{ 'Currency' | t }}</label>
+    <div class="accounts-form-currencies">
+      <button [class.active]="formCurrency() === 'DOP'" (click)="setCurrency('DOP')">{{ settings.currency() }}</button>
+      <button [class.active]="formCurrency() === 'USD'" (click)="setCurrency('USD')">US$</button>
+      <button *ngIf="isCredit()" [class.active]="formCurrency() === 'dual'" (click)="setCurrency('dual')">
+        {{ settings.currency() }} + US$
+      </button>
+    </div>
+
+    <!-- Linked bank account (debit cards) -->
+    <ng-container *ngIf="isDebit()">
+      <label class="accounts-form-label">{{ 'Linked bank account' | t }}</label>
+      <select class="x-input" [ngModel]="formLinkedId()" (ngModelChange)="formLinkedId.set($event)" name="formLinkedId">
+        <option value="">{{ 'Not linked (own money)' | t }}</option>
+        <option *ngFor="let acc of accountService.linkableAccounts(editingId || undefined)" [value]="acc.id">
+          🏦 {{ acc.name }}
+        </option>
+      </select>
+      <p class="accounts-form-hint" *ngIf="isLinked()">
+        {{ 'Purchases with this card are taken from the linked bank account.' | t }}
+      </p>
+    </ng-container>
+
+    <!-- Initial balance (not for linked debit cards) -->
+    <ng-container *ngIf="!isLinked()">
+      <label class="accounts-form-label">{{ 'Initial balance' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
+    </ng-container>
 
     <div class="accounts-form-actions">
       <button class="x-btn" [disabled]="!isValid()" (click)="save()">

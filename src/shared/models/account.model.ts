@@ -1,6 +1,10 @@
 export type AccountType = 'cash' | 'bank' | 'card' | 'savings';
 export type CardKind = 'credit' | 'debit';
 
+// DOP = Dominican peso (shown with the symbol chosen in Settings),
+// USD = US dollar, dual = credit cards with both a RD$ and a US$ side
+export type AccountCurrency = 'DOP' | 'USD' | 'dual';
+
 export interface AccountModel {
   id: string;
   name: string;
@@ -9,5 +13,7 @@ export interface AccountModel {
   cardKind?: CardKind; // cards only
   bankId?: string; // bank from the catalog (bank/card/savings accounts)
   last4?: string; // last 4 digits, cards only
+  currency?: AccountCurrency; // default DOP
+  linkedAccountId?: string; // debit cards: the bank account money comes from
   initialBalance: number;
 }

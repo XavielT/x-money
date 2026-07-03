@@ -1,22 +1,34 @@
 <div class="x-page stats">
   <h1 class="x-page-title">{{ 'Stats' | t }}</h1>
 
-  <!-- Month navigation -->
-  <div class="stats-month">
-    <button (click)="prevMonth()" aria-label="Previous month">‹</button>
-    <span>{{ monthLabel() }}</span>
-    <button (click)="nextMonth()" aria-label="Next month">›</button>
+  <!-- Month / Year mode -->
+  <div class="stats-mode">
+    <button [class.active]="mode() === 'month'" (click)="setMode('month')">{{ 'Month' | t }}</button>
+    <button [class.active]="mode() === 'year'" (click)="setMode('year')">{{ 'Year' | t }}</button>
   </div>
 
-  <!-- Type toggle -->
+  <!-- Period navigation -->
+  <div class="stats-month">
+    <button (click)="prev()" aria-label="Previous period">‹</button>
+    <span>{{ periodLabel() }}</span>
+    <button (click)="next()" aria-label="Next period">›</button>
+  </div>
+
+  <!-- Filters: type + account -->
   <div class="stats-toggle">
     <button [class.active-expense]="type() === 'expense'" (click)="setType('expense')">{{ 'Expenses' | t }}</button>
     <button [class.active-income]="type() === 'income'" (click)="setType('income')">{{ 'Income' | t }}</button>
   </div>
+  <select class="x-input stats-account-filter" [ngModel]="accountFilter()" (ngModelChange)="accountFilter.set($event)" name="statsAccount">
+    <option value="">{{ 'All accounts' | t }}</option>
+    <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
+      {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
+    </option>
+  </select>
 
   <!-- Empty state -->
   <div class="stats-empty x-card" *ngIf="!slices().length">
-    <p>{{ 'Nothing to show for this month.' | t }}</p>
+    <p>{{ 'Nothing to show for this period.' | t }}</p>
   </div>
 
   <!-- Donut chart -->
@@ -54,8 +66,42 @@
     </div>
   </div>
 
-  <!-- 6-month trend -->
-  <div class="stats-trends x-card" *ngIf="hasTrendData()">
+  <!-- Yearly report -->
+  <div class="stats-trends x-card" *ngIf="mode() === 'year'">
+    <h2 class="stats-trends-title">{{ 'Yearly report' | t }} · {{ year() }}</h2>
+    <div class="stats-trends-chart stats-trends-chart-year">
+      <div class="stats-trends-month" *ngFor="let m of yearReport().months">
+        <div class="stats-trends-bars">
+          <div class="stats-trends-bar income" [style.height.%]="m.incomeHeight"></div>
+          <div class="stats-trends-bar expense" [style.height.%]="m.expenseHeight"></div>
+        </div>
+        <span class="stats-trends-label">{{ m.label }}</span>
+      </div>
+    </div>
+    <div class="stats-year-totals">
+      <div>
+        <span>{{ 'Income' | t }}</span>
+        <strong class="income">+{{ settings.currency() }}{{ yearReport().income | number:'1.0-0' }}</strong>
+      </div>
+      <div>
+        <span>{{ 'Expenses' | t }}</span>
+        <strong class="expense">-{{ settings.currency() }}{{ yearReport().expense | number:'1.0-0' }}</strong>
+      </div>
+      <div>
+        <span>{{ 'Net' | t }}</span>
+        <strong [class.income]="yearReport().net >= 0" [class.expense]="yearReport().net < 0">
+          {{ yearReport().net >= 0 ? '+' : '-' }}{{ settings.currency() }}{{ abs(yearReport().net) | number:'1.0-0' }}
+        </strong>
+      </div>
+      <div>
+        <span>{{ 'Avg/month' | t }}</span>
+        <strong>{{ settings.currency() }}{{ yearReport().monthlyAvg | number:'1.0-0' }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6-month trend (month mode) -->
+  <div class="stats-trends x-card" *ngIf="mode() === 'month' && hasTrendData()">
     <h2 class="stats-trends-title">{{ 'Last 6 months' | t }}</h2>
     <div class="stats-trends-chart">
       <div class="stats-trends-month" *ngFor="let m of trends()">
@@ -71,4 +117,57 @@
       <span><i class="expense"></i>{{ 'Expenses' | t }}</span>
     </div>
   </div>
+
+  <!-- Insights -->
+  <h2 class="stats-insights-title">{{ 'Insights' | t }}</h2>
+
+  <div class="stats-insight x-card" *ngIf="antExpenses().count >= 5">
+    <span class="stats-insight-icon">🐜</span>
+    <div>
+      <strong>{{ 'Ant expenses' | t }}</strong>
+      <p>
+        {{ antExpenses().count }} {{ 'small purchases add up to' | t }}
+        <b>{{ settings.currency() }}{{ antExpenses().total | number:'1.0-0' }}</b>
+        ({{ antExpenses().percent }}% {{ 'of your expenses this month' | t }})
+      </p>
+    </div>
+  </div>
+
+  <div class="stats-insight x-card" *ngIf="subscriptions().count > 0">
+    <span class="stats-insight-icon">🔁</span>
+    <div>
+      <strong>{{ 'Recurring payments' | t }}</strong>
+      <p>
+        {{ subscriptions().count }} {{ 'active services cost you' | t }}
+        <b>{{ settings.currency() }}{{ subscriptions().monthly | number:'1.0-0' }}</b> {{ 'per month' | t }}
+        (≈ {{ settings.currency() }}{{ subscriptions().yearly | number:'1.0-0' }} {{ 'per year' | t }}).
+        {{ 'Review services you no longer use.' | t }}
+      </p>
+    </div>
+  </div>
+
+  <div class="stats-insight x-card warn" *ngIf="momChange() && momChange()!.percentChange >= 15">
+    <span class="stats-insight-icon">📈</span>
+    <div>
+      <strong>{{ 'Spending up' | t }}</strong>
+      <p>
+        {{ 'You have spent' | t }} <b>{{ momChange()!.percentChange }}%</b> {{ 'more than last month' | t }}
+        ({{ settings.currency() }}{{ momChange()!.current | number:'1.0-0' }} vs {{ settings.currency() }}{{ momChange()!.previous | number:'1.0-0' }}).
+      </p>
+    </div>
+  </div>
+
+  <div class="stats-insight x-card good" *ngIf="momChange() && momChange()!.percentChange <= -15">
+    <span class="stats-insight-icon">🎉</span>
+    <div>
+      <strong>{{ 'Good job' | t }}</strong>
+      <p>
+        {{ 'You have spent' | t }} <b>{{ abs(momChange()!.percentChange) }}%</b> {{ 'less than last month' | t }}.
+      </p>
+    </div>
+  </div>
+
+  <p class="stats-insight-empty" *ngIf="antExpenses().count < 5 && !subscriptions().count && !momChange()">
+    {{ 'Keep registering movements to unlock insights.' | t }}
+  </p>
 </div>

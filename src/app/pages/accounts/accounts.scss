@@ -81,6 +81,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.accounts-card-balances {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
 
   strong {
     font-size: 0.9rem;
@@ -88,7 +95,43 @@
     &.negative {
       color: var(--expense);
     }
+
+    &.usd {
+      font-size: 0.75rem;
+      color: var(--Hub);
+
+      &.negative {
+        color: var(--expense);
+      }
+    }
   }
+}
+
+.accounts-form-currencies {
+  display: flex;
+  gap: 8px;
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-weight: 700;
+    transition: all 0.3s ease;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.accounts-form-hint {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  color: var(--main-ultra-light);
 }
 
 .accounts-card-history {
