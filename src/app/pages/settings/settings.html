@@ -1,0 +1,64 @@
+<div class="x-page settings">
+  <h1 class="x-page-title">Settings</h1>
+
+  <!-- Currency -->
+  <section class="settings-section">
+    <h2>Currency</h2>
+    <div class="settings-currencies">
+      <button
+        *ngFor="let symbol of currencies"
+        [class.active]="settingsService.currency() === symbol"
+        (click)="setCurrency(symbol)"
+      >
+        {{ symbol }}
+      </button>
+    </div>
+  </section>
+
+  <!-- Accounts -->
+  <section class="settings-section">
+    <h2>Accounts</h2>
+
+    <div class="settings-account x-card" *ngFor="let acc of accountService.accounts()">
+      <span class="settings-account-icon">{{ acc.icon }}</span>
+      <div class="settings-account-info">
+        <span>{{ acc.name }}</span>
+        <small>
+          Balance: {{ settingsService.currency() }}{{ transactionService.accountBalance(acc.id) | number:'1.2-2' }}
+        </small>
+      </div>
+      <button class="settings-account-delete" (click)="removeAccount(acc.id)" aria-label="Remove account">✕</button>
+    </div>
+
+    <div class="settings-new-account x-card">
+      <div class="settings-new-account-icons">
+        <button
+          *ngFor="let icon of accountIcons"
+          [class.active]="newIcon === icon"
+          (click)="newIcon = icon"
+        >
+          {{ icon }}
+        </button>
+      </div>
+      <input class="x-input" type="text" maxlength="24" placeholder="Account name" [(ngModel)]="newName" name="newName" />
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" placeholder="Initial balance" [(ngModel)]="newBalance" name="newBalance" />
+      <button class="x-btn" [disabled]="!newName.trim()" (click)="addAccount()">Add account</button>
+    </div>
+  </section>
+
+  <!-- Data -->
+  <section class="settings-section">
+    <h2>Your data</h2>
+    <p class="settings-hint">Everything is stored only on this device. Export a backup before changing phone.</p>
+    <div class="settings-data">
+      <button class="x-btn" (click)="exportData()">Export backup (JSON)</button>
+      <label class="x-btn settings-import">
+        Import backup
+        <input type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
+      </label>
+      <button class="x-btn x-btn-danger" (click)="wipeData()">Delete all data</button>
+    </div>
+  </section>
+
+  <p class="settings-version">X Money · local-first · v1.0</p>
+</div>

@@ -1,0 +1,94 @@
+.transactions-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+
+  span {
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+
+  button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 1.1rem;
+    transition: all 0.15s ease;
+
+    &:active {
+      transform: scale(0.94);
+    }
+  }
+}
+
+.transactions-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+
+    span {
+      font-size: 0.7rem;
+      color: var(--main-ultra-light);
+    }
+
+    strong {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.income {
+  color: var(--income);
+}
+
+.expense {
+  color: var(--expense);
+}
+
+.transactions-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  padding: 26px 20px;
+
+  p {
+    color: var(--main-ultra-light);
+  }
+}
+
+.transactions-group {
+  margin-bottom: 16px;
+}
+
+.transactions-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+
+  span {
+    color: var(--main-ultra-light);
+  }
+
+  strong {
+    font-size: 0.8rem;
+  }
+}
+
+.transactions-group-list {
+  padding: 4px 12px;
+}

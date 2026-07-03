@@ -1,0 +1,122 @@
+.stats-month {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+
+  span {
+    font-family: var(--font-heading);
+    font-weight: 700;
+  }
+
+  button {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 1.1rem;
+    transition: all 0.15s ease;
+
+    &:active {
+      transform: scale(0.94);
+    }
+  }
+}
+
+.stats-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--main-ultra-light);
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &.active-expense {
+      background: var(--expense-translucid);
+      border-color: var(--expense);
+      color: var(--expense);
+    }
+
+    &.active-income {
+      background: var(--income-translucid);
+      border-color: var(--income);
+      color: var(--income);
+    }
+  }
+}
+
+.stats-empty {
+  padding: 26px 20px;
+  text-align: center;
+
+  p {
+    color: var(--main-ultra-light);
+  }
+}
+
+.stats-chart {
+  padding: 20px 16px;
+}
+
+.stats-donut {
+  display: block;
+  width: 190px;
+  margin: 0 auto 18px;
+}
+
+.stats-donut-total {
+  font-size: 4.4px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.stats-donut-label {
+  font-size: 2.6px;
+  fill: var(--main-ultra-light);
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stats-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.stats-row-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stats-row-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-row-percent {
+  color: var(--main-ultra-light);
+  font-size: 0.8rem;
+}
+
+.stats-row-amount {
+  min-width: 80px;
+  text-align: right;
+}

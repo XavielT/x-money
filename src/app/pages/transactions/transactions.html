@@ -1,0 +1,47 @@
+<div class="x-page transactions">
+  <h1 class="x-page-title">Transactions</h1>
+
+  <!-- Month navigation -->
+  <div class="transactions-month">
+    <button (click)="prevMonth()" aria-label="Previous month">‹</button>
+    <span>{{ monthLabel() }}</span>
+    <button (click)="nextMonth()" aria-label="Next month">›</button>
+  </div>
+
+  <!-- Month summary -->
+  <div class="transactions-summary x-card">
+    <div>
+      <span>Income</span>
+      <strong class="income">+{{ settings.currency() }}{{ summary().income | number:'1.2-2' }}</strong>
+    </div>
+    <div>
+      <span>Expenses</span>
+      <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
+    </div>
+    <div>
+      <span>Net</span>
+      <strong [class.income]="net() >= 0" [class.expense]="net() < 0">
+        {{ net() >= 0 ? '+' : '-' }}{{ settings.currency() }}{{ abs(net()) | number:'1.2-2' }}
+      </strong>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="transactions-empty x-card" *ngIf="!groups().length">
+    <p>No transactions this month.</p>
+    <a routerLink="/add" class="x-btn">Add transaction</a>
+  </div>
+
+  <!-- Day groups -->
+  <section class="transactions-group" *ngFor="let group of groups()">
+    <div class="transactions-group-head">
+      <span>{{ group.label }}</span>
+      <strong [class.income]="group.total >= 0" [class.expense]="group.total < 0">
+        {{ group.total >= 0 ? '+' : '-' }}{{ settings.currency() }}{{ abs(group.total) | number:'1.2-2' }}
+      </strong>
+    </div>
+    <div class="x-card transactions-group-list">
+      <app-transaction-item *ngFor="let t of group.items" [transaction]="t"></app-transaction-item>
+    </div>
+  </section>
+</div>

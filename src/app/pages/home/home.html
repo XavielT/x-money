@@ -1,0 +1,71 @@
+<div class="x-page home">
+  <!-- Header -->
+  <header class="home-header">
+    <h1 class="home-brand">X <span>Money</span></h1>
+    <a routerLink="/settings" class="home-settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    </a>
+  </header>
+
+  <!-- Balance card -->
+  <section class="home-balance x-card">
+    <span class="home-balance-label">Total balance</span>
+    <span class="home-balance-amount">
+      {{ settings.currency() }}{{ transactionService.totalBalance() | number:'1.2-2' }}
+    </span>
+
+    <div class="home-balance-month">
+      <div class="home-balance-pill">
+        <span>{{ monthLabel }} income</span>
+        <strong class="income">+{{ settings.currency() }}{{ summary().income | number:'1.2-2' }}</strong>
+      </div>
+      <div class="home-balance-pill">
+        <span>{{ monthLabel }} expenses</span>
+        <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- Empty state -->
+  <section class="home-empty x-card" *ngIf="!hasTransactions()">
+    <span class="home-empty-icon">🪙</span>
+    <p>No movements yet.</p>
+    <a routerLink="/add" class="x-btn home-empty-btn">Add your first transaction</a>
+  </section>
+
+  <!-- Top spending -->
+  <section class="home-section" *ngIf="topCategories().length">
+    <div class="home-section-head">
+      <h2>Top spending</h2>
+      <a routerLink="/stats">See stats</a>
+    </div>
+    <div class="home-top x-card">
+      <div class="home-top-row" *ngFor="let item of topCategories()">
+        <span class="home-top-icon">{{ item.category?.icon }}</span>
+        <div class="home-top-info">
+          <div class="home-top-labels">
+            <span>{{ item.category?.name }}</span>
+            <strong>{{ settings.currency() }}{{ item.total | number:'1.2-2' }}</strong>
+          </div>
+          <div class="home-top-bar">
+            <div class="home-top-bar-fill" [style.width.%]="item.percent" [style.background]="item.category?.color"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent transactions -->
+  <section class="home-section" *ngIf="recent().length">
+    <div class="home-section-head">
+      <h2>Recent</h2>
+      <a routerLink="/transactions">See all</a>
+    </div>
+    <div class="home-recent x-card">
+      <app-transaction-item *ngFor="let t of recent()" [transaction]="t"></app-transaction-item>
+    </div>
+  </section>
+</div>

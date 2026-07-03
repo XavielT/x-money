@@ -1,0 +1,178 @@
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.home-brand {
+  font-family: var(--font-brand);
+  font-size: 1.5rem;
+  font-weight: 800;
+
+  span {
+    color: var(--Hub);
+  }
+}
+
+.home-settings {
+  color: var(--main-ultra-light);
+  transition: all 0.3s ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:hover {
+    color: var(--Hub);
+  }
+}
+
+// Balance card
+.home-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 16px;
+  margin-bottom: 20px;
+}
+
+.home-balance-label {
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+  margin-bottom: 4px;
+}
+
+.home-balance-amount {
+  font-family: var(--font-heading);
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--Hub);
+  margin-bottom: 16px;
+}
+
+.home-balance-month {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.home-balance-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--secondary);
+  border-radius: 10px;
+  padding: 10px;
+
+  span {
+    font-size: 0.7rem;
+    color: var(--main-ultra-light);
+  }
+
+  strong {
+    font-size: 0.95rem;
+
+    &.income {
+      color: var(--income);
+    }
+
+    &.expense {
+      color: var(--expense);
+    }
+  }
+}
+
+// Empty state
+.home-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  text-align: center;
+
+  p {
+    color: var(--main-ultra-light);
+  }
+}
+
+.home-empty-icon {
+  font-size: 2rem;
+}
+
+.home-empty-btn {
+  margin-top: 6px;
+  text-align: center;
+}
+
+// Sections
+.home-section {
+  margin-bottom: 20px;
+}
+
+.home-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  a {
+    font-size: 0.8rem;
+    color: var(--Hub);
+  }
+}
+
+.home-top {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.home-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-top-icon {
+  font-size: 1.2rem;
+}
+
+.home-top-info {
+  flex: 1;
+}
+
+.home-top-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.home-top-bar {
+  height: 6px;
+  background: var(--secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.home-top-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.home-recent {
+  padding: 6px 12px;
+}

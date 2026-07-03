@@ -1,0 +1,58 @@
+.navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: var(--secondary);
+  border-top: 1px solid var(--card-border);
+}
+
+.navbar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  color: var(--main-ultra-light);
+  font-size: 0.65rem;
+  transition: all 0.3s ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &.active {
+    color: var(--Hub);
+  }
+}
+
+.navbar-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-top: -24px;
+  border-radius: 50%;
+  background: var(--Hub);
+  color: var(--main);
+  box-shadow: 0 4px 14px var(--Hub-translucid);
+  transition: all 0.15s ease;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}

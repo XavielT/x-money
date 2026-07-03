@@ -1,0 +1,56 @@
+<div class="x-page stats">
+  <h1 class="x-page-title">Stats</h1>
+
+  <!-- Month navigation -->
+  <div class="stats-month">
+    <button (click)="prevMonth()" aria-label="Previous month">‹</button>
+    <span>{{ monthLabel() }}</span>
+    <button (click)="nextMonth()" aria-label="Next month">›</button>
+  </div>
+
+  <!-- Type toggle -->
+  <div class="stats-toggle">
+    <button [class.active-expense]="type() === 'expense'" (click)="setType('expense')">Expenses</button>
+    <button [class.active-income]="type() === 'income'" (click)="setType('income')">Income</button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="stats-empty x-card" *ngIf="!slices().length">
+    <p>Nothing to show for this month.</p>
+  </div>
+
+  <!-- Donut chart -->
+  <div class="stats-chart x-card" *ngIf="slices().length">
+    <svg viewBox="0 0 36 36" class="stats-donut">
+      <circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--secondary)" stroke-width="3.6" />
+      <circle
+        *ngFor="let slice of slices()"
+        cx="18"
+        cy="18"
+        r="15.9155"
+        fill="none"
+        [attr.stroke]="slice.category?.color || '#78909c'"
+        stroke-width="3.6"
+        [attr.stroke-dasharray]="slice.dasharray"
+        [attr.stroke-dashoffset]="slice.dashoffset"
+      />
+      <text x="18" y="17" text-anchor="middle" class="stats-donut-total">
+        {{ settings.currency() }}{{ grandTotal() | number:'1.0-0' }}
+      </text>
+      <text x="18" y="21.5" text-anchor="middle" class="stats-donut-label">
+        {{ type() === 'expense' ? 'spent' : 'earned' }}
+      </text>
+    </svg>
+
+    <!-- Ranked category list -->
+    <div class="stats-list">
+      <div class="stats-row" *ngFor="let slice of slices()">
+        <span class="stats-row-dot" [style.background]="slice.category?.color"></span>
+        <span class="stats-row-icon">{{ slice.category?.icon }}</span>
+        <span class="stats-row-name">{{ slice.category?.name || 'Unknown' }}</span>
+        <span class="stats-row-percent">{{ slice.percent }}%</span>
+        <strong class="stats-row-amount">{{ settings.currency() }}{{ slice.total | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,151 @@
+.transaction-form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .x-page-title {
+    margin-bottom: 0;
+  }
+}
+
+.transaction-form-back {
+  background: var(--secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+  transition: all 0.15s ease;
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// Expense / income toggle
+.transaction-form-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0;
+
+  button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--main-ultra-light);
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+
+    &.active-expense {
+      background: var(--expense-translucid);
+      border-color: var(--expense);
+      color: var(--expense);
+    }
+
+    &.active-income {
+      background: var(--income-translucid);
+      border-color: var(--income);
+      color: var(--income);
+    }
+  }
+}
+
+.transaction-form-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--main-ultra-light);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 16px 0 8px;
+}
+
+// Big amount input
+.transaction-form-amount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+
+  span {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--Hub);
+  }
+
+  input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 1.7rem;
+    font-weight: 700;
+    width: 100%;
+
+    &::placeholder {
+      color: var(--main-ultra-light);
+    }
+
+    // Hide number spinners
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
+// Category grid
+.transaction-form-categories {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.transaction-form-category {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text);
+  transition: all 0.3s ease;
+
+  &.active {
+    border-color: var(--Hub);
+    background: var(--secondary);
+  }
+}
+
+.transaction-form-category-icon {
+  font-size: 1.25rem;
+}
+
+.transaction-form-category-name {
+  font-size: 0.65rem;
+  color: var(--main-ultra-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.transaction-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 26px;
+}

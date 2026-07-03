@@ -1,0 +1,61 @@
+<div class="x-page budgets">
+  <h1 class="x-page-title">Budgets</h1>
+  <p class="budgets-subtitle">{{ monthLabel }}</p>
+
+  <!-- Add / update budget -->
+  <div class="budgets-form x-card">
+    <select class="x-input" [(ngModel)]="selectedCategoryId" name="category">
+      <option value="" disabled>Choose category…</option>
+      <option *ngFor="let cat of categoryService.expenseCategories()" [value]="cat.id">
+        {{ cat.icon }} {{ cat.name }}
+      </option>
+    </select>
+    <input
+      class="x-input"
+      type="number"
+      inputmode="decimal"
+      min="0"
+      step="0.01"
+      placeholder="Monthly limit"
+      [(ngModel)]="limit"
+      name="limit"
+    />
+    <button class="x-btn" [disabled]="!selectedCategoryId || !limit || limit <= 0" (click)="saveBudget()">
+      Set budget
+    </button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="budgets-empty x-card" *ngIf="!rows().length">
+    <p>No budgets yet. Pick a category and set a monthly limit.</p>
+  </div>
+
+  <!-- Budget list -->
+  <div class="budgets-row x-card" *ngFor="let row of rows()">
+    <div class="budgets-row-head">
+      <span class="budgets-row-icon">{{ row.category?.icon }}</span>
+      <span class="budgets-row-name">{{ row.category?.name || 'Unknown' }}</span>
+      <button class="budgets-row-delete" (click)="removeBudget(row.budget.id)" aria-label="Remove budget">✕</button>
+    </div>
+
+    <div class="budgets-row-bar">
+      <div
+        class="budgets-row-bar-fill"
+        [class.warn]="row.status === 'warn'"
+        [class.over]="row.status === 'over'"
+        [style.width.%]="row.percent"
+      ></div>
+    </div>
+
+    <div class="budgets-row-numbers">
+      <span [class.over-text]="row.status === 'over'">
+        {{ settings.currency() }}{{ row.spent | number:'1.2-2' }} spent
+      </span>
+      <span>limit {{ settings.currency() }}{{ row.budget.monthlyLimit | number:'1.2-2' }}</span>
+    </div>
+
+    <p class="budgets-row-over" *ngIf="row.status === 'over'">
+      Over budget by {{ settings.currency() }}{{ row.spent - row.budget.monthlyLimit | number:'1.2-2' }}
+    </p>
+  </div>
+</div>

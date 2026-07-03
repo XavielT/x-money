@@ -1,0 +1,77 @@
+<div class="x-page transaction-form">
+  <!-- Header -->
+  <header class="transaction-form-header">
+    <button class="transaction-form-back" (click)="cancel()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ editId ? 'Edit transaction' : 'New transaction' }}</h1>
+  </header>
+
+  <!-- Type toggle -->
+  <div class="transaction-form-toggle">
+    <button
+      [class.active-expense]="type() === 'expense'"
+      (click)="setType('expense')"
+    >
+      Expense
+    </button>
+    <button
+      [class.active-income]="type() === 'income'"
+      (click)="setType('income')"
+    >
+      Income
+    </button>
+  </div>
+
+  <!-- Amount -->
+  <label class="transaction-form-label">Amount</label>
+  <div class="transaction-form-amount">
+    <span>{{ settings.currency() }}</span>
+    <input
+      type="number"
+      inputmode="decimal"
+      step="0.01"
+      min="0"
+      placeholder="0.00"
+      [(ngModel)]="amount"
+      name="amount"
+    />
+  </div>
+
+  <!-- Category grid -->
+  <label class="transaction-form-label">Category</label>
+  <div class="transaction-form-categories">
+    <button
+      *ngFor="let cat of categoriesForType()"
+      class="transaction-form-category"
+      [class.active]="categoryId() === cat.id"
+      [style.border-color]="categoryId() === cat.id ? cat.color : ''"
+      (click)="selectCategory(cat.id)"
+    >
+      <span class="transaction-form-category-icon">{{ cat.icon }}</span>
+      <span class="transaction-form-category-name">{{ cat.name }}</span>
+    </button>
+  </div>
+
+  <!-- Account -->
+  <label class="transaction-form-label">Account</label>
+  <select class="x-input" [(ngModel)]="accountId" name="accountId">
+    <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
+      {{ acc.icon }} {{ acc.name }}
+    </option>
+  </select>
+
+  <!-- Date -->
+  <label class="transaction-form-label">Date</label>
+  <input class="x-input" type="date" [(ngModel)]="date" name="date" />
+
+  <!-- Note -->
+  <label class="transaction-form-label">Note (optional)</label>
+  <input class="x-input" type="text" maxlength="80" placeholder="e.g. Lunch with friends" [(ngModel)]="note" name="note" />
+
+  <!-- Actions -->
+  <div class="transaction-form-actions">
+    <button class="x-btn" [disabled]="!isValid()" (click)="save()">
+      {{ editId ? 'Save changes' : 'Add transaction' }}
+    </button>
+    <button class="x-btn x-btn-danger" *ngIf="editId" (click)="delete()">Delete</button>
+  </div>
+</div>

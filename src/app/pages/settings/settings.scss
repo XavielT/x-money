@@ -1,0 +1,120 @@
+.settings-section {
+  margin-bottom: 24px;
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+}
+
+.settings-currencies {
+  display: flex;
+  gap: 8px;
+
+  button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-weight: 700;
+    transition: all 0.3s ease;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.settings-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.settings-account-icon {
+  font-size: 1.3rem;
+}
+
+.settings-account-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  span {
+    font-weight: 600;
+  }
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.75rem;
+  }
+}
+
+.settings-account-delete {
+  background: transparent;
+  border: none;
+  color: var(--main-ultra-light);
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: var(--expense);
+  }
+}
+
+.settings-new-account {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+.settings-new-account-icons {
+  display: flex;
+  gap: 6px;
+
+  button {
+    flex: 1;
+    padding: 8px;
+    font-size: 1.05rem;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    transition: all 0.3s ease;
+
+    &.active {
+      border-color: var(--Hub);
+    }
+  }
+}
+
+.settings-hint {
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+  margin-bottom: 10px;
+}
+
+.settings-data {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-import {
+  text-align: center;
+  cursor: pointer;
+}
+
+.settings-version {
+  text-align: center;
+  color: var(--main-ultra-light);
+  font-size: 0.7rem;
+  margin-top: 8px;
+}

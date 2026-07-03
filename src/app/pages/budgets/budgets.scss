@@ -1,0 +1,96 @@
+.budgets-subtitle {
+  color: var(--main-ultra-light);
+  font-size: 0.85rem;
+  margin: -8px 0 16px;
+}
+
+.budgets-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.budgets-empty {
+  padding: 24px 20px;
+  text-align: center;
+
+  p {
+    color: var(--main-ultra-light);
+  }
+}
+
+.budgets-row {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.budgets-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.budgets-row-icon {
+  font-size: 1.1rem;
+}
+
+.budgets-row-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.budgets-row-delete {
+  background: transparent;
+  border: none;
+  color: var(--main-ultra-light);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: var(--expense);
+  }
+}
+
+.budgets-row-bar {
+  height: 8px;
+  background: var(--secondary);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.budgets-row-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: var(--income);
+  transition: all 0.3s ease;
+
+  &.warn {
+    background: var(--Hub);
+  }
+
+  &.over {
+    background: var(--expense);
+  }
+}
+
+.budgets-row-numbers {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--main-ultra-light);
+
+  .over-text {
+    color: var(--expense);
+    font-weight: 700;
+  }
+}
+
+.budgets-row-over {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--expense);
+}

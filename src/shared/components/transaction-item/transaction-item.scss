@@ -1,0 +1,54 @@
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  transition: all 0.3s ease;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.transaction-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.transaction-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.transaction-item-category {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.transaction-item-meta {
+  font-size: 0.75rem;
+  color: var(--main-ultra-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transaction-item-amount {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--expense);
+  white-space: nowrap;
+
+  &.income {
+    color: var(--income);
+  }
+}

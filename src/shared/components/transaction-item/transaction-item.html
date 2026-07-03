@@ -1,0 +1,17 @@
+<!-- One transaction row, taps through to the edit form -->
+<a class="transaction-item" [routerLink]="['/edit', transaction.id]">
+  <span class="transaction-item-icon" [style.background]="category?.color + '26'">
+    {{ category?.icon || '❓' }}
+  </span>
+
+  <span class="transaction-item-info">
+    <span class="transaction-item-category">{{ category?.name || 'Unknown' }}</span>
+    <span class="transaction-item-meta">
+      {{ account?.name }}<ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
+    </span>
+  </span>
+
+  <span class="transaction-item-amount" [class.income]="transaction.type === 'income'">
+    {{ transaction.type === 'income' ? '+' : '-' }}{{ settings.currency() }}{{ transaction.amount | number:'1.2-2' }}
+  </span>
+</a>
