@@ -24,7 +24,7 @@
       <div class="settings-account-info">
         <span>{{ acc.name }}</span>
         <small>
-          Balance: {{ settingsService.currency() }}{{ transactionService.accountBalance(acc.id) | number:'1.2-2' }}
+          Balance: {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settingsService.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.2-2' }}
         </small>
       </div>
       <button class="settings-account-delete" (click)="removeAccount(acc.id)" aria-label="Remove account">✕</button>

@@ -27,6 +27,10 @@ export class SettingsComponent {
     public settingsService: SettingsService
   ) {}
 
+  abs(value: number): number {
+    return Math.abs(value);
+  }
+
   setCurrency(symbol: string): void {
     this.settingsService.setCurrency(symbol);
   }

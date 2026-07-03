@@ -14,7 +14,7 @@
   <section class="home-balance x-card">
     <span class="home-balance-label">Total balance</span>
     <span class="home-balance-amount">
-      {{ settings.currency() }}{{ transactionService.totalBalance() | number:'1.2-2' }}
+      {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
     </span>
 
     <div class="home-balance-month">

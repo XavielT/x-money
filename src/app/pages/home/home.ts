@@ -36,6 +36,10 @@ export class HomeComponent {
 
   hasTransactions = computed(() => this.transactionService.transactions().length > 0);
 
+  abs(value: number): number {
+    return Math.abs(value);
+  }
+
   constructor(
     public transactionService: TransactionService,
     public categoryService: CategoryService,
