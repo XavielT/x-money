@@ -101,6 +101,27 @@
     </select>
   </ng-container>
 
+  <!-- Bank fee / tax -->
+  <ng-container *ngIf="showFeeField()">
+    <label class="transaction-form-label">{{ 'Bank fee / tax (optional)' | t }}</label>
+    <div class="transaction-form-fee">
+      <input
+        class="x-input"
+        type="number"
+        inputmode="decimal"
+        step="0.01"
+        min="0"
+        placeholder="0.00"
+        [(ngModel)]="fee"
+        name="fee"
+      />
+      <button class="transaction-form-fee-btn" (click)="applyDgiiFee()" [disabled]="!amount || amount <= 0">
+        0.15%
+      </button>
+    </div>
+    <p class="transaction-form-fee-hint">{{ 'The bank discounts it with the movement (DGII 0.15%, commissions...).' | t }}</p>
+  </ng-container>
+
   <!-- Date -->
   <label class="transaction-form-label">{{ 'Date' | t }}</label>
   <input class="x-input" type="date" [(ngModel)]="date" name="date" />

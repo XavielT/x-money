@@ -49,6 +49,10 @@ const ES: Record<string, string> = {
   'Every month': 'Cada mes',
   'Every year': 'Cada año',
   'Note (optional)': 'Nota (opcional)',
+  'Bank fee / tax (optional)': 'Comisión / impuesto del banco (opcional)',
+  'The bank discounts it with the movement (DGII 0.15%, commissions...).':
+    'El banco lo descuenta junto al movimiento (DGII 0.15%, comisiones...).',
+  'fee': 'comisión',
   'e.g. Lunch with friends': 'ej. Almuerzo con amigos',
   'Add recurring transaction': 'Agregar transacción recurrente',
   'Save changes': 'Guardar cambios',

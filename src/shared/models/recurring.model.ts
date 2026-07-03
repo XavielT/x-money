@@ -9,6 +9,7 @@ export interface RecurringModel {
   categoryId?: string; // absent on transfers
   accountId: string;
   toAccountId?: string; // transfers only
+  fee?: number; // bank commission/tax charged with each occurrence
   note?: string;
   frequency: RecurringFrequency;
   startDate: string; // ISO yyyy-MM-dd, first occurrence (anchors the day of month)

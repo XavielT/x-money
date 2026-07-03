@@ -40,13 +40,23 @@ export class ExportService {
 
   buildCsv(): string {
     const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const rows = ['date,type,category,account,to_account,amount,note'];
+    const rows = ['date,type,category,account,to_account,amount,currency,fee,note'];
     for (const t of this.transactionService.sorted()) {
       const category = t.categoryId ? this.categoryService.byId(t.categoryId)?.name ?? '' : '';
       const account = this.accountService.byId(t.accountId)?.name ?? '';
       const toAccount = t.toAccountId ? this.accountService.byId(t.toAccountId)?.name ?? '' : '';
       rows.push(
-        [t.date, t.type, escape(category), escape(account), escape(toAccount), t.amount, escape(t.note ?? '')].join(',')
+        [
+          t.date,
+          t.type,
+          escape(category),
+          escape(account),
+          escape(toAccount),
+          t.amount,
+          t.currency ?? 'DOP',
+          t.fee ?? 0,
+          escape(t.note ?? ''),
+        ].join(',')
       );
     }
     return rows.join('\n');

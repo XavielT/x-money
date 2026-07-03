@@ -33,6 +33,7 @@ export class RecurringService {
           categoryId: rule.categoryId,
           accountId: rule.accountId,
           toAccountId: rule.toAccountId,
+          fee: rule.fee,
           date: next,
           note: rule.note,
         });

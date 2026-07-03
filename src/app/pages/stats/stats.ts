@@ -69,8 +69,12 @@ export class StatsComponent {
   private periodTotals = computed(() => {
     const totals = new Map<string, number>();
     for (const t of this.periodTransactions()) {
-      if (t.type !== this.type() || !t.categoryId) continue;
       if (this.transactionService.currencyOf(t) !== 'DOP') continue;
+      // Bank fees of every movement count as Bank fees expenses
+      if (this.type() === 'expense' && t.fee) {
+        totals.set('cat-bank-fees', (totals.get('cat-bank-fees') ?? 0) + t.fee);
+      }
+      if (t.type !== this.type() || !t.categoryId) continue;
       totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
     }
     return [...totals.entries()]

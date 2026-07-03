@@ -14,6 +14,7 @@ export interface TransactionModel {
   accountId: string; // source account
   toAccountId?: string; // destination account, transfers only
   currency?: TransactionCurrency; // default DOP (the primary currency)
+  fee?: number; // bank commission/tax discounted with the movement (e.g. DGII 0.15%)
   date: string; // ISO yyyy-MM-dd
   note?: string;
 }

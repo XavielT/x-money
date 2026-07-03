@@ -213,6 +213,41 @@
   }
 }
 
+.transaction-form-fee {
+  display: flex;
+  gap: 8px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.transaction-form-fee-btn {
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--Hub);
+  background: var(--Hub-translucid);
+  color: var(--Hub);
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+  }
+}
+
+.transaction-form-fee-hint {
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--main-ultra-light);
+}
+
 .transaction-form-actions {
   display: flex;
   flex-direction: column;

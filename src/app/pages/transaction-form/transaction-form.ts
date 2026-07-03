@@ -27,6 +27,7 @@ export class TransactionFormComponent {
   categoryId = signal<string>('');
   txCurrency = signal<TransactionCurrency>('DOP');
   amount: number | null = null;
+  fee: number | null = null;
   accountId = '';
   toAccountId = '';
   date = '';
@@ -71,6 +72,7 @@ export class TransactionFormComponent {
         this.accountId = existing.accountId;
         this.toAccountId = existing.toAccountId ?? this.toAccountId;
         this.txCurrency.set(existing.currency ?? 'DOP');
+        this.fee = existing.fee ?? null;
         this.date = existing.date;
         this.note = existing.note ?? '';
       } else {
@@ -112,6 +114,17 @@ export class TransactionFormComponent {
 
   setTxCurrency(currency: TransactionCurrency): void {
     this.txCurrency.set(currency);
+  }
+
+  // Fees apply to movements from bank accounts and cards, not cash
+  showFeeField(): boolean {
+    return (this.accountOf(this.accountId)?.type ?? 'cash') !== 'cash';
+  }
+
+  // DGII 0.15% tax on bank transfers (Ley 288-04) — one tap to fill it
+  applyDgiiFee(): void {
+    if (this.amount == null || this.amount <= 0) return;
+    this.fee = Math.round(this.amount * 0.0015 * 100) / 100;
   }
 
   // An account can move money in a currency if it matches or is dual
@@ -164,6 +177,7 @@ export class TransactionFormComponent {
       accountId: this.accountId,
       toAccountId: isTransfer ? this.toAccountId : undefined,
       currency: this.txCurrency(),
+      fee: this.showFeeField() && this.fee && this.fee > 0 ? Number(this.fee) : undefined,
       date: this.date,
       note: this.note.trim() || undefined,
     };

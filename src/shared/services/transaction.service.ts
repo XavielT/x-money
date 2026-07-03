@@ -106,6 +106,8 @@ export class TransactionService {
     return this._transactions().reduce((sum, t) => {
       if (this.currencyOf(t) !== currency) return sum;
       const from = this.accountService.effectiveOwnerId(t.accountId);
+      // Bank fee/tax always leaves the source account
+      if (from === accountId) sum -= t.fee ?? 0;
       if (t.type === 'transfer') {
         const to = t.toAccountId ? this.accountService.effectiveOwnerId(t.toAccountId) : undefined;
         if (from === accountId) sum -= t.amount;
@@ -124,6 +126,7 @@ export class TransactionService {
     }, 0);
     return this._transactions().reduce((sum, t) => {
       if (this.currencyOf(t) !== currency) return sum;
+      sum -= t.fee ?? 0; // fees leave the money pool regardless of type
       if (t.type === 'income') return sum + t.amount;
       if (t.type === 'expense') return sum - t.amount;
       return sum;
@@ -134,6 +137,7 @@ export class TransactionService {
     return transactions.reduce(
       (acc, t) => {
         if (this.currencyOf(t) !== 'DOP') return acc;
+        acc.expense += t.fee ?? 0; // bank fees are spent money
         if (t.type === 'income') acc.income += t.amount;
         else if (t.type === 'expense') acc.expense += t.amount;
         return acc;
@@ -148,7 +152,12 @@ export class TransactionService {
   ): CategoryTotal[] {
     const totals = new Map<string, number>();
     for (const t of transactions) {
-      if (t.type !== type || !t.categoryId || this.currencyOf(t) !== 'DOP') continue;
+      if (this.currencyOf(t) !== 'DOP') continue;
+      // Fees of every movement pile up under the Bank fees category
+      if (type === 'expense' && t.fee) {
+        totals.set('cat-bank-fees', (totals.get('cat-bank-fees') ?? 0) + t.fee);
+      }
+      if (t.type !== type || !t.categoryId) continue;
       totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
     }
     return [...totals.entries()]

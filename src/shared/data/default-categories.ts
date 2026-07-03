@@ -21,6 +21,7 @@ export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = [
   { id: 'cat-pets', name: 'Pets', icon: '🐾', color: '#9ccc65', type: 'expense' },
   { id: 'cat-education', name: 'Education', icon: '📚', color: '#bcaaa4', type: 'expense' },
   { id: 'cat-gifts-expense', name: 'Gifts', icon: '🎁', color: '#ef5350', type: 'expense' },
+  { id: 'cat-bank-fees', name: 'Bank fees', icon: '🏛️', color: '#90a4ae', type: 'expense' },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },
