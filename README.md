@@ -43,6 +43,22 @@ a normal app, fully offline.
 > If `JAVA_HOME` is not set, point it at Android Studio's bundled JDK:
 > `C:\Program Files\Android\Android Studio\jbr`
 
+### Release build (Play Store)
+
+Release builds are signed with `android/x-money-release.jks` configured through
+`android/keystore.properties`. **Both files are gitignored — back them up somewhere safe.**
+Losing the keystore means you can never update the app on the Play Store again.
+
+```bash
+cd android
+gradlew.bat assembleRelease   # signed APK  → app/build/outputs/apk/release/app-release.apk
+gradlew.bat bundleRelease     # signed AAB  → app/build/outputs/bundle/release/app-release.aab
+```
+
+Upload the **`.aab`** to the [Google Play Console](https://play.google.com/console)
+(one-time $25 developer account). The `.apk` is for installing directly on a phone.
+Bump `versionCode`/`versionName` in `android/app/build.gradle` for every Play Store update.
+
 **Alternative (no APK):** deploy `dist/x-money/browser` to any static host (GitHub Pages,
 Netlify, Vercel), open it on the phone and use "Add to Home Screen" — same app as a PWA.
 
