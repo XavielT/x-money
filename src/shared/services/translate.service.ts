@@ -50,9 +50,12 @@ const ES: Record<string, string> = {
   'Every year': 'Cada año',
   'Note (optional)': 'Nota (opcional)',
   'Bank fee / tax (optional)': 'Comisión / impuesto del banco (opcional)',
-  'The bank discounts it with the movement (DGII 0.15%, commissions...).':
-    'El banco lo descuenta junto al movimiento (DGII 0.15%, comisiones...).',
+  'The bank discounts it with the movement (DGII tax, commissions...).':
+    'El banco lo descuenta junto al movimiento (impuesto DGII, comisiones...).',
   'fee': 'comisión',
+  'Bank transfer tax (%)': 'Impuesto a transferencias (%)',
+  'Used by the % button when adding a bank fee. DGII rate: 0.20% since 2026.':
+    'Lo usa el botón % al agregar una comisión bancaria. Tasa DGII: 0.20% desde 2026.',
   'e.g. Lunch with friends': 'ej. Almuerzo con amigos',
   'Add recurring transaction': 'Agregar transacción recurrente',
   'Save changes': 'Guardar cambios',

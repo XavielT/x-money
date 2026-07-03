@@ -121,10 +121,11 @@ export class TransactionFormComponent {
     return (this.accountOf(this.accountId)?.type ?? 'cash') !== 'cash';
   }
 
-  // DGII 0.15% tax on bank transfers (Ley 288-04) — one tap to fill it
+  // DGII tax on bank transfers — rate is editable in Settings (0.20% today)
   applyDgiiFee(): void {
     if (this.amount == null || this.amount <= 0) return;
-    this.fee = Math.round(this.amount * 0.0015 * 100) / 100;
+    const rate = this.settings.taxPercent() / 100;
+    this.fee = Math.round(this.amount * rate * 100) / 100;
   }
 
   // An account can move money in a currency if it matches or is dual

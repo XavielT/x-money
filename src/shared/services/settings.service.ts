@@ -3,6 +3,7 @@ import { StorageService } from './storage.service';
 
 interface SettingsState {
   currency: string;
+  taxPercent?: number; // bank transfer tax (DGII), editable because it changes
 }
 
 // Keys that make up a full backup snapshot
@@ -13,14 +14,32 @@ export class SettingsService {
   private _currency = signal<string>('$');
   currency = this._currency.asReadonly();
 
+  // 0.20% since the 2026 update (was 0.15%) — user-editable in Settings
+  private _taxPercent = signal<number>(0.2);
+  taxPercent = this._taxPercent.asReadonly();
+
   constructor(private storage: StorageService) {
     const saved = this.storage.get<SettingsState>('settings', { currency: '$' });
     this._currency.set(saved.currency);
+    this._taxPercent.set(saved.taxPercent ?? 0.2);
   }
 
   setCurrency(symbol: string): void {
     this._currency.set(symbol);
-    this.storage.set<SettingsState>('settings', { currency: symbol });
+    this.persist();
+  }
+
+  setTaxPercent(percent: number): void {
+    if (!isFinite(percent) || percent < 0 || percent > 10) return;
+    this._taxPercent.set(percent);
+    this.persist();
+  }
+
+  private persist(): void {
+    this.storage.set<SettingsState>('settings', {
+      currency: this._currency(),
+      taxPercent: this._taxPercent(),
+    });
   }
 
   // Full backup as a JSON string (used for the export file)

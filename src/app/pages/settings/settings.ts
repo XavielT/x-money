@@ -55,6 +55,11 @@ export class SettingsComponent {
     this.settingsService.setCurrency(symbol);
   }
 
+  setTaxPercent(value: number | string): void {
+    const percent = Number(value);
+    if (isFinite(percent)) this.settingsService.setTaxPercent(percent);
+  }
+
   setLanguage(lang: AppLanguage): void {
     if (this.translate.lang() === lang) return;
     this.translate.setLanguage(lang);

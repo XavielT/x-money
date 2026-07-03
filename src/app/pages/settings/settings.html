@@ -13,6 +13,22 @@
         {{ symbol }}
       </button>
     </div>
+
+    <div class="settings-tax">
+      <label>{{ 'Bank transfer tax (%)' | t }}</label>
+      <input
+        class="x-input"
+        type="number"
+        inputmode="decimal"
+        step="0.01"
+        min="0"
+        max="10"
+        [ngModel]="settingsService.taxPercent()"
+        (ngModelChange)="setTaxPercent($event)"
+        name="taxPercent"
+      />
+    </div>
+    <p class="settings-hint">{{ 'Used by the % button when adding a bank fee. DGII rate: 0.20% since 2026.' | t }}</p>
   </section>
 
   <!-- Language -->

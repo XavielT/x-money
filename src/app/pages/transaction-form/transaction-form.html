@@ -116,10 +116,10 @@
         name="fee"
       />
       <button class="transaction-form-fee-btn" (click)="applyDgiiFee()" [disabled]="!amount || amount <= 0">
-        0.15%
+        {{ settings.taxPercent() | number:'1.2-2' }}%
       </button>
     </div>
-    <p class="transaction-form-fee-hint">{{ 'The bank discounts it with the movement (DGII 0.15%, commissions...).' | t }}</p>
+    <p class="transaction-form-fee-hint">{{ 'The bank discounts it with the movement (DGII tax, commissions...).' | t }}</p>
   </ng-container>
 
   <!-- Date -->
