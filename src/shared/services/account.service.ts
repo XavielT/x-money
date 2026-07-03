@@ -18,12 +18,20 @@ export class AccountService {
   constructor(private storage: StorageService) {
     const saved = this.storage.get<AccountModel[]>('accounts', []);
     if (saved.length) {
-      // Migration: accounts created before v2.1 have no type — infer from icon
+      // Migrations: pre-v2.1 accounts have no type (infer from icon);
+      // pre-v2.2 cards have no credit/debit kind (default to debit)
       let migrated = false;
       const withTypes = saved.map((a) => {
-        if (a.type) return a;
-        migrated = true;
-        return { ...a, type: this.typeFromIcon(a.icon) };
+        let account = a;
+        if (!account.type) {
+          migrated = true;
+          account = { ...account, type: this.typeFromIcon(account.icon) };
+        }
+        if (account.type === 'card' && !account.cardKind) {
+          migrated = true;
+          account = { ...account, cardKind: 'debit' };
+        }
+        return account;
       });
       this._accounts.set(withTypes);
       if (migrated) this.persist();

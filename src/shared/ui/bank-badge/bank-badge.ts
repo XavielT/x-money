@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AccountModel } from '../../models/account.model';
+import { BankModel } from '../../models/bank.model';
 import { bankById } from '../../data/banks';
 
-// Round "logo" badge for an account: bank initials over the brand color,
-// or the account emoji for cash accounts / accounts without a bank.
+// Round "logo" badge: the bank's logo image on a light tile, initials over the
+// brand color when there is no image, or the account emoji for cash accounts.
 @Component({
   selector: 'app-bank-badge',
   standalone: true,
@@ -13,9 +14,12 @@ import { bankById } from '../../data/banks';
   styleUrl: './bank-badge.scss',
 })
 export class BankBadge {
-  @Input({ required: true }) account!: AccountModel;
+  @Input() account?: AccountModel;
+  @Input() bank?: BankModel;
 
-  get bank() {
-    return bankById(this.account.bankId);
+  imgFailed = false;
+
+  get resolvedBank(): BankModel | undefined {
+    return this.bank ?? bankById(this.account?.bankId);
   }
 }

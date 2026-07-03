@@ -79,7 +79,7 @@
   <label class="transaction-form-label">{{ (kind() === 'transfer' ? 'From account' : 'Account') | t }}</label>
   <select class="x-input" [(ngModel)]="accountId" name="accountId">
     <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">
-      {{ acc.icon }} {{ acc.name }}
+      {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
     </option>
   </select>
 
@@ -87,7 +87,7 @@
     <label class="transaction-form-label">{{ 'To account' | t }}</label>
     <select class="x-input" [(ngModel)]="toAccountId" name="toAccountId">
       <option *ngFor="let acc of accountService.accounts()" [value]="acc.id" [disabled]="acc.id === accountId">
-        {{ acc.icon }} {{ acc.name }}
+        {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
       </option>
     </select>
   </ng-container>

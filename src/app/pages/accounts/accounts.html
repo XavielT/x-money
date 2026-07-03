@@ -23,7 +23,7 @@
     <div class="accounts-card-info">
       <span class="accounts-card-name">{{ acc.name }}</span>
       <small>
-        {{ typeLabel(acc.type) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container>
+        {{ typeLabel(acc) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container>
       </small>
     </div>
     <div class="accounts-card-right">
@@ -51,8 +51,8 @@
     <div class="accounts-form-types">
       <button
         *ngFor="let t of accountTypes"
-        [class.active]="formType() === t.type"
-        (click)="setType(t.type)"
+        [class.active]="formTypeKey() === t.key"
+        (click)="setTypeKey(t.key)"
       >
         <span>{{ t.icon }}</span>
         <small>{{ t.label | t }}</small>
@@ -64,7 +64,7 @@
     <input class="x-input" type="text" maxlength="24" [placeholder]="'e.g. Payroll account' | t" [(ngModel)]="formName" name="formName" />
 
     <!-- Bank picker -->
-    <ng-container *ngIf="formType() !== 'cash'">
+    <ng-container *ngIf="!isCash()">
       <label class="accounts-form-label">{{ 'Bank' | t }}</label>
       <div class="accounts-form-banks">
         <button
@@ -74,16 +74,14 @@
           [style.border-color]="formBankId() === bank.id ? bank.color : ''"
           (click)="selectBank(bank.id)"
         >
-          <span class="accounts-form-bank-logo" [style.background]="bank.color" [style.color]="bank.textColor">
-            {{ bank.short }}
-          </span>
+          <app-bank-badge [bank]="bank"></app-bank-badge>
           <small>{{ bank.name }}</small>
         </button>
       </div>
     </ng-container>
 
     <!-- Card last 4 -->
-    <ng-container *ngIf="formType() === 'card'">
+    <ng-container *ngIf="isCard()">
       <label class="accounts-form-label">{{ 'Card last 4 digits (optional)' | t }}</label>
       <input class="x-input" type="text" inputmode="numeric" maxlength="4" placeholder="1234" [(ngModel)]="formLast4" name="formLast4" />
     </ng-container>

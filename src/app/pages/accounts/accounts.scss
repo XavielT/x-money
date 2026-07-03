@@ -142,7 +142,7 @@
 
 .accounts-form-types {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 
   button {
@@ -215,17 +215,6 @@
   }
 }
 
-.accounts-form-bank-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  font-size: 0.66rem;
-  font-weight: 800;
-  font-family: var(--font-heading);
-}
 
 .accounts-form-actions {
   display: flex;

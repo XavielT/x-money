@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AccountModel, AccountType } from '../../../shared/models/account.model';
+import { AccountModel, AccountType, CardKind } from '../../../shared/models/account.model';
 import { BANKS_MOCK } from '../../../shared/data/banks';
 import { BankBadge } from '../../../shared/ui/bank-badge/bank-badge';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -21,16 +21,17 @@ import { bankById } from '../../../shared/data/banks';
 })
 export class AccountsComponent {
   banks = BANKS_MOCK;
-  accountTypes: { type: AccountType; icon: string; label: string }[] = [
-    { type: 'cash', icon: '💵', label: 'Cash' },
-    { type: 'bank', icon: '🏦', label: 'Bank account' },
-    { type: 'card', icon: '💳', label: 'Card' },
-    { type: 'savings', icon: '💰', label: 'Savings' },
+  accountTypes: { key: string; type: AccountType; cardKind?: CardKind; icon: string; label: string }[] = [
+    { key: 'cash', type: 'cash', icon: '💵', label: 'Cash' },
+    { key: 'bank', type: 'bank', icon: '🏦', label: 'Bank account' },
+    { key: 'debit', type: 'card', cardKind: 'debit', icon: '💳', label: 'Debit card' },
+    { key: 'credit', type: 'card', cardKind: 'credit', icon: '💳', label: 'Credit card' },
+    { key: 'savings', type: 'savings', icon: '💰', label: 'Savings' },
   ];
 
   showForm = signal(false);
   editingId: string | null = null;
-  formType = signal<AccountType>('bank');
+  formTypeKey = signal('bank');
   formBankId = signal('');
   formName = '';
   formLast4 = '';
@@ -52,8 +53,16 @@ export class AccountsComponent {
     return bankById(bankId)?.name ?? '';
   }
 
-  typeLabel(type: AccountType): string {
-    return this.translate.instant(this.accountTypes.find((t) => t.type === type)?.label ?? type);
+  typeLabel(account: AccountModel): string {
+    const entry =
+      account.type === 'card'
+        ? this.accountTypes.find((t) => t.type === 'card' && t.cardKind === (account.cardKind ?? 'debit'))
+        : this.accountTypes.find((t) => t.type === account.type);
+    return this.translate.instant(entry?.label ?? account.type);
+  }
+
+  private selectedType() {
+    return this.accountTypes.find((t) => t.key === this.formTypeKey()) ?? this.accountTypes[1];
   }
 
   balanceOf(id: string): number {
@@ -62,7 +71,7 @@ export class AccountsComponent {
 
   openAdd(): void {
     this.editingId = null;
-    this.formType.set('bank');
+    this.formTypeKey.set('bank');
     this.formBankId.set('');
     this.formName = '';
     this.formLast4 = '';
@@ -72,7 +81,9 @@ export class AccountsComponent {
 
   openEdit(account: AccountModel): void {
     this.editingId = account.id;
-    this.formType.set(account.type);
+    this.formTypeKey.set(
+      account.type === 'card' ? (account.cardKind === 'credit' ? 'credit' : 'debit') : account.type
+    );
     this.formBankId.set(account.bankId ?? '');
     this.formName = account.name;
     this.formLast4 = account.last4 ?? '';
@@ -85,9 +96,17 @@ export class AccountsComponent {
     this.editingId = null;
   }
 
-  setType(type: AccountType): void {
-    this.formType.set(type);
-    if (type === 'cash') this.formBankId.set('');
+  setTypeKey(key: string): void {
+    this.formTypeKey.set(key);
+    if (key === 'cash') this.formBankId.set('');
+  }
+
+  isCash(): boolean {
+    return this.selectedType().type === 'cash';
+  }
+
+  isCard(): boolean {
+    return this.selectedType().type === 'card';
   }
 
   selectBank(id: string): void {
@@ -96,19 +115,20 @@ export class AccountsComponent {
 
   isValid(): boolean {
     if (!this.formName.trim()) return false;
-    if (this.formType() !== 'cash' && !this.formBankId()) return false;
+    if (!this.isCash() && !this.formBankId()) return false;
     if (this.formLast4 && !/^\d{4}$/.test(this.formLast4.trim())) return false;
     return true;
   }
 
   save(): void {
     if (!this.isValid()) return;
-    const type = this.formType();
+    const selected = this.selectedType();
     const data = {
       name: this.formName.trim(),
-      type,
-      bankId: type === 'cash' ? undefined : this.formBankId() || undefined,
-      last4: type === 'card' && this.formLast4.trim() ? this.formLast4.trim() : undefined,
+      type: selected.type,
+      cardKind: selected.cardKind,
+      bankId: selected.type === 'cash' ? undefined : this.formBankId() || undefined,
+      last4: selected.type === 'card' && this.formLast4.trim() ? this.formLast4.trim() : undefined,
       initialBalance: Number(this.formBalance) || 0,
     };
     if (this.editingId) {

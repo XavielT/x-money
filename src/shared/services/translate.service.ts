@@ -88,6 +88,8 @@ const ES: Record<string, string> = {
   'Cash': 'Efectivo',
   'Bank account': 'Cuenta bancaria',
   'Card': 'Tarjeta',
+  'Debit card': 'Tarjeta de débito',
+  'Credit card': 'Tarjeta de crédito',
   'Savings': 'Ahorros',
   'Bank': 'Banco',
   'Card last 4 digits (optional)': 'Últimos 4 dígitos (opcional)',

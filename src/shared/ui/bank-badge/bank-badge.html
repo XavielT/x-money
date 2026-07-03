@@ -1,11 +1,11 @@
-<span
-  class="bank-badge"
-  *ngIf="bank; else emojiBadge"
-  [style.background]="bank!.color"
-  [style.color]="bank!.textColor"
->
-  {{ bank!.short }}
-</span>
+<ng-container *ngIf="resolvedBank as b; else emojiBadge">
+  <span class="bank-badge bank-badge-img" *ngIf="b.logo && !imgFailed; else initialsBadge">
+    <img [src]="b.logo" [alt]="b.name" (error)="imgFailed = true" />
+  </span>
+  <ng-template #initialsBadge>
+    <span class="bank-badge" [style.background]="b.color" [style.color]="b.textColor">{{ b.short }}</span>
+  </ng-template>
+</ng-container>
 <ng-template #emojiBadge>
-  <span class="bank-badge bank-badge-emoji">{{ account.icon || '💵' }}</span>
+  <span class="bank-badge bank-badge-emoji">{{ account?.icon || '💵' }}</span>
 </ng-template>
