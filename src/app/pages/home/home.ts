@@ -61,6 +61,16 @@ export class HomeComponent {
 
   hasTransactions = computed(() => this.transactionService.transactions().length > 0);
 
+  // Cap the Home strip so a large account list doesn't become an endless
+  // horizontal scroll; full management stays on the Accounts page
+  private static readonly VISIBLE_ACCOUNTS = 6;
+  visibleAccounts = computed(() =>
+    this.accountService.accounts().slice(0, HomeComponent.VISIBLE_ACCOUNTS)
+  );
+  hiddenAccountsCount = computed(() =>
+    Math.max(0, this.accountService.accounts().length - HomeComponent.VISIBLE_ACCOUNTS)
+  );
+
   // Ant-expenses warning when small purchases are a big slice of the month
   antAlert = computed(() => {
     const insight = this.insights.antExpenses(this.year, this.month);

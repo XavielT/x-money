@@ -21,6 +21,7 @@ const ES: Record<string, string> = {
   'Recent': 'Recientes',
   'See all': 'Ver todo',
   'of budget used': 'del presupuesto usado',
+  'See all accounts': 'Ver todas las cuentas',
   // Transactions
   'Transactions': 'Transacciones',
   'Income': 'Ingresos',
@@ -119,6 +120,8 @@ const ES: Record<string, string> = {
   'Credit card': 'Tarjeta de crédito',
   'Savings': 'Ahorros',
   'Bank': 'Banco',
+  'Search bank…': 'Buscar banco…',
+  'No banks match your search.': 'Ningún banco coincide con tu búsqueda.',
   'Account subtype': 'Tipo de cuenta',
   'Checking account': 'Cuenta corriente',
   'Savings account': 'Cuenta de ahorros',

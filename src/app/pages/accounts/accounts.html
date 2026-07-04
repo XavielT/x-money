@@ -13,18 +13,19 @@
     </strong>
   </div>
 
-  <!-- Account cards -->
+  <!-- Account cards, grouped by bank so cards/checking/savings of the same bank sit together -->
   <div
     class="accounts-card x-card"
-    *ngFor="let acc of accountService.accounts()"
+    *ngFor="let acc of sortedAccounts()"
     (click)="openEdit(acc)"
   >
     <app-bank-badge [account]="acc"></app-bank-badge>
     <div class="accounts-card-info">
       <span class="accounts-card-name">{{ acc.name }}</span>
       <small>
-        {{ typeLabel(acc) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container> · {{ currencyTag(acc) }}<ng-container *ngIf="linkedName(acc)"> · → {{ linkedName(acc) }}</ng-container>
+        {{ typeLabel(acc) }}<ng-container *ngIf="acc.bankId"> · {{ bankName(acc.bankId) }}</ng-container><ng-container *ngIf="acc.last4"> · •••• {{ acc.last4 }}</ng-container> · {{ currencyTag(acc) }}
       </small>
+      <small class="accounts-card-linked" *ngIf="linkedName(acc)">→ {{ linkedName(acc) }}</small>
     </div>
     <div class="accounts-card-right">
       <div class="accounts-card-balances">
@@ -80,9 +81,17 @@
     <!-- Bank picker -->
     <ng-container *ngIf="!isCash()">
       <label class="accounts-form-label">{{ 'Bank' | t }}</label>
+      <input
+        class="x-input accounts-form-bank-search"
+        type="search"
+        [placeholder]="'Search bank…' | t"
+        [ngModel]="bankSearch()"
+        (ngModelChange)="bankSearch.set($event)"
+        name="bankSearch"
+      />
       <div class="accounts-form-banks">
         <button
-          *ngFor="let bank of banks"
+          *ngFor="let bank of filteredBanks()"
           class="accounts-form-bank"
           [class.active]="formBankId() === bank.id"
           [style.border-color]="formBankId() === bank.id ? bank.color : ''"
@@ -91,6 +100,7 @@
           <app-bank-badge [bank]="bank"></app-bank-badge>
           <small>{{ bank.name }}</small>
         </button>
+        <p class="accounts-form-bank-empty" *ngIf="!filteredBanks().length">{{ 'No banks match your search.' | t }}</p>
       </div>
     </ng-container>
 

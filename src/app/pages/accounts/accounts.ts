@@ -9,6 +9,7 @@ import {
   BankAccountKind,
   CardKind,
 } from '../../../shared/models/account.model';
+import { BankModel } from '../../../shared/models/bank.model';
 import { BANKS_MOCK } from '../../../shared/data/banks';
 import { BankBadge } from '../../../shared/ui/bank-badge/bank-badge';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -51,6 +52,7 @@ export class AccountsComponent {
   formName = '';
   formLast4 = '';
   formBalance: number | null = 0;
+  bankSearch = signal('');
 
   constructor(
     private router: Router,
@@ -120,6 +122,35 @@ export class AccountsComponent {
       : '';
   }
 
+  // Groups accounts by bank so cards/checking/savings of the same bank sit
+  // together instead of a flat list in creation order
+  sortedAccounts(): AccountModel[] {
+    const typeOrder: Record<AccountType, number> = { cash: 0, bank: 1, savings: 2, card: 3 };
+    return [...this.accountService.accounts()].sort((a, b) => {
+      const bankA = this.bankName(a.bankId);
+      const bankB = this.bankName(b.bankId);
+      if (bankA !== bankB) return bankA.localeCompare(bankB);
+      const orderDiff = (typeOrder[a.type] ?? 9) - (typeOrder[b.type] ?? 9);
+      if (orderDiff !== 0) return orderDiff;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  // Bank picker filtered by search text (accent/case-insensitive)
+  filteredBanks(): BankModel[] {
+    const query = this.normalize(this.bankSearch());
+    if (!query) return this.banks;
+    return this.banks.filter((bank) => this.normalize(bank.name).includes(query));
+  }
+
+  private normalize(text: string): string {
+    return text
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '');
+  }
+
   openAdd(): void {
     this.editingId = null;
     this.formTypeKey.set('bank');
@@ -130,6 +161,7 @@ export class AccountsComponent {
     this.formName = '';
     this.formLast4 = '';
     this.formBalance = 0;
+    this.bankSearch.set('');
     this.showForm.set(true);
   }
 
@@ -145,6 +177,7 @@ export class AccountsComponent {
     this.formName = account.name;
     this.formLast4 = account.last4 ?? '';
     this.formBalance = account.initialBalance;
+    this.bankSearch.set('');
     this.showForm.set(true);
   }
 

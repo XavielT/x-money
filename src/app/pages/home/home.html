@@ -32,9 +32,9 @@
     </div>
   </section>
 
-  <!-- Accounts strip -->
+  <!-- Accounts strip (capped; full list lives on the Accounts page) -->
   <section class="home-accounts">
-    <a routerLink="/accounts" class="home-account x-card" *ngFor="let acc of accountService.accounts()">
+    <a routerLink="/accounts" class="home-account x-card" *ngFor="let acc of visibleAccounts()">
       <app-bank-badge [account]="acc"></app-bank-badge>
       <div class="home-account-info">
         <small>{{ acc.name }}</small>
@@ -43,7 +43,13 @@
         </strong>
       </div>
     </a>
-    <a routerLink="/accounts" class="home-account home-account-add x-card" aria-label="Manage accounts">＋</a>
+    <a
+      routerLink="/accounts"
+      class="home-account home-account-add x-card"
+      [attr.aria-label]="hiddenAccountsCount() ? ('See all accounts' | t) : ('Manage accounts' | t)"
+    >
+      {{ hiddenAccountsCount() ? '+' + hiddenAccountsCount() : '＋' }}
+    </a>
   </section>
 
   <!-- Budget & insight alerts -->

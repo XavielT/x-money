@@ -66,10 +66,16 @@
   small {
     color: var(--main-ultra-light);
     font-size: 0.72rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.35;
+    // Wraps instead of truncating: hiding the bank/last4/link behind an
+    // ellipsis made it impossible to tell accounts apart in a long list
+    overflow-wrap: break-word;
   }
+}
+
+.accounts-card-linked {
+  color: var(--Hub) !important;
+  font-weight: 600;
 }
 
 .accounts-card-name {
@@ -223,6 +229,10 @@
   }
 }
 
+.accounts-form-bank-search {
+  margin-bottom: 8px;
+}
+
 // Bank picker grid
 .accounts-form-banks {
   display: grid;
@@ -230,6 +240,14 @@
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
+}
+
+.accounts-form-bank-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--main-ultra-light);
+  font-size: 0.8rem;
+  padding: 12px 0;
 }
 
 .accounts-form-bank {
