@@ -64,6 +64,15 @@
       </button>
     </div>
 
+    <!-- Bank account subtype -->
+    <ng-container *ngIf="isBank()">
+      <label class="accounts-form-label">{{ 'Account subtype' | t }}</label>
+      <select class="x-input" [ngModel]="formBankKind()" (ngModelChange)="formBankKind.set($event)" name="formBankKind">
+        <option value="">{{ 'Bank account' | t }}</option>
+        <option *ngFor="let k of bankKinds" [value]="k.kind">{{ k.label | t }}</option>
+      </select>
+    </ng-container>
+
     <!-- Name -->
     <label class="accounts-form-label">{{ 'Account name' | t }}</label>
     <input class="x-input" type="text" maxlength="24" [placeholder]="'e.g. Payroll account' | t" [(ngModel)]="formName" name="formName" />

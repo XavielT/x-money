@@ -6,6 +6,7 @@ import {
   AccountCurrency,
   AccountModel,
   AccountType,
+  BankAccountKind,
   CardKind,
 } from '../../../shared/models/account.model';
 import { BANKS_MOCK } from '../../../shared/data/banks';
@@ -34,10 +35,17 @@ export class AccountsComponent {
     { key: 'savings', type: 'savings', icon: '💰', label: 'Savings' },
   ];
 
+  bankKinds: { kind: BankAccountKind; label: string }[] = [
+    { kind: 'checking', label: 'Checking account' },
+    { kind: 'savings', label: 'Savings account' },
+    { kind: 'payroll', label: 'Payroll account' },
+  ];
+
   showForm = signal(false);
   editingId: string | null = null;
   formTypeKey = signal('bank');
   formBankId = signal('');
+  formBankKind = signal<BankAccountKind | ''>('');
   formCurrency = signal<AccountCurrency>('DOP');
   formLinkedId = signal('');
   formName = '';
@@ -61,6 +69,11 @@ export class AccountsComponent {
   }
 
   typeLabel(account: AccountModel): string {
+    // Bank accounts show their subtype the way banks name them
+    if (account.type === 'bank' && account.bankKind) {
+      const kind = this.bankKinds.find((k) => k.kind === account.bankKind);
+      if (kind) return this.translate.instant(kind.label);
+    }
     const entry =
       account.type === 'card'
         ? this.accountTypes.find((t) => t.type === 'card' && t.cardKind === (account.cardKind ?? 'debit'))
@@ -111,6 +124,7 @@ export class AccountsComponent {
     this.editingId = null;
     this.formTypeKey.set('bank');
     this.formBankId.set('');
+    this.formBankKind.set('');
     this.formCurrency.set('DOP');
     this.formLinkedId.set('');
     this.formName = '';
@@ -125,6 +139,7 @@ export class AccountsComponent {
       account.type === 'card' ? (account.cardKind === 'credit' ? 'credit' : 'debit') : account.type
     );
     this.formBankId.set(account.bankId ?? '');
+    this.formBankKind.set(account.bankKind ?? '');
     this.formCurrency.set(account.currency ?? 'DOP');
     this.formLinkedId.set(account.linkedAccountId ?? '');
     this.formName = account.name;
@@ -141,8 +156,13 @@ export class AccountsComponent {
   setTypeKey(key: string): void {
     this.formTypeKey.set(key);
     if (key === 'cash') this.formBankId.set('');
+    if (key !== 'bank') this.formBankKind.set('');
     if (key !== 'credit' && this.formCurrency() === 'dual') this.formCurrency.set('DOP');
     if (key !== 'debit') this.formLinkedId.set('');
+  }
+
+  isBank(): boolean {
+    return this.selectedType().type === 'bank';
   }
 
   setCurrency(currency: AccountCurrency): void {
@@ -188,6 +208,7 @@ export class AccountsComponent {
       type: selected.type,
       cardKind: selected.cardKind,
       bankId: selected.type === 'cash' ? undefined : this.formBankId() || undefined,
+      bankKind: selected.type === 'bank' && this.formBankKind() ? (this.formBankKind() as BankAccountKind) : undefined,
       last4: selected.type === 'card' && this.formLast4.trim() ? this.formLast4.trim() : undefined,
       currency: this.formCurrency(),
       linkedAccountId: this.isDebit() && this.formLinkedId() ? this.formLinkedId() : undefined,
