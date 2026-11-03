@@ -4,7 +4,7 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 
 | Prompt | Tema | Versión destino | Estado |
 |---|---|---|---|
-| 00 | Fundamentos: auditoría, documentación y base de pruebas | 2.5.2 | **hecho** (pendiente de commit y de prueba en el teléfono) |
+| 00 | Fundamentos: auditoría, documentación y base de pruebas | 2.5.2 | **hecho** (commiteado y probado en el teléfono) |
 | 00b | Cuenta, base de datos en x-core y sincronización | 2.6.0 | pendiente |
 | 01 | Integridad financiera P0 | 2.7.0 | pendiente |
 | 02 | Tarjetas de crédito | 2.8.0 | pendiente |
