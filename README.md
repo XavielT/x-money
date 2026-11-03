@@ -1,9 +1,13 @@
 # X Money 💰
 
-Personal money manager. **100% local** — no backend, no account, no bank sync.
-Your data never leaves your device. Installable on your phone as a PWA and works fully offline.
+Personal money manager with its **own account** and **offline-first sync**: your data lives in your X Money
+account (a private schema in Xaviel's Supabase project `x-core`, reached only through the `xmoney-api` Edge Function)
+and every device keeps a local copy, so the app works without a connection and syncs when the signal returns. Laptop,
+Android and iPhone (PWA) all show the same history. No bank sync. Until the backend is configured
+(`docs/SETUP-XCORE.md`) the app runs in **local-only mode**, exactly like 2.5.x.
 
-Built with Angular (standalone components + Signals), SCSS, and localStorage. See [PLAN.md](PLAN.md) for the research and architecture.
+Built with Angular (standalone components + Signals), SCSS and IndexedDB. See [PLAN.md](PLAN.md) for the research
+and architecture, and `docs/` for the architecture, integrity rules, roadmap and setup.
 
 ## Features
 
@@ -20,7 +24,10 @@ Built with Angular (standalone components + Signals), SCSS, and localStorage. Se
 - 📈 6-month income vs expense trend chart · ⚠️ over-budget alerts on Home
 - 🔐 Optional PIN app lock (locks on start and on background)
 - 🌎 English / Español
-- 🛡️ Data mirrored to native storage (survives WebView cache clearing) · CSV export via Android share sheet
+- ☁️ Own account (not Supabase Auth), sessions per device, recovery code, change history for edit conflicts
+- 🔄 Offline-first sync with x-core: a persistent outbox, safe retries, conflicts never discarded silently
+- 🛡️ Local copy in IndexedDB (mirrored to native Preferences on Android) · CSV export via Android share sheet
+- 📲 Also a PWA for web and iPhone ("Add to Home Screen")
 - 📆 Transaction history grouped by day, navigable by month
 - 🏠 Dashboard: total balance, monthly income vs expenses, top spending, recent movements
 - 📊 Stats: category donut chart per month (expenses or income)
@@ -75,8 +82,18 @@ Bump `versionCode`/`versionName` in `android/app/build.gradle` for every Play St
 **Alternative (no APK):** deploy `dist/x-money/browser` to any static host (GitHub Pages,
 Netlify, Vercel), open it on the phone and use "Add to Home Screen" — same app as a PWA.
 
-## Data & backups
+## Data, sync & backups
 
-Everything is stored in `localStorage` under `x-money:*` keys.
-Use **Settings → Export backup** before changing phone or clearing browser data,
-and **Import backup** to restore.
+- The source of truth is your account in x-core. Each device keeps a copy in IndexedDB and works offline; changes
+  wait in a persistent outbox and are uploaded when there is a connection (on open, when the app returns to the
+  foreground, when the network comes back, after each edit and every 5 minutes).
+- Balances and totals are never stored or synced: they are always derived from the movements.
+- If the same record is edited on two devices, the newer edit wins and the other version is kept under
+  **Settings → Change history** (restorable). Nothing is discarded silently.
+- First sign-in on a device with existing data runs the **Upload my data** wizard (automatic JSON backup first, batch
+  upload with progress, count verification). If both sides have data it asks before doing anything.
+- Use **Settings → Export backup** regularly: it is your second copy (a reminder appears after 30 days by default)
+  and **Import backup** restores it (it goes through the same data layer, so it syncs).
+- Set up the backend with [docs/SETUP-XCORE.md](docs/SETUP-XCORE.md). The app only knows the URL of the function;
+  there is no anon key and the service role key never enters the app.
+- Local-only mode (no `apiUrl` in `src/shared/config/app-config.ts`): no account, data stays on the device.

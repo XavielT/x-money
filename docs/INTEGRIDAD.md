@@ -1,7 +1,7 @@
 # Reglas de integridad financiera
 
 Mandan sobre cualquier comodidad de implementación. Si una regla choca con lo que pide un prompt, gana la regla y
-se reporta. Estado a v2.5.2 (detalle y casos en `docs/AUDITORIA-2026-11.md`). Las pruebas están en
+se reporta. Estado a v2.6.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). Las pruebas están en
 `src/shared/characterization/integrity.spec.ts` (casos C1–C9); las `KNOWN GAP:` documentan violaciones actuales.
 
 ## Las 10 reglas
@@ -47,9 +47,9 @@ se reporta. Estado a v2.5.2 (detalle y casos en `docs/AUDITORIA-2026-11.md`). La
 - Estado: no aplica todavía (sin clasificación) → prompt 04.
 
 ### 9. Los saldos deben calcularse a partir de movimientos financieros consistentes.
-- Dónde se aplica (archivo): `transaction.service.ts` (`accountBalance`, `totalBalanceIn`: saldo = inicial + movimientos).
-- Prueba que la protege: C2, C6 (consistentes); `KNOWN GAP` en C4, C5, C6, C7, C9 (huérfanos, `NaN`, flotantes, importación, duplicados).
-- Estado: **parcial** → prompts 00b y 01.
+- Dónde se aplica (archivo): `transaction.service.ts` (`accountBalance`, `totalBalanceIn`: saldo = inicial + movimientos). **Desde la 2.6.0 los saldos y totales no se guardan ni se sincronizan**: `data-layer/registry.ts` no tiene ninguna colección de saldos; cada dispositivo los deriva de los movimientos.
+- Prueba que la protege: C2, C6 (consistentes); `sync.spec.ts` «both devices compute the same balances from the same movements» y `data-layer.spec.ts` «no regression: balances before and after the data layer»; `KNOWN GAP` en C5, C6, C7, C9 (huérfanos, `NaN`, flotantes, importación). El duplicado por fallo de guardado de recurrentes (C4) quedó corregido en la 2.6.0 con ids determinísticos (`rec-<regla>-<fecha>`).
+- Estado: **parcial** → prompt 01.
 
 ### 10. Las proyecciones deben identificarse claramente como estimaciones.
 - Dónde se aplica (archivo): `insights.service.ts` (`subscriptionCost`), mostrado con «≈» en `stats.html:136-143` sin supuestos.

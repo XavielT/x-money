@@ -1,5 +1,9 @@
 # Auditoría de código — noviembre 2026 (base: v2.5.1, escrita en v2.5.2)
 
+> **Actualización 2.6.0:** el hueco "no es atómico / duplica tras un fallo de guardado" de C4 (y el riesgo de duplicar
+> recurrentes entre dispositivos al sincronizar) quedó corregido: cada ocurrencia usa el id determinístico
+> `rec-<regla>-<fecha>` y `TransactionService.add` es idempotente por id. El resto de los hallazgos sigue vigente.
+
 Alcance: se leyó todo `src/` (modelos, servicios, páginas, componentes). No se corrigió nada de producción: lo
 que sigue es lo que el código hace HOY, con las pruebas de caracterización de
 `src/shared/characterization/integrity.spec.ts` que lo fijan (las que documentan una violación se llaman

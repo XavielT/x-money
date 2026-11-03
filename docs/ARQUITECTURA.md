@@ -1,39 +1,75 @@
-# Arquitectura (estado a v2.5.2)
+# Arquitectura (estado a v2.6.0)
 
-Angular 22 (standalone + Signals), SCSS, Capacitor/Android y PWA. Hoy 100 % local; desde el prompt 00b la fuente de
-verdad pasa a ser `x-core` con copia local por dispositivo.
+Angular 22 (standalone + Signals), SCSS, Capacitor/Android y PWA (web e iPhone). Desde la 2.6.0 la fuente de verdad es
+`x-core` (schema `xmoney`, solo accesible por la Edge Function `xmoney-api`) y cada dispositivo guarda una copia local
+en IndexedDB para trabajar sin conexión. Sin `apiUrl` configurada la app funciona en modo solo local (como la 2.5.x).
 
 ## Entidades y claves de almacenamiento (`x-money:*`)
 
-| Clave | Modelo (`src/shared/models`) | Servicio dueño |
-|---|---|---|
-| `transactions` | `TransactionModel` (income/expense/transfer, `fee`, `currency`) | `TransactionService` |
-| `accounts` | `AccountModel` (cash/bank/card/savings, `cardKind`, `bankKind`, `currency`, `linkedAccountId`) | `AccountService` |
-| `categories` | `CategoryModel` (ids `cat-*` por defecto, `custom-*` del usuario) | `CategoryService` |
-| `budgets` | `BudgetModel` (límite mensual por categoría) | `BudgetService` |
-| `recurring` | `RecurringModel` | `RecurringService` |
-| `settings` | `{currency, taxPercent}` | `SettingsService` |
-| `lock` | hash del PIN | `LockService` |
-| `lang` | `'en' \| 'es'` | `TranslateService` |
+Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva se registra allí como sincronizada o
+"solo del dispositivo"** (una clave sin registrar se reporta con `console.error` y no se sincroniza).
+
+| Clave | Modelo (`src/shared/models`) | Servicio dueño | Sincronización |
+|---|---|---|---|
+| `transactions` | `TransactionModel` (income/expense/transfer, `fee`, `currency`) | `TransactionService` | **sincronizada** (1 registro por movimiento) |
+| `accounts` | `AccountModel` | `AccountService` | **sincronizada** |
+| `categories` | `CategoryModel` (`cat-*` por defecto, `custom-*`) | `CategoryService` | **sincronizada** |
+| `budgets` | `BudgetModel` | `BudgetService` | **sincronizada** |
+| `recurring` | `RecurringModel` | `RecurringService` | **sincronizada** |
+| `conflicts` | `ConflictModel` (versiones que perdieron un conflicto; las escribe el servidor) | `ConflictService` | **sincronizada** |
+| `settings` | `{currency, taxPercent}` | `SettingsService` | **sincronizada** (documento) |
+| `lang` | `'en' \| 'es'` | `TranslateService` | **sincronizada** (documento) |
+| `lock` | hash del PIN | `LockService` | **solo de este dispositivo** |
+| `device-prefs` | `{lastExportAt, reminderDays}` | `BackupReminderService` | **solo de este dispositivo** |
+
+Solo del dispositivo además (en el almacén `device` de IndexedDB o en Preferences/localStorage, nunca suben):
+id del dispositivo, cursor de sincronización, cola de salida (outbox), revs conocidas, cuenta enlazada, estado de la
+migración, tokens de sesión (refresco en Preferences en la app y localStorage en la web; el de acceso solo en memoria).
+Los saldos y totales **no se guardan ni se sincronizan**: se derivan de los movimientos (regla 9).
 
 Catálogos estáticos: `shared/data/banks.ts`, `default-accounts.ts`, `default-categories.ts`.
 
 ## Quién depende de quién
 
 ```
-StorageService (localStorage + espejo en Capacitor Preferences)
-  ├─ AccountService
-  │    └─ TransactionService (saldos, resúmenes, totales por categoría)
-  │         ├─ RecurringService (publica ocurrencias vencidas al inyectarse)
-  │         │    └─ InsightsService (también usa TransactionService)
-  │         └─ ExportService (+ CategoryService, AccountService): CSV y compartir
-  ├─ CategoryService · BudgetService · LockService · TranslateService
-  └─ SettingsService (además exporta/importa claves directo por StorageService)
-Páginas (src/app/pages) → servicios. main.ts restaura localStorage desde Preferences antes de arrancar.
+StorageService (copia local en IndexedDB + espejo a Preferences en Android; get/set síncronos desde una caché en memoria)
+  │   └─ envía cada escritura de una clave sincronizada al SyncEngine (diferencia por registro → outbox)
+  ├─ AccountService → TransactionService → RecurringService → InsightsService · ExportService
+  ├─ CategoryService · BudgetService · LockService · TranslateService · SettingsService · ConflictService · BackupReminderService
+  ├─ ApiService (XMoneyApiClient: fetch propio, token en memoria, refresco único en vuelo)
+  ├─ SyncService (SyncEngine + disparadores: abrir, primer plano, reconexión, tras editar, cada 5 min)
+  └─ AuthService (sesión, registro, recuperación) → SyncService
+Los servicios se suscriben con storage.watch(clave) para reflejar lo descargado de otro dispositivo.
+Páginas (src/app/pages) → servicios. APP_INITIALIZER: hidrata StorageService (y migra 2.5.x → IndexedDB) y luego AuthService.init().
 ```
+
+Servidor: `supabase/functions/xmoney-api/` (`lib/api.ts` lógica pura sobre la interfaz `Db`; `lib/pg-db.ts` SQL
+parametrizado; `index.ts` HTTP/CORS/Deno) y `supabase/migrations/*_xmoney_*.sql`.
 
 Los cálculos de dinero viven hoy mezclados en `TransactionService` y en componentes (`budgets.ts`, `home.ts`); ver
 riesgos RK-7 y RK-10 en `docs/AUDITORIA-2026-11.md`.
+
+## Modelo de sincronización
+
+- **Tabla genérica `xmoney.records`** (`account_id, collection, id, data jsonb, schema_version, rev, updated_at,
+  client_updated_at, device_id, deleted_at`). Motivo: los datos cambian de forma en casi cada prompt de la ronda;
+  una tabla genérica evita una migración de Postgres por módulo en un proyecto compartido, y la integridad
+  financiera la imponen la capa de dominio y las pruebas (los saldos nunca se guardan). Si hicieran falta consultas
+  analíticas en el servidor se evaluaría pasar colecciones concretas a relacionales.
+- `rev` y `updated_at` los asigna **el servidor** (trigger); nunca se confía en el reloj del dispositivo para el
+  orden de descarga. `client_updated_at` solo decide conflictos y se limita a "ahora + 5 min".
+- **Subida:** outbox persistente de operaciones por registro (upsert por clave primaria ⇒ idempotente), por lotes de
+  200, con reintentos con retraso exponencial. **Descarga:** cursor por `rev`, en páginas de 500.
+- **Conflictos:** gana el `client_updated_at` más reciente (empate: el de mayor `rev` del servidor); el perdedor se
+  guarda completo en la colección `conflicts` (Ajustes → Historial de cambios, "Restaurar esta versión"). Un borrado
+  contra una edición más nueva pierde y se informa. El mismo contenido en dos dispositivos (p. ej. una ocurrencia
+  recurrente, que tiene id determinístico `rec-<regla>-<fecha>`) no es conflicto.
+- **Versión de esquema:** cada registro lleva `schema_version` y `xmoney.meta` guarda la del servidor. Una app más
+  vieja que el servidor queda en solo lectura ("Actualiza X Money"). Orden para cambios de esquema futuros: migrar en
+  local, subir por lotes y solo entonces subir `schema_version` (`sync/meta`).
+- **Primera sincronización** (`data-layer/link.ts`): servidor vacío + datos locales → "Subir mis datos" (respaldo JSON,
+  lotes con progreso reanudable, verificación de conteos); servidor con datos + dispositivo virgen → descarga;
+  datos en ambos lados → el usuario elige "quedarme con lo del servidor" o "unir por id", siempre tras respaldo.
 
 ## Capas objetivo
 
@@ -42,17 +78,16 @@ shared/domain        funciones puras (sin Angular ni almacenamiento) + shared/ut
       ↓
 shared/services      servicios con signals que llaman al dominio
       ↓
-capa de datos        StorageService → copia local + sincronización con x-core (prompt 00b)
+capa de datos        StorageService → copia local (IndexedDB) + SyncEngine ⇄ xmoney-api ⇄ x-core (2.6.0)
       ↓
 pages / ui           solo muestran; no calculan dinero en plantillas
 ```
 
 ## Qué datos son sincronizados y cuáles del dispositivo
 
-_(Se llena en el prompt 00b. Propuesta de partida en `docs/AUDITORIA-2026-11.md` §4.1: sincronizables
-`transactions`, `accounts`, `categories`, `budgets`, `recurring`, `settings`; solo del dispositivo `lock`, `lang`.)_
+Ver la tabla de "Entidades y claves de almacenamiento" arriba y `src/shared/data-layer/registry.ts`.
 
 ## Pruebas
 
-`npm test` (vitest vía `@angular/build:unit-test`). `shared/testing/` tiene builders y `MemoryStorage` + `boot()`
+`npm test` (vitest vía `@angular/build:unit-test`; incluye `src/server-tests/` con la lógica de `xmoney-api` y `src/shared/data-layer/` con la sincronización contra un servidor en memoria). `shared/testing/` tiene builders y `MemoryStorage` + `boot()`
 para arrancar servicios sobre un almacenamiento en memoria; `shared/characterization/` fija el comportamiento actual.

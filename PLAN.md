@@ -1,7 +1,9 @@
 # X Money — Plan
 
-Personal money management app, 100% local (no backend, no account, no bank sync).
-Installable on the phone as a PWA ("Add to Home Screen"), works fully offline.
+Personal money management app. Since 2.6.0 it has its own account and an offline-first sync with the
+user's Supabase project (`x-core`, schema `xmoney`, reached only through the `xmoney-api` Edge Function); every device
+keeps a local copy. Before 2.6.0 it was 100% local. No bank sync. Installable on the phone as a PWA ("Add to Home
+Screen"), works fully offline. See `docs/ARQUITECTURA.md`.
 
 ## 1. Research summary — how these apps work
 
@@ -23,8 +25,9 @@ transactions, cloud sync, passcode. Left as roadmap items.
 ## 2. Architecture
 
 - **Angular 22, standalone components**, Signals for all state, SCSS, no UI framework.
-- **Persistence: localStorage** through a single `StorageService` (JSON snapshot per
-  collection). TODO markers left for a future HttpClient/IndexedDB upgrade.
+- **Persistence (2.6.0):** `StorageService` keeps its get/set API; the working copy is IndexedDB, writes of
+  synced collections become per-record operations in a persistent outbox, and `SyncEngine` pushes/pulls against
+  x-core. Before 2.6.0 it was localStorage mirrored to Capacitor Preferences.
 - **PWA**: `@angular/pwa` service worker + manifest → installable, offline-first.
 - Business logic lives in `shared/services`, page components only orchestrate.
 

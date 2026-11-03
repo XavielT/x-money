@@ -4,8 +4,9 @@ App personal de Xaviel con datos reales. **Regla de oro: integridad de datos ant
 corrompa o pierda datos es peor que cualquier función que falte.
 
 ## Stack y comandos
-Angular 22 (standalone + Signals), SCSS, Capacitor/Android, PWA. Datos: hoy localStorage espejado a Capacitor
-Preferences; desde el prompt 00b, base en Supabase `x-core` con copia local y sincronización.
+Angular 22 (standalone + Signals), SCSS, Capacitor/Android, PWA. Datos (2.6.0): fuente de verdad en Supabase `x-core`
+(schema `xmoney`, solo vía la Edge Function `xmoney-api`), copia local en IndexedDB y sincronización offline-first. Sin
+`apiUrl` en `src/shared/config/app-config.ts` la app corre en modo solo local.
 
 ```bash
 npm start                 # ng serve, http://localhost:4200
@@ -20,9 +21,10 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 - `src/app/pages/*` páginas (solo orquestan y muestran) · `src/shared/services` estado con signals · `models` · `data`
   (catálogos) · `ui` y `components` · `pipes` (`t` = traducción).
 - `src/shared/domain/` cálculos financieros **puros** (ver su README) · `src/shared/utils/money.ts` redondeo a 2 decimales.
+- `src/shared/data-layer/` registro de colecciones, copia local, motor de sincronización y cliente de la API; `supabase/` migración, función `xmoney-api` y pruebas SQL (`docs/SETUP-XCORE.md`).
 - `src/shared/testing/` builders (`account()`, `transaction()`, `category()`, `recurring()`) y `MemoryStorage`/`boot()`.
 - `src/shared/characterization/` pruebas que fijan el comportamiento actual (`KNOWN GAP:` = violación documentada).
-- `docs/` AUDITORIA, INTEGRIDAD, VISION, ROADMAP, IA, ARQUITECTURA. `supabase/migrations/` SQL (prefijo `xmoney_`, schema `xmoney`); **no lo aplica Claude**, lo aplica Xaviel.
+- `docs/` AUDITORIA, INTEGRIDAD, VISION, ROADMAP, IA, ARQUITECTURA. `supabase/migrations/` SQL (`<timestamp>_xmoney_*.sql`, schema `xmoney`); **no lo aplica Claude**, lo aplica Xaviel.
 
 ## Convenciones
 - Signals y componentes standalone. Código, nombres y comentarios en inglés; comentarios solo donde el porqué no sea obvio.
@@ -30,6 +32,7 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 - Dinero: nunca sumar ni comparar flotantes sin redondear (`money.ts`). RD$ y US$ nunca se mezclan ni se convierten con tasas inventadas.
 - Cálculos en funciones puras de `shared/domain` con pruebas (cero, negativos, redondeo, fin de mes, bisiesto, USD vs DOP, listas vacías). Los componentes no calculan dinero.
 - Proyecciones/inferencias: se devuelven y muestran marcadas como estimación, con supuestos visibles.
+- Toda colección nueva se registra en `data-layer/registry.ts` (sincronizada o solo del dispositivo). Los saldos nunca se guardan ni se sincronizan.
 - Toda entidad se guarda por la capa de datos; todo cambio de forma lleva migración + prueba con datos de la forma anterior; no romper la importación de respaldos viejos.
 - Reutilizar antes de crear (`shared/services`, `shared/ui`, `shared/models`, `:root` en `styles.scss`).
 
