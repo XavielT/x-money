@@ -1,0 +1,25 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 14px 8px;
+  background: var(--Hub-translucid);
+  font-size: 0.8rem;
+
+  &.bad {
+    background: var(--expense-translucid);
+    color: var(--expense);
+  }
+
+  a {
+    color: var(--Hub);
+    font-weight: 600;
+  }
+
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+  }
+}

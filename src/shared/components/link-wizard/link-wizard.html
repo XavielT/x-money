@@ -1,0 +1,71 @@
+<div class="auth" *ngIf="sync.link() as link">
+  <span class="auth-brand">X <span>Money</span></span>
+
+  <div class="auth-card x-card" [ngSwitch]="link.phase">
+    <ng-container *ngSwitchCase="'checking'">
+      <h2>{{ 'Setting up sync…' | t }}</h2>
+      <p class="auth-hint">{{ 'Checking what is in your account…' | t }}</p>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'confirm-upload'">
+      <h2>{{ 'Upload your data' | t }}</h2>
+      <p class="auth-hint">{{ 'Your account is empty. A backup file is saved first, then everything on this device is uploaded and checked.' | t }}</p>
+      <ng-container *ngTemplateOutlet="counts"></ng-container>
+      <button class="x-btn" (click)="sync.uploadMyData()">{{ 'Upload my data' | t }}</button>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'choose'">
+      <h2>{{ 'This device and your account both have data' | t }}</h2>
+      <p class="auth-hint">{{ 'Nothing changes until you choose. A backup file is saved first.' | t }}</p>
+      <ng-container *ngTemplateOutlet="counts"></ng-container>
+      <button class="x-btn" (click)="sync.keepServerCopy()">{{ 'Keep the account copy' | t }}</button>
+      <p class="auth-hint">{{ 'This device is replaced by the data in your account.' | t }}</p>
+      <button class="x-btn" (click)="sync.mergeById()">{{ 'Merge by id' | t }}</button>
+      <p class="auth-hint">{{ 'Combines both. When the same record exists on both sides the account version stays and the other one goes to Change history.' | t }}</p>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'backup-failed'">
+      <h2>{{ 'The backup could not be saved' | t }}</h2>
+      <p class="auth-hint">{{ 'Nothing has changed yet. Try again, or continue without a backup.' | t }}</p>
+      <button class="x-btn" (click)="sync.continueAfterBackupFailure(false)">{{ 'Try again' | t }}</button>
+      <button class="x-btn x-btn-danger" (click)="sync.continueAfterBackupFailure(true)">{{ 'Continue without a backup' | t }}</button>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'uploading'">
+      <h2>{{ 'Uploading…' | t }} {{ percent }}%</h2>
+      <p class="auth-hint">{{ link.remaining ?? 0 }} {{ 'records left' | t }}. {{ 'If you close the app it resumes where it stopped.' | t }}</p>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'downloading'">
+      <h2>{{ 'Downloading your data…' | t }}</h2>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'verify-failed'">
+      <h2>{{ 'The counts do not match' | t }}</h2>
+      <p class="auth-hint">{{ 'Your data is still safe on this device. Try the upload again.' | t }}</p>
+      <ng-container *ngTemplateOutlet="counts"></ng-container>
+      <button class="x-btn" (click)="sync.retryUpload()">{{ 'Try again' | t }}</button>
+    </ng-container>
+
+    <ng-container *ngSwitchCase="'error'">
+      <h2>{{ 'Could not reach your account' | t }}</h2>
+      <p class="auth-hint">{{ 'The first sync needs internet. Your data on this device is untouched.' | t }}</p>
+      <button class="x-btn" (click)="sync.retryLink()">{{ 'Try again' | t }}</button>
+    </ng-container>
+  </div>
+
+  <ng-template #counts>
+    <table class="link-counts">
+      <tr>
+        <th></th>
+        <th>{{ 'On this device' | t }}</th>
+        <th>{{ 'In your account' | t }}</th>
+      </tr>
+      <tr *ngFor="let row of rows">
+        <td>{{ row.label | t }}</td>
+        <td>{{ link.local?.[row.key] ?? 0 }}</td>
+        <td>{{ link.server?.[row.key] ?? 0 }}</td>
+      </tr>
+    </table>
+  </ng-template>
+</div>

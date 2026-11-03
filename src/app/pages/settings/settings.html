@@ -160,10 +160,16 @@
     </div>
   </section>
 
+  <!-- Account, sync, devices, change history -->
+  @defer {
+    <app-account-settings></app-account-settings>
+  }
+
   <!-- Data -->
   <section class="settings-section">
     <h2>{{ 'Your data' | t }}</h2>
-    <p class="settings-hint">{{ 'Everything is stored only on this device. Export a backup before changing phone.' | t }}</p>
+    <p class="settings-hint" *ngIf="auth.mode() === 'local'">{{ 'Everything is stored only on this device. Export a backup before changing phone.' | t }}</p>
+    <p class="settings-hint" *ngIf="auth.mode() !== 'local'">{{ 'Your data is saved in your account and a copy is kept on this device to work offline. Export a backup regularly: it is your second copy.' | t }}</p>
     <div class="settings-data">
       <button class="x-btn" (click)="exportData()">{{ 'Export backup (JSON)' | t }}</button>
       <button class="x-btn" (click)="exportCsv()">{{ 'Export CSV (Excel)' | t }}</button>
@@ -171,9 +177,9 @@
         {{ 'Import backup' | t }}
         <input type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
       </label>
-      <button class="x-btn x-btn-danger" (click)="wipeData()">{{ 'Delete all data' | t }}</button>
+      <button class="x-btn x-btn-danger" (click)="wipeData()">{{ (auth.mode() === 'local' ? 'Delete all data' : 'Remove data from this device') | t }}</button>
     </div>
   </section>
 
-  <p class="settings-version">X Money · local-first · v2.5.2</p>
+  <p class="settings-version">X Money · v2.6.0</p>
 </div>

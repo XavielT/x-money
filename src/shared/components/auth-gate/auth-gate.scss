@@ -1,0 +1,130 @@
+// Full-screen overlay shared by the account gate and the first-sync wizard
+:host {
+  display: contents;
+}
+
+.auth {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow-y: auto;
+  background: var(--main);
+  padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.auth-brand {
+  font-family: var(--font-brand);
+  font-size: 1.6rem;
+  font-weight: 800;
+
+  span {
+    color: var(--Hub);
+  }
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+  }
+}
+
+.auth-tagline,
+.auth-notice,
+.auth-hint {
+  max-width: 380px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--main-ultra-light);
+}
+
+.auth-notice {
+  color: var(--Hub);
+}
+
+.auth-hint {
+  text-align: left;
+}
+
+.auth-code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+  word-break: break-all;
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 10px;
+  background: var(--secondary);
+  border: 1px dashed var(--Hub);
+  user-select: all;
+}
+
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.auth-error {
+  color: var(--expense);
+  font-size: 0.85rem;
+}
+
+.auth-replace {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+}
+
+.auth-links {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  button {
+    background: none;
+    border: none;
+    color: var(--Hub);
+    font-size: 0.9rem;
+    padding: 6px;
+  }
+}
+
+.link-counts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th {
+    font-weight: 600;
+    color: var(--main-ultra-light);
+    text-align: right;
+    padding: 4px 6px;
+  }
+
+  td {
+    padding: 4px 6px;
+    text-align: right;
+    border-top: 1px solid var(--card-border);
+
+    &:first-child {
+      text-align: left;
+    }
+  }
+}

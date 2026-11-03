@@ -8,11 +8,25 @@ import { Navbar } from '../shared/components/navbar/navbar';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { RecurringService } from '../shared/services/recurring.service';
 import { LockService } from '../shared/services/lock.service';
+import { AuthService } from '../shared/services/auth.service';
+import { SyncService } from '../shared/services/sync.service';
+import { AuthGateComponent } from '../shared/components/auth-gate/auth-gate';
+import { LinkWizardComponent } from '../shared/components/link-wizard/link-wizard';
+import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banner';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, Navbar, TranslatePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterOutlet,
+    Navbar,
+    TranslatePipe,
+    AuthGateComponent,
+    LinkWizardComponent,
+    SyncBannerComponent,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -23,7 +37,9 @@ export class App {
   // Injecting RecurringService here posts any due recurring transactions on startup
   constructor(
     private recurringService: RecurringService,
-    public lock: LockService
+    public lock: LockService,
+    public auth: AuthService,
+    public sync: SyncService
   ) {
     if (Capacitor.isNativePlatform()) {
       // Android hardware back: navigate back inside the app, exit only from Home

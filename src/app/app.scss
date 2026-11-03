@@ -13,7 +13,7 @@
   justify-content: center;
   gap: 14px;
   background: var(--main);
-  padding: 24px;
+  padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
 }
 
 .app-lock-brand {

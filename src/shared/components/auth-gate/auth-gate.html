@@ -1,0 +1,84 @@
+<div class="auth">
+  <span class="auth-brand">X <span>Money</span></span>
+
+  <!-- Recovery code (after signup or password reset): must be acknowledged -->
+  <div class="auth-card x-card" *ngIf="auth.recoveryCode() as code">
+    <h2>{{ 'Save your recovery code' | t }}</h2>
+    <p class="auth-hint">{{ 'It is the only way back in if you forget your password. It is shown only once.' | t }}</p>
+    <div class="auth-code">{{ code }}</div>
+    <label class="auth-check">
+      <input type="checkbox" [(ngModel)]="savedCode" name="saved" />
+      {{ 'I saved it' | t }}
+    </label>
+    <button class="x-btn" [disabled]="!savedCode || busy()" (click)="confirmCode()">{{ 'Continue' | t }}</button>
+  </div>
+
+  <ng-container *ngIf="!auth.recoveryCode()">
+    <p class="auth-notice" *ngIf="auth.mode() === 'expired'">
+      {{ 'Your session ended. Sign in again: the data on this device is safe.' | t }}
+    </p>
+    <p class="auth-tagline" *ngIf="auth.mode() !== 'expired'">
+      {{ 'Your data is saved in your account and kept on this device to work offline.' | t }}
+    </p>
+
+    <form class="auth-card x-card" (ngSubmit)="view() === 'login' ? submitLogin() : view() === 'signup' ? submitSignup() : submitRecover()">
+      <h2>
+        {{ (view() === 'login' ? 'Sign in' : view() === 'signup' ? 'Create account' : 'Recover password') | t }}
+      </h2>
+
+      <input class="x-input" type="email" name="email" autocomplete="username" [placeholder]="'Email' | t" [(ngModel)]="email" />
+
+      <ng-container *ngIf="view() !== 'recover'">
+        <input
+          class="x-input"
+          [type]="showPassword ? 'text' : 'password'"
+          name="password"
+          [autocomplete]="view() === 'login' ? 'current-password' : 'new-password'"
+          [placeholder]="(view() === 'signup' ? 'Password (10+ characters)' : 'Password') | t"
+          [(ngModel)]="password"
+        />
+        <input class="x-input" *ngIf="view() === 'signup'" type="password" name="invite" autocomplete="off" [placeholder]="'Invite code' | t" [(ngModel)]="inviteCode" />
+      </ng-container>
+
+      <ng-container *ngIf="view() === 'recover'">
+        <input class="x-input" type="text" name="rcode" autocomplete="off" autocapitalize="characters" [placeholder]="'Recovery code' | t" [(ngModel)]="recoveryCodeInput" />
+        <input class="x-input" type="password" name="npw" autocomplete="new-password" [placeholder]="'New password (10+ characters)' | t" [(ngModel)]="newPassword" />
+      </ng-container>
+
+      <label class="auth-check" *ngIf="view() !== 'recover'">
+        <input type="checkbox" [(ngModel)]="showPassword" name="show" />
+        {{ 'Show password' | t }}
+      </label>
+
+      <p class="auth-error" *ngIf="error()" role="alert">
+        <ng-container [ngSwitch]="error()">
+          <ng-container *ngSwitchCase="'invalid_credentials'">{{ 'Wrong email or password.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'locked'">{{ 'Account locked. Try again in' | t }} {{ lockedMinutes() }} min.</ng-container>
+          <ng-container *ngSwitchCase="'network'">{{ 'No connection. The first sign-in needs internet.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'weak_password'">{{ 'The password needs at least 10 characters.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'signup_failed'">{{ 'Could not create the account.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'recovery_failed'">{{ 'Wrong email or recovery code.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'too_many_requests'">{{ 'Too many attempts. Wait a moment.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'account_disabled'">{{ 'This account is disabled.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'different_account'">{{ 'This device holds data from another account.' | t }}</ng-container>
+          <ng-container *ngSwitchDefault>{{ 'Something went wrong. Try again.' | t }}</ng-container>
+        </ng-container>
+      </p>
+
+      <div class="auth-replace" *ngIf="askReplace()">
+        <p>{{ 'Sign in with the original account, or erase this device copy first. Your account data is not touched.' | t }}</p>
+        <button type="button" class="x-btn x-btn-danger" (click)="submitLogin(true)">{{ 'Erase this device copy and sign in' | t }}</button>
+      </div>
+
+      <button class="x-btn" type="submit" [disabled]="busy() || !email">
+        {{ (view() === 'login' ? 'Sign in' : view() === 'signup' ? 'Create account' : 'Reset password') | t }}
+      </button>
+    </form>
+
+    <div class="auth-links">
+      <button type="button" *ngIf="view() !== 'login'" (click)="setView('login')">{{ 'Back to sign in' | t }}</button>
+      <button type="button" *ngIf="view() === 'login'" (click)="setView('signup')">{{ 'Create account' | t }}</button>
+      <button type="button" *ngIf="view() === 'login'" (click)="setView('recover')">{{ 'Forgot your password?' | t }}</button>
+    </div>
+  </ng-container>
+</div>

@@ -1,4 +1,5 @@
 <!-- App shell: routed page + bottom navigation -->
+<app-sync-banner></app-sync-banner>
 <main class="app-main">
   <router-outlet />
 </main>
@@ -21,3 +22,15 @@
   <p class="app-lock-error" *ngIf="pinError()">{{ 'Wrong PIN' | t }}</p>
   <button class="x-btn app-lock-btn" (click)="tryUnlock()">{{ 'Unlock' | t }}</button>
 </div>
+
+<!-- Account gate (needs a session) and first-sync wizard; the PIN lock stays on top -->
+@if (auth.needsAuth() || auth.recoveryCode()) {
+  @defer {
+    <app-auth-gate></app-auth-gate>
+  }
+}
+@if (auth.mode() === 'signed-in' && sync.link().phase !== 'none') {
+  @defer {
+    <app-link-wizard></app-link-wizard>
+  }
+}

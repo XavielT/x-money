@@ -1,0 +1,93 @@
+.acct {
+  margin-bottom: 24px;
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 14px 0 10px;
+  }
+}
+
+.acct-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin: -2px 0 4px;
+  }
+}
+
+.acct-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+
+  small {
+    color: var(--main-ultra-light);
+  }
+
+  .acct-sub {
+    display: block;
+  }
+
+  strong.bad {
+    color: var(--expense);
+  }
+}
+
+.acct-hint,
+.acct-warn,
+.acct-msg {
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+  margin-bottom: 10px;
+}
+
+.acct-warn,
+.acct-msg.bad {
+  color: var(--expense);
+}
+
+.acct-msg {
+  color: var(--income);
+}
+
+.acct-days {
+  width: 80px;
+  text-align: center;
+  padding: 8px;
+}
+
+.acct-small {
+  background: var(--secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.acct-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  word-break: break-word;
+
+  small {
+    color: var(--main-ultra-light);
+  }
+}
+
+.acct-actions {
+  display: flex;
+  gap: 8px;
+}

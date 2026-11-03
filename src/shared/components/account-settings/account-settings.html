@@ -1,0 +1,98 @@
+<section class="acct">
+  <h2>{{ 'Account' | t }}</h2>
+
+  <!-- Backend not configured: same as 2.5.x -->
+  <p class="acct-hint" *ngIf="auth.mode() === 'local'">
+    {{ 'Cloud sync is not set up. Your data stays only on this device.' | t }}
+  </p>
+
+  <ng-container *ngIf="auth.mode() !== 'local'">
+    <div class="acct-card x-card">
+      <div class="acct-row">
+        <span>{{ 'Signed in as' | t }}</span>
+        <strong>{{ auth.email() }}</strong>
+      </div>
+      <div class="acct-row">
+        <span>{{ 'Sync' | t }}</span>
+        <strong [class.bad]="sync.status() === 'error' || sync.status() === 'auth' || sync.status() === 'readonly'">{{ statusKey() | t }}</strong>
+      </div>
+      <div class="acct-row" *ngIf="sync.pending() > 0">
+        <span>{{ 'Changes not synced yet' | t }}</span>
+        <strong>{{ sync.pending() }}</strong>
+      </div>
+      <div class="acct-row">
+        <span>{{ 'Last sync' | t }}</span>
+        <strong>{{ sync.lastSyncAt() ? when(sync.lastSyncAt()!) : ('Never' | t) }}</strong>
+      </div>
+      <p class="acct-warn" *ngIf="sync.skewWarning">
+        {{ 'Your clock is off by more than 5 minutes. Fix the date and time of this device.' | t }}
+      </p>
+      <button class="x-btn" [disabled]="sync.status() === 'syncing'" (click)="syncNow()">{{ 'Sync now' | t }}</button>
+    </div>
+
+    <p class="acct-msg" *ngIf="message() as m" [class.bad]="!m.ok">{{ m.text }}</p>
+
+    <details class="acct-card x-card">
+      <summary>{{ 'Change password' | t }}</summary>
+      <input class="x-input" type="password" autocomplete="current-password" [placeholder]="'Current password' | t" [(ngModel)]="currentPassword" name="cur" />
+      <input class="x-input" type="password" autocomplete="new-password" [placeholder]="'New password (10+ characters)' | t" [(ngModel)]="newPassword" name="new" />
+      <button class="x-btn" [disabled]="busy() || !currentPassword || !newPassword" (click)="changePassword()">{{ 'Save' | t }}</button>
+    </details>
+
+    <details class="acct-card x-card">
+      <summary>{{ 'Regenerate recovery code' | t }}</summary>
+      <p class="acct-hint">{{ 'The old code stops working. You will see the new one once.' | t }}</p>
+      <input class="x-input" type="password" autocomplete="current-password" [placeholder]="'Password' | t" [(ngModel)]="recoveryPassword" name="rp" />
+      <button class="x-btn" [disabled]="busy() || !recoveryPassword" (click)="regenerateCode()">{{ 'Regenerate recovery code' | t }}</button>
+    </details>
+
+    <details class="acct-card x-card" (toggle)="loadSessions()">
+      <summary>{{ 'Devices' | t }}</summary>
+      <div class="acct-row" *ngFor="let s of sessions()">
+        <span>
+          {{ s.deviceLabel || '—' }}
+          <small *ngIf="s.current">({{ 'This device' | t }})</small>
+          <small class="acct-sub">{{ when(s.lastUsedAt) }}</small>
+        </span>
+        <button class="acct-small" *ngIf="!s.current" [disabled]="busy()" (click)="revoke(s)">{{ 'Revoke' | t }}</button>
+      </div>
+    </details>
+
+    <button class="x-btn x-btn-danger" (click)="signOut()">{{ 'Sign out' | t }}</button>
+  </ng-container>
+
+  <!-- iPhone / Safari: no install prompt -->
+  <p class="acct-hint" *ngIf="showIosHint()">
+    📲 {{ 'Install on iPhone: in Safari tap Share, then "Add to Home Screen", and open X Money from your home screen.' | t }}
+  </p>
+
+  <div class="acct-card x-card">
+    <div class="acct-row">
+      <span>{{ 'Last backup' | t }}</span>
+      <strong [class.bad]="reminder.due()">
+        {{ reminder.daysSince() === null ? ('Never' | t) : reminder.daysSince() + ' ' + ('days ago' | t) }}
+      </strong>
+    </div>
+    <div class="acct-row">
+      <span>{{ 'Remind me every (days)' | t }}</span>
+      <input class="x-input acct-days" type="number" min="1" max="365" [(ngModel)]="reminderDays" (change)="setReminderDays()" name="rd" />
+    </div>
+  </div>
+
+  <!-- Change history: versions that lost a conflict -->
+  <ng-container *ngIf="auth.mode() !== 'local'">
+    <h2>{{ 'Change history' | t }}</h2>
+    <p class="acct-hint">{{ 'When the same record is edited on two devices, the newer edit wins and the other version is kept here. Nothing is deleted silently.' | t }}</p>
+    <p class="acct-hint" *ngIf="!conflictService.conflicts().length">{{ 'No conflicts.' | t }}</p>
+    <div class="acct-card x-card" *ngFor="let c of conflictService.conflicts()">
+      <div class="acct-conflict">
+        <strong>{{ describe(c) }}</strong>
+        <small>{{ when(c.detectedAt) }}<ng-container *ngIf="c.deleted"> · {{ 'a delete that lost to a newer edit' | t }}</ng-container></small>
+      </div>
+      <div class="acct-actions">
+        <button class="acct-small" *ngIf="!c.deleted" (click)="conflictService.restore(c)">{{ 'Restore this version' | t }}</button>
+        <button class="acct-small" (click)="conflictService.dismiss(c.id)">{{ 'Dismiss' | t }}</button>
+      </div>
+    </div>
+  </ng-container>
+</section>

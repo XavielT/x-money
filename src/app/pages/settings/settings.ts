@@ -13,11 +13,16 @@ import { RecurringService } from '../../../shared/services/recurring.service';
 import { ExportService } from '../../../shared/services/export.service';
 import { LockService } from '../../../shared/services/lock.service';
 import { AppLanguage, TranslateService } from '../../../shared/services/translate.service';
+import { AuthService } from '../../../shared/services/auth.service';
+import { SyncService } from '../../../shared/services/sync.service';
+import { StorageService } from '../../../shared/services/storage.service';
+import { BackupReminderService } from '../../../shared/services/backup-reminder.service';
+import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
@@ -44,7 +49,11 @@ export class SettingsComponent {
     public categoryService: CategoryService,
     public recurringService: RecurringService,
     public lock: LockService,
-    public translate: TranslateService
+    public translate: TranslateService,
+    public auth: AuthService,
+    private sync: SyncService,
+    private storage: StorageService,
+    private reminder: BackupReminderService
   ) {}
 
   abs(value: number): number {
@@ -121,6 +130,7 @@ export class SettingsComponent {
       this.settingsService.exportData(),
       'application/json'
     );
+    this.reminder.markExported();
   }
 
   async exportCsv(): Promise<void> {
@@ -132,24 +142,54 @@ export class SettingsComponent {
     );
   }
 
-  onImportFile(event: Event): void {
+  // Importing goes through the data layer, so it syncs like any edit: with an account it
+  // replaces the data on every device. A backup of the current data is saved first.
+  async onImportFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    file.text().then((text) => {
-      if (this.settingsService.importData(text)) {
-        alert(this.translate.instant('Backup restored.'));
-        location.reload();
-      } else {
-        alert(this.translate.instant('That file is not a valid X Money backup.'));
+    const text = await file.text();
+    const warning =
+      this.auth.mode() === 'local'
+        ? 'Import this backup? It replaces the data on this device. A backup of the current data is saved first.'
+        : 'Import this backup? It replaces your data on ALL your devices. A backup of the current data is saved first.';
+    if (!confirm(this.translate.instant(warning))) {
+      input.value = '';
+      return;
+    }
+    try {
+      await this.exportData(); // safety copy of what is there now
+    } catch {
+      if (!confirm(this.translate.instant('The safety backup could not be saved. Import anyway?'))) {
         input.value = '';
+        return;
       }
-    });
+    }
+    if (this.settingsService.importData(text)) {
+      await this.storage.flush(); // make sure the copy is on disk before reloading
+      alert(this.translate.instant('Backup restored.'));
+      location.reload();
+    } else {
+      alert(this.translate.instant('That file is not a valid X Money backup.'));
+      input.value = '';
+    }
   }
 
-  wipeData(): void {
-    if (!confirm(this.translate.instant('Delete ALL data? This cannot be undone.'))) return;
-    this.settingsService.wipeData();
-    location.reload();
+  // Local-only mode: wipes the data of this device. With an account the server copy must
+  // never be deleted from here, so this only removes the copy on this device and signs out.
+  async wipeData(): Promise<void> {
+    if (this.auth.mode() === 'local') {
+      if (!confirm(this.translate.instant('Delete ALL data? This cannot be undone.'))) return;
+      this.settingsService.wipeData();
+      await this.storage.flush();
+      location.reload();
+      return;
+    }
+    if (this.sync.pending() > 0) {
+      alert(this.translate.instant('You have changes that are not synced yet. Sync or export a backup first.'));
+      return;
+    }
+    if (!confirm(this.translate.instant('Remove the data from this device and sign out? Your data stays in your account.'))) return;
+    await this.auth.logout({ eraseLocal: true });
   }
 }
