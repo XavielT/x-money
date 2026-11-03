@@ -4,6 +4,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
+    "rewriteRelativeImportExtensions": true,
     "types": [
       "vitest/globals"
     ]
