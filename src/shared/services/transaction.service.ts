@@ -40,14 +40,19 @@ export class TransactionService {
     private accountService: AccountService
   ) {
     this._transactions.set(this.storage.get<TransactionModel[]>('transactions', []));
+    // changes downloaded from another device
+    this.storage.watch('transactions', (v) => this._transactions.set((v as TransactionModel[] | undefined) ?? []));
   }
 
   byId(id: string): TransactionModel | undefined {
     return this._transactions().find((t) => t.id === id);
   }
 
-  add(data: Omit<TransactionModel, 'id'>): void {
-    const transaction: TransactionModel = { ...data, id: crypto.randomUUID() };
+  // An explicit id makes the call idempotent (recurring occurrences use a deterministic
+  // one so two devices posting the same occurrence do not create duplicates)
+  add(data: Omit<TransactionModel, 'id'> & { id?: string }): void {
+    if (data.id && this._transactions().some((t) => t.id === data.id)) return;
+    const transaction: TransactionModel = { ...data, id: data.id ?? crypto.randomUUID() };
     this._transactions.update((list) => [transaction, ...list]);
     this.persist();
   }

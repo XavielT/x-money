@@ -22,6 +22,11 @@ export class SettingsService {
     const saved = this.storage.get<SettingsState>('settings', { currency: '$' });
     this._currency.set(saved.currency);
     this._taxPercent.set(saved.taxPercent ?? 0.2);
+    this.storage.watch('settings', (v) => {
+      const next = (v as SettingsState | undefined) ?? { currency: '$' };
+      this._currency.set(next.currency);
+      this._taxPercent.set(next.taxPercent ?? 0.2);
+    });
   }
 
   setCurrency(symbol: string): void {

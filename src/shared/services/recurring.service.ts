@@ -13,6 +13,7 @@ export class RecurringService {
     private transactionService: TransactionService
   ) {
     this._recurring.set(this.storage.get<RecurringModel[]>('recurring', []));
+    this.storage.watch('recurring', (v) => this._recurring.set((v as RecurringModel[] | undefined) ?? []));
     this.processDue();
   }
 
@@ -28,6 +29,7 @@ export class RecurringService {
       let guard = 0; // safety cap if the phone was off for very long
       while (next <= today && guard < 500) {
         this.transactionService.add({
+          id: `rec-${rule.id}-${next}`,
           type: rule.type,
           amount: rule.amount,
           categoryId: rule.categoryId,

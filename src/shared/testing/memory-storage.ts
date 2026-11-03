@@ -32,6 +32,14 @@ export class MemoryStorage {
     this.data.clear();
   }
 
+  refresh(): void {
+    /* no watchers in the memory stub */
+  }
+
+  watch(): () => void {
+    return () => undefined;
+  }
+
   seed(values: Record<string, unknown>): this {
     for (const [key, value] of Object.entries(values)) this.data.set(key, JSON.stringify(value));
     return this;
@@ -41,7 +49,7 @@ export class MemoryStorage {
 // Starts a fresh "app session" on top of the given storage: new service
 // instances that read whatever the previous session persisted. Recurring
 // catch-up runs when RecurringService is first injected.
-export function boot(storage: MemoryStorage = new MemoryStorage()) {
+export function boot<S extends object = MemoryStorage>(storage: S = new MemoryStorage() as unknown as S) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [{ provide: StorageService, useValue: storage as unknown as StorageService }],

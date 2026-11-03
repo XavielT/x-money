@@ -154,14 +154,18 @@ describe('C4 recurring catch-up (R9)', () => {
     expect(back.transactions.transactions().some((t) => t.date > '2026-11-03')).toBe(true);
   });
 
-  it('KNOWN GAP: transactions and rule are saved separately, a failed save duplicates on next start (AUDITORIA §2/C4)', () => {
+  it('a failed rule save no longer duplicates: occurrences have deterministic ids (fixed in 2.6.0, was a KNOWN GAP)', () => {
     const storage = new MemoryStorage().seed({ accounts: [bank], recurring: [rule] });
     storage.failOnSet.add('recurring'); // e.g. localStorage quota exceeded
     expect(() => boot(storage)).toThrow();
     expect(storage.get<unknown[]>('transactions', [])).toHaveLength(2); // already persisted
     storage.failOnSet.clear();
     const next = boot(storage);
-    expect(next.transactions.transactions()).toHaveLength(4); // 2 duplicated
+    expect(next.transactions.transactions()).toHaveLength(2); // same ids: nothing duplicated
+    expect(next.transactions.transactions().map((t) => t.id).sort()).toEqual([
+      `rec-${rule.id}-2026-10-01`,
+      `rec-${rule.id}-2026-11-01`,
+    ]);
   });
 
   it('KNOWN GAP: a rule keeps posting to an account that no longer exists (AUDITORIA §2/C5)', () => {

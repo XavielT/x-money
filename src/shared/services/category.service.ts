@@ -19,6 +19,7 @@ export class CategoryService {
     const missing = DEFAULT_CATEGORIES_MOCK.filter((d) => !saved.some((c) => c.id === d.id));
     this._categories.set([...saved, ...missing]);
     if (!saved.length || missing.length) this.persist();
+    this.storage.watch('categories', (v) => this._categories.set((v as CategoryModel[] | undefined) ?? []));
   }
 
   byId(id: string): CategoryModel | undefined {

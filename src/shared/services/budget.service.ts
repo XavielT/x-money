@@ -9,6 +9,7 @@ export class BudgetService {
 
   constructor(private storage: StorageService) {
     this._budgets.set(this.storage.get<BudgetModel[]>('budgets', []));
+    this.storage.watch('budgets', (v) => this._budgets.set((v as BudgetModel[] | undefined) ?? []));
   }
 
   byCategoryId(categoryId: string): BudgetModel | undefined {

@@ -43,6 +43,7 @@ export class AccountService {
       this._accounts.set(DEFAULT_ACCOUNTS_MOCK);
       this.persist();
     }
+    this.storage.watch('accounts', (v) => this._accounts.set((v as AccountModel[] | undefined) ?? []));
   }
 
   byId(id: string): AccountModel | undefined {
