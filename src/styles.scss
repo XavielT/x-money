@@ -71,7 +71,9 @@ a {
 .x-page {
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px 16px 96px;
+  // env(safe-area-inset-*): notch and home bar on iPhone (0 elsewhere)
+  padding: calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(96px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
 }
 
 .x-page-title {
