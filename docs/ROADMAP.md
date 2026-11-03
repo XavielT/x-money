@@ -1,0 +1,22 @@
+# Roadmap — ronda de noviembre 2026
+
+Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado en el teléfono.**
+
+| Prompt | Tema | Versión destino | Estado |
+|---|---|---|---|
+| 00 | Fundamentos: auditoría, documentación y base de pruebas | 2.5.2 | **hecho** (pendiente de commit y de prueba en el teléfono) |
+| 00b | Cuenta, base de datos en x-core y sincronización | 2.6.0 | pendiente |
+| 01 | Integridad financiera P0 | 2.7.0 | pendiente |
+| 02 | Tarjetas de crédito | 2.8.0 | pendiente |
+| 03 | Ingresos y beneficios laborales | 2.9.0 | pendiente |
+| 04 | Gastos, categorías y presupuestos | 2.10.0 | pendiente |
+| 05 | Dashboard | 2.11.0 | pendiente |
+| 06 | Negocios e inventario | 2.12.0 | pendiente |
+| 07 | Ahorros y objetivos | 2.13.0 | pendiente |
+| 08 | Préstamos | 2.14.0 | pendiente |
+| 09 | Inteligencia determinística | 2.15.0 | pendiente |
+| 10 | Infraestructura de IA | 2.16.0 | pendiente |
+| 11 | IA en los módulos | 2.17.0 | pendiente |
+
+Prioridad de fondo: P0 integridad → P1 control → P2 negocios → P3 planificación → P4 inteligencia (`docs/VISION.md`).
+La versión vive en `android/app/build.gradle` (`versionName`/`versionCode`) y en el mensaje de commit `vX.Y.Z: …`.

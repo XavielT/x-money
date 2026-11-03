@@ -1,0 +1,22 @@
+# shared/domain
+
+Pure financial logic. Nothing in here may import Angular, Capacitor, a service
+or storage; it takes plain data in and returns plain data out.
+
+**Goes here**
+- Balance, summary, statement, amortization, projection and budget calculations.
+- Rules that decide what counts as income, expense, transfer or card payment.
+- Anything that adds or compares money: use `shared/utils/money.ts` (2 decimals,
+  one currency at a time; RD$ and US$ are never mixed or converted).
+
+**Does not go here**
+- Signals, `StorageService`, HTTP/sync, `TranslateService`, components.
+- Formatting for display (pages and pipes do that).
+
+**Rules**
+- Every function has a vitest spec next to it covering zero, negatives,
+  rounding, month end, leap years, USD vs DOP and empty lists.
+- Anything that is a projection or inference returns an explicit estimate
+  marker plus its assumptions; never present it as a confirmed figure.
+- Services (signals) call these functions; components only display the result.
+- Build test data with `shared/testing/builders.ts`.
