@@ -29,9 +29,12 @@ export type AuditType =
   | 'category'
   | 'budget-move'
   | 'budget-move-undo'
-  | 'bucket';
+  | 'bucket'
+  | 'business-operation'
+  | 'business-sale'
+  | 'business-withdrawal';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget' | 'business';
 
 export interface AuditEvent {
   id: string;

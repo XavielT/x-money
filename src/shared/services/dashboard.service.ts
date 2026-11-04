@@ -26,6 +26,7 @@ import { isCounted, summarize } from '../domain/stats';
 import { addMoney, round2, sumMoney } from '../utils/money';
 import { AccountService } from './account.service';
 import { BudgetService } from './budget.service';
+import { BusinessService } from './business.service';
 import { CategoryService } from './category.service';
 import { CreditCardService } from './credit-card.service';
 import { FixedExpenseService } from './fixed-expense.service';
@@ -47,6 +48,9 @@ export class DashboardService {
   private _external = signal<ExternalFigures>({});
   external = this._external.asReadonly();
 
+  // what the modules hand over (provide) plus what the business module knows by itself
+  private figures = computed<ExternalFigures>(() => ({ ...this._external(), ...this.business.dashboardFigures() }));
+
   constructor(
     private transactions: TransactionService,
     private accounts: AccountService,
@@ -57,7 +61,8 @@ export class DashboardService {
     private incomeSources: IncomeSourceService,
     private budget: BudgetService,
     private fixed: FixedExpenseService,
-    private settings: SettingsService
+    private settings: SettingsService,
+    private business: BusinessService
   ) {}
 
   // The contract for prompts 06 (business), 07 (savings goals) and 08 (loans): they hand over
@@ -138,7 +143,7 @@ export class DashboardService {
       if (t.origin === 'card-payment') cardPayments = addMoney(cardPayments, t.amount);
       else transfers = addMoney(transfers, t.amount);
     }
-    const hasData = txs.some((t) => t.type === 'expense');
+    const hasData = txs.some((t) => t.type === 'expense' && isCounted(t));
     return {
       id: 'expenses',
       label: 'Expenses this month',
@@ -161,8 +166,8 @@ export class DashboardService {
 
   private commercialProfitIndicator(): Indicator {
     const b = this.incomeBreakdown();
-    const ext = this._external().commercialProfit;
-    const hasCommercial = b.commercialGross > 0 || b.commercialWithoutCost > 0 || this.incomeSources.sources().some((s) => ['commercial-sales', 'vehicle-trade', 'parts-accessories'].includes(s.kind));
+    const ext = this.figures().commercialProfit;
+    const hasCommercial = this.business.hasOperations() || b.commercialGross > 0 || b.commercialWithoutCost > 0 || this.incomeSources.sources().some((s) => ['commercial-sales', 'vehicle-trade', 'parts-accessories'].includes(s.kind));
     const base = { id: 'commercial-profit' as const, label: 'Commercial profit', display: 'money' as const, currency: 'DOP' as const, sources: ['IncomeService.monthBreakdown'], estimate: false };
     if (ext) {
       return { ...base, value: ext.value, components: ext.components ?? [money('Net benefit of the month (business module)', ext.value)], formula: 'Net benefit of the month: sale price − cost − expenses of each operation.', available: true };
@@ -181,7 +186,7 @@ export class DashboardService {
   }
 
   private businessCapitalIndicator(): Indicator {
-    const ext = this._external().businessCapital;
+    const ext = this.figures().businessCapital;
     return {
       id: 'business-capital',
       label: 'Capital invested in business',
@@ -206,7 +211,7 @@ export class DashboardService {
       cardDue = addMoney(cardDue, this.cards.remainingOf(s));
     }
     const fixedPending = this.fixed.summary().pendingThisMonth;
-    const reserved = this._external().goalsReserved?.value ?? 0;
+    const reserved = this.figures().goalsReserved?.value ?? 0;
     const value = availableMoney(liquid, [cardDue, fixedPending], reserved);
     return {
       id: 'available',
@@ -218,7 +223,7 @@ export class DashboardService {
         money('Liquid net worth', liquid, 'data', 'Cash, bank and savings accounts.'),
         money('Card payments due in 30 days', -cardDue, 'data'),
         money('Fixed obligations still to pay this month', -fixedPending, 'data', 'From your recurring expenses.'),
-        this._external().goalsReserved ? money('Set aside in goals', -reserved, 'data') : money('Set aside in goals', null, 'excluded', 'Not part of the formula until the savings goals exist.'),
+        this.figures().goalsReserved ? money('Set aside in goals', -reserved, 'data') : money('Set aside in goals', null, 'excluded', 'Not part of the formula until the savings goals exist.'),
         money('Non-monetary benefits', null, 'excluded', 'Never cash (rule 4).'),
       ],
       formula: 'Liquid net worth − card payments due in the next 30 days − fixed obligations still to pay this month − money set aside in goals.',
@@ -230,7 +235,7 @@ export class DashboardService {
 
   private savingsIndicator(): Indicator {
     const accounts = this.accounts.activeAccounts().filter((a) => a.type === 'savings');
-    const ext = this._external().goalsSaved;
+    const ext = this.figures().goalsSaved;
     const inAccounts = sumMoney(accounts.map((a) => this.transactions.accountBalance(a.id, 'DOP')));
     return {
       id: 'savings',
@@ -251,7 +256,7 @@ export class DashboardService {
 
   private debtsIndicator(): Indicator {
     const cards = this.cards.cards();
-    const loans = this._external().loanBalance;
+    const loans = this.figures().loanBalance;
     const owed = this.cards.totalOwed();
     const parts = cards.filter((c) => this.cards.debtOf(c, 'DOP').owed > 0).map((c) => money(c.name, this.cards.debtOf(c, 'DOP').owed));
     return {
@@ -307,7 +312,7 @@ export class DashboardService {
 
   private netWorthIndicator(): Indicator {
     const nw = this.netWorth.summary();
-    const capital = this._external().commercialWorkingCapital;
+    const capital = this.figures().commercialWorkingCapital;
     return {
       id: 'net-worth',
       label: 'Financial net worth',

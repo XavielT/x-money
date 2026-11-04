@@ -251,6 +251,11 @@ export interface MonthBreakdown {
   commercialNetBenefit: number; // only sales with a declared cost
   commercialWithoutCost: number; // how many sales have no cost yet (their benefit is unknown, not zero)
   unclassified: number; // income with no source: not counted as personal until classified
+  // Business operations (2.12.0): their revenue is in commercialGross and ONLY their net profit in
+  // commercialNetBenefit; the recovered cost is working capital and never personal income.
+  businessRevenue: number;
+  businessNetProfit: number;
+  businessByKind: Partial<Record<IncomeKind, { revenue: number; netProfit: number }>>;
   // "available income" = personalNet + commercialNetBenefit. The recovered cost of sales is
   // working capital, not personal income.
   available: number;
@@ -264,7 +269,8 @@ export function monthBreakdown(
   sources: readonly IncomeSourceModel[],
   year: number,
   month: number,
-  today: string
+  today: string,
+  businessSales: readonly { date: string; price: number; netProfit: number; kind: IncomeKind }[] = []
 ): MonthBreakdown {
   const prefix = `${year}-${String(month).padStart(2, '0')}`;
   const byId = new Map(sources.map((s) => [s.id, s]));
@@ -291,8 +297,23 @@ export function monthBreakdown(
       personalByKind[source.kind] = addMoney(personalByKind[source.kind] ?? 0, t.amount);
     }
   }
+  let businessRevenue = 0;
+  let businessNetProfit = 0;
+  const businessByKind: MonthBreakdown['businessByKind'] = {};
+  for (const s of businessSales) {
+    if (!s.date.startsWith(prefix)) continue;
+    businessRevenue = addMoney(businessRevenue, s.price);
+    businessNetProfit = addMoney(businessNetProfit, s.netProfit);
+    const k = businessByKind[s.kind] ?? { revenue: 0, netProfit: 0 };
+    businessByKind[s.kind] = { revenue: addMoney(k.revenue, s.price), netProfit: addMoney(k.netProfit, s.netProfit) };
+  }
+  commercialGross = addMoney(commercialGross, businessRevenue);
+  commercialNetBenefit = addMoney(commercialNetBenefit, businessNetProfit);
   const capacity = incomeCapacity(sources, txs, today);
   return {
+    businessRevenue,
+    businessNetProfit,
+    businessByKind,
     personalNet,
     personalByKind,
     commercialGross,

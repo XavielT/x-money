@@ -463,6 +463,19 @@ export class TransactionService {
     return changed;
   }
 
+  // A manual commercial sale becomes part of a business operation WITHOUT duplicating the
+  // income: the same movement changes scope (business) and origin, and stops being personal income.
+  markBusinessSale(id: string, operationId: string): TxResult {
+    if (this.storage.readOnly()) return fail('read-only');
+    const t = this.byId(id);
+    if (!t) return fail('not-found');
+    if (t.type !== 'income' || t.status === 'reversed' || t.scope === 'business') return fail('not-a-pair');
+    const next: TransactionModel = { ...t, scope: 'business', origin: 'business-sale', businessOperationId: operationId, incomeSourceId: undefined, updatedAt: this.nowIso() };
+    this.commit(this._transactions().map((x) => (x.id === id ? next : x)));
+    this.audit.log({ type: 'edit', entity: 'transaction', entityId: id, accountId: t.accountId, before: summarizeTransaction(t), after: { ...summarizeTransaction(next), scope: 'business' }, origin: 'business-conversion' });
+    return ok(id);
+  }
+
   // Confirmed recurring-income pattern (prompt 03 links it to an income source)
   tagIncomePattern(ids: readonly string[], key: string): void {
     const set = new Set(ids);

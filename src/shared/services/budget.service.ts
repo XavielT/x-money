@@ -32,6 +32,7 @@ import { lastCompleteMonths, localIso } from '../domain/dates';
 import { natureOfCategory } from '../domain/categories';
 import { addMoney, round2, sumMoney } from '../utils/money';
 import { AuditLogService } from './audit-log.service';
+import { BusinessService } from './business.service';
 import { CategoryService } from './category.service';
 import { FixedExpenseService } from './fixed-expense.service';
 import { IncomeService } from './income.service';
@@ -99,7 +100,8 @@ export class BudgetService {
     private income: IncomeService,
     private netWorth: NetWorthService,
     private fixed: FixedExpenseService,
-    private audit: AuditLogService
+    private audit: AuditLogService,
+    private business: BusinessService
   ) {
     this._budgets.set(this.storage.get<BudgetModel[]>('budgets', []));
     this._buckets.set(this.storage.get<BudgetBucketModel[]>('buckets', []));
@@ -212,7 +214,8 @@ export class BudgetService {
     const all = this.buckets();
     return all.map((bucket) => {
       const limit = adjustedLimit(bucketLimit(bucket, base), this._moves(), { type: 'bucket', id: bucket.kind }, key);
-      const spent = bucketSpent(bucket, all, totals, key);
+      // the business-capital block counts what was put into inventory this month, plus what was added by hand
+      const spent = bucketSpent(bucket, all, totals, key) + (bucket.kind === 'business-capital' ? this.business.purchasesInMonth(year, month) : 0);
       return { bucket, limit, spent, remaining: round2(limit - spent), risk: budgetRisk(limit, spent, this.today(), year, month, this.settings.budget().riskAt) };
     });
   }

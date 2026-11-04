@@ -24,6 +24,7 @@ import {
 import { TxResult } from '../domain/validation';
 import { AccountService } from './account.service';
 import { IncomeSourceService } from './income-source.service';
+import { BusinessService } from './business.service';
 import { RecurringService } from './recurring.service';
 import { SettingsService } from './settings.service';
 import { TransactionService } from './transaction.service';
@@ -55,7 +56,7 @@ export class IncomeService {
 
   // What the other modules read for a month (available income = personal net + commercial net benefit)
   monthBreakdown(year: number, month: number): MonthBreakdown {
-    return monthBreakdown(this.transactions.transactions(), this.incomeSources.sources(), year, month, this.today());
+    return monthBreakdown(this.transactions.transactions(), this.incomeSources.sources(), year, month, this.today(), this.business.saleFacts());
   }
 
   capacity = computed<IncomeCapacity>(() => incomeCapacity(this.incomeSources.sources(), this.transactions.transactions(), this.today()));
@@ -104,7 +105,8 @@ export class IncomeService {
     private transactions: TransactionService,
     private accounts: AccountService,
     private recurring: RecurringService,
-    private settings: SettingsService
+    private settings: SettingsService,
+    private business: BusinessService
   ) {
     this.sources = this.incomeSources.sources; // not in the initializer: parameter properties are not assigned yet there
   }

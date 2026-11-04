@@ -36,6 +36,9 @@ const BASE_CATEGORIES: CategoryModel[] = [
   { id: 'cat-family', name: 'Family expenses', icon: '👨‍👩‍👧', color: '#ec407a', type: 'expense' },
   { id: 'cat-vehicle-maintenance', name: 'Vehicle maintenance', icon: '🔧', color: '#6d4c41', type: 'expense' },
   { id: 'cat-occasional', name: 'Occasional purchases', icon: '🛒', color: '#26c6da', type: 'expense' },
+  // Business module (2.12.0): app-managed, hidden from the pickers; business movements are not personal spending
+  { id: 'cat-working-capital', name: 'Working capital (inventory)', icon: '📦', color: '#8d6e63', type: 'expense', system: true },
+  { id: 'cat-business-expense', name: 'Business operation expense', icon: '🧰', color: '#8d6e63', type: 'expense', system: true },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },
