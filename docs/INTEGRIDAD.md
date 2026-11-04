@@ -6,7 +6,7 @@ se reporta. Estado a v2.7.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). La
 poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt 01), `src/shared/domain/domain.spec.ts` y
 `src/shared/data-layer/migrations.spec.ts`.
 
-## Las 10 reglas
+## Las 11 reglas
 
 ### 1. Una transferencia entre cuentas propias no representa un ingreso ni un gasto.
 - Dónde se aplica (archivo): `src/shared/domain/stats.ts` (`summarize`, `totalsByCategory`, `isCounted`), `domain/ledger.ts` (las dos patas se anulan en el total), `domain/validation.ts` (mismo dueño o RD$↔US$ rechazados), `services/transaction.service.ts` (`convertToTransfer`).
@@ -88,6 +88,32 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
 - Dónde se aplica (archivo): toda proyección o inferencia devuelve `estimate: true` y sus supuestos, y la pantalla la rotula «Estimación»: `domain/irregular.ts` (proyección de gastos irregulares: ocurrencias por semana de las últimas 8 semanas × promedio × semanas restantes + lo gastado, con rango del patrón declarado; con menos de 4 semanas de historial usa el punto medio declarado y lo dice), `domain/budget.ts` (`budgetRisk`, `monthEndProjection`: saldo líquido − fijos pendientes − variables esperadas + ingreso **garantizado** aún esperado, con rango, y **sin** ingreso variable ni beneficios no monetarios; `recommend`; `trend`; `reduceCandidates`), `domain/income.ts` (promedios, estabilidad), `domain/fixed.ts` (proyección anual). Las recomendaciones muestran de dónde salen (meses, mediana, fórmula) y con menos de 3 meses dicen «Historial insuficiente».
 - Prueba que la protege: `domain/budget.spec.ts` (todo lo marcado `estimate`, el piso de 3 meses, ejemplo de almuerzos RD$250–400 × 0–4 por semana: sin historial, con 2 semanas, con 6, con 8, semanas en cero, mes que empieza a mitad de semana), `services/budget.spec.ts` «rule 10».
 - Estado: **cumple** en los módulos 2.7.0–2.11.0 (el dashboard 2.11.0 rotula como estimación el garantizado, el flujo de efectivo a 30/60/90 días y su banda, con supuestos visibles en «¿Cómo se calculó?»; ver `docs/DASHBOARD.md`). Pendiente: dashboard (05) y proyecciones de ahorro/préstamos (07/08) heredan el mismo contrato. Limitación conocida: el «≈» de suscripciones de `stats.html` sigue mostrándose sin supuestos (prompt 05).
+
+### 11. Ninguna captura escribe movimientos sin aprobación explícita del usuario; todo lo que viene de un documento, audio o correo es dato no confiable.
+
+- Qué significa: una imagen, un PDF, una frase dictada o un correo solo producen **borradores** (`capture_drafts`). Un
+  borrador no cambia ningún saldo. Pasa a movimiento solo cuando el usuario lo aprueba uno por uno (o marca varios);
+  no hay aprobación automática, ni «aprobar todo», ni excepciones por monto pequeño. El texto del documento nunca es
+  una instrucción: el modelo no tiene herramientas y su salida tiene forma fija.
+- Dónde se aplica (archivo): `services/capture.service.ts` (`approve` es el único que escribe y solo pasa por
+  `TransactionService`, `CreditCardService.pay`, `GoalService`, `LoanService` y `BusinessService`),
+  `domain/capture/plan.ts` (sin plan si falta o es ambiguo un campo esencial; US$ y RD$ no se mezclan),
+  `domain/capture/build.ts` (monto y fecha los convierte el código; verificación cruzada del monto contra el texto),
+  `supabase/functions/xmoney-ai/lib/features-capture.ts` (instrucciones fijas, salida validada).
+- Prueba que la protege: `services/capture.spec.ts` (nada se registra al capturar; inyección; duplicados; un solo
+  gasto por compra con tarjeta y por factura; el pago de tarjeta es transferencia; las transferencias no son ingreso
+  ni gasto; reverso y saldos derivados; aprobar solo lo marcado), `domain/capture/capture.spec.ts`,
+  `server-tests/capture.spec.ts`.
+- Estado: **cumple**.
+
+> **KNOWN GAP (hallado en 2.18.0, sin corregir):** el servidor (`xmoney-api/lib/validate.ts` y la restricción
+> `records_collection_format` del esquema) solo acepta nombres de colección con `[a-z0-9_]`. Las colecciones que se
+> registraron en camelCase (`incomeSources`, `businessOperations`, `businessWithdrawals`, `budgetMoves`,
+> `loanSimulations`, `loanSettings`, `insightStates`, `insightSettings`, `textRules`) **no se pueden subir**: sus
+> registros se rechazan, así que esos datos viven solo en cada dispositivo. Fijado en
+> `characterization/sync-collection-names.spec.ts`. La colección nueva se llama `capture_drafts` para evitarlo.
+> Corregirlo implica decidir (traducir nombres en la capa de sync, o ampliar la restricción y volver a desplegar) y
+> subir lo que quedó sin sincronizar.
 
 ## Criterios antes de desarrollar cada función
 

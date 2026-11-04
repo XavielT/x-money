@@ -130,3 +130,7 @@ Ver la tabla de "Entidades y claves de almacenamiento" arriba y `src/shared/data
 
 `npm test` (vitest vía `@angular/build:unit-test`; incluye `src/server-tests/` con la lógica de `xmoney-api` y `src/shared/data-layer/` con la sincronización contra un servidor en memoria). `shared/testing/` tiene builders y `MemoryStorage` + `boot()`
 para arrancar servicios sobre un almacenamiento en memoria; `shared/characterization/` fija el comportamiento actual.
+
+## Captura inteligente (2.18.0)
+
+`capture_drafts` (sincronizada, nombre en snake_case porque el servidor solo acepta `[a-z0-9_]`) guarda las propuestas; `capture-queue`, `capture-originals` y `capture-prefs` son solo del dispositivo (archivos, miniaturas y filtro de correo: nunca salen). Flujo: `CaptureService.submit` → `AiService.run(capture_parse)` (ruta de documentos: sin caché, interruptor propio) → `domain/capture/schema.ts` → `build.ts` → borrador; `approve` ejecuta el `plan.ts` por los servicios de cada módulo. `xmoney-ai` recibe imagen/PDF/texto (cuerpo hasta 8 MB, tope propio por función); `xmoney-mail` es un conector aparte (Gmail, solo lectura). Detalle en `docs/CAPTURA.md`.

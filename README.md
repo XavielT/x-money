@@ -38,6 +38,7 @@ and architecture, and `docs/` for the architecture, integrity rules, roadmap and
 - 👛 Multiple accounts (Cash, Card, custom) with initial balances
 - 💱 Currency symbol setting ($, RD$, €, £, ¥)
 - 💾 JSON backup export/import · wipe data
+- 📷 Smart capture (opt-in, off by default): turn a bank-notice screenshot, an invoice (image or PDF), your voice, pasted text or your email into a **draft you approve** — nothing is registered on its own. It is the one AI function that sends the document itself, so it has its own switch and consent, strips image metadata, lets you black out parts, and the server never stores the document (docs/CAPTURA.md)
 
 ## Development
 

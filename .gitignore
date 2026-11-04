@@ -42,3 +42,7 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Real bank samples of the owner (smart capture evaluation): never committed
+/docs/muestras-bancos/*
+!/docs/muestras-bancos/README.md

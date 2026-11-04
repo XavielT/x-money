@@ -88,6 +88,44 @@ Treinta funciones en ocho módulos (`src/shared/ai/catalog.ts`, lista blanca del
 
 **Balance honesto:** donde la IA aporta valor real es en el texto libre (categorizar notas, normalizar nombres, agrupar artículos, juzgar duplicados dudosos). Las narraciones (la mayoría) solo redactan cifras que ya están en pantalla: su utilidad es de comodidad y se mide con el uso; si pasados dos meses casi no las abres, apágalas por módulo en Ajustes.
 
+## Captura inteligente (2.18.0): la excepción a «solo agregados»
+
+La directriz de 2.16.0 es que a la IA solo salen agregados. **La captura no puede cumplirla**: para leer una
+captura hay que enviar el documento mismo. Es la **única excepción**, explícita y controlada:
+
+- Interruptor propio «Captura inteligente», **apagado por defecto**, separado del general y de los de módulo; al
+  encenderlo, consentimiento que dice qué sale (la imagen/PDF/texto de cada captura, hacia `x-core` y de ahí al
+  proveedor) y qué no (nada más de tu base). Se registra la fecha y se retira apagándolo.
+- Cada captura muestra antes de enviar lo que viajará (con herramienta de recuadros negros) y un botón «Enviar para
+  leer»; «no volver a preguntar» solo oculta la vista previa.
+- Minimización local: imágenes a 1600 px máximo, recomprimidas y sin metadatos; PDF de máximo 5 MB y 10 páginas;
+  texto sin firmas, pies legales ni números largos (se conserva la referencia de la transacción).
+- El servidor (`capture_parse` en la lista blanca de `xmoney-ai`) no guarda el documento ni el texto, no los escribe
+  en registros y no los reenvía; guarda solo metadatos de uso. El tipo se decide por los **bytes**, no por el nombre.
+- El archivo original se borra al aprobar o rechazar; «Guardar comprobante» (apagado) conserva una miniatura local;
+  los comprobantes **no** se sincronizan.
+- Topes: los del 10 más **40 capturas por día** (servidor y dispositivo) y un tope mensual de costo estimado.
+
+### Retención de datos de Anthropic (verificado el 04/11/2026)
+Según el Centro de privacidad de Anthropic (privacy.claude.com, «How long do you store my organization's data?»), las
+entradas y salidas de la API se eliminan del backend de Anthropic **dentro de los 30 días** de recibirse o generarse,
+salvo excepciones: acuerdos de retención cero, servicios con retención bajo tu control (p. ej. Files API),
+violaciones de la política de uso señaladas por sistemas automáticos (hasta 2 años; puntuaciones de clasificación
+hasta 7), comentarios enviados por el usuario (5 años) y lo que exija la ley. **No afirmo nada sobre entrenamiento**:
+esa página no lo dice; si necesitas esa garantía, revisa los términos comerciales vigentes o pide retención cero.
+Para el correo y la voz en navegador, ver `CAPTURA.md` (el reconocimiento de voz del navegador lo hace el fabricante).
+
+### Funciones de captura
+
+| Función | Problema que resuelve | Alternativa determinística | Decisión y criterio | Cómo saber si sirve |
+|---|---|---|---|---|
+| `capture_parse` · imagen/PDF (`captura_imagen_pdf`) | Registrar un consumo, depósito o factura desde una captura sin teclear | El formulario manual de movimientos | **Útil, con consentimiento propio**: lee y propone; tú apruebas (regla 11) | Qué % de borradores apruebas sin editar el monto (si <70 %, no vale la pena) |
+| `capture_parse` · texto/voz (`captura_texto_voz`) | Dictar o pegar «gasté 1.500 en el colmado» y que quede el borrador | **Lectura local sin IA** (`domain/capture/local.ts`: monto, verbo, cuentas por palabras) y el formulario | **Útil**; sin IA igual funciona en versión ligera | Cuántas frases salen sin campos vacíos |
+| `capture_parse` · correo (`captura_correo`) | Encontrar solos los avisos de consumo y depósitos de tus bancos | Captura manual por imagen/texto pegado | **Opcional, apagada por defecto**: requiere Google Cloud y reconectar cada 7 días en modo Testing | Avisos leídos vs. borradores aprobados |
+
+La salida es siempre un JSON de forma fija (validado en el servidor y otra vez en el dispositivo); los montos llegan
+como el texto del documento y los convierte el código; el modelo no tiene herramientas ni ejecuta nada.
+
 ## Guion de humo con la IA real (2.17.0)
 
 Las pruebas automáticas NO llaman al proveedor. Con la función `xmoney-ai` desplegada y `ai_enabled` activo en tu cuenta (docs/SETUP-XCORE.md), en el teléfono o la web:
