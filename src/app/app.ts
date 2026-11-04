@@ -10,6 +10,8 @@ import { RecurringService } from '../shared/services/recurring.service';
 import { LockService } from '../shared/services/lock.service';
 import { AuthService } from '../shared/services/auth.service';
 import { SyncService } from '../shared/services/sync.service';
+import { CreditCardService } from '../shared/services/credit-card.service';
+import { CardNoticeService } from '../shared/services/card-notice.service';
 import { AuthGateComponent } from '../shared/components/auth-gate/auth-gate';
 import { LinkWizardComponent } from '../shared/components/link-wizard/link-wizard';
 import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banner';

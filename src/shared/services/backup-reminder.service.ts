@@ -4,6 +4,7 @@ import { StorageService } from './storage.service';
 interface DevicePrefs {
   lastExportAt?: number;
   reminderDays?: number;
+  cardAlerts?: boolean; // owned by CardNoticeService
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -49,6 +50,7 @@ export class BackupReminderService {
 
   private persist(): void {
     this.storage.set<DevicePrefs>('device-prefs', {
+      ...this.storage.get<DevicePrefs>('device-prefs', {}),
       lastExportAt: this._lastExportAt() ?? undefined,
       reminderDays: this._days(),
     });
