@@ -6,6 +6,7 @@ import { StatsComponent } from './pages/stats/stats';
 import { BudgetsComponent } from './pages/budgets/budgets';
 import { SettingsComponent } from './pages/settings/settings';
 import { AccountsComponent } from './pages/accounts/accounts';
+import { ReconcileComponent } from './pages/reconcile/reconcile';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -16,5 +17,6 @@ export const routes: Routes = [
   { path: 'budgets', component: BudgetsComponent },
   { path: 'settings', component: SettingsComponent },
   { path: 'accounts', component: AccountsComponent },
+  { path: 'reconcile/:id', component: ReconcileComponent },
   { path: '**', redirectTo: '' },
 ];

@@ -1,0 +1,60 @@
+<div class="x-page reconcile">
+  <header class="reconcile-header">
+    <button class="reconcile-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Reconcile account' | t }}</h1>
+  </header>
+
+  <p *ngIf="!account">{{ 'Account not found.' | t }}</p>
+
+  <ng-container *ngIf="account">
+    <p class="reconcile-hint">
+      <b>{{ account.name }}</b> · {{ 'Last reconciled' | t }}: {{ account.reconciledAt || ('Never' | t) }}
+    </p>
+
+    <div class="x-card reconcile-card" *ngIf="!done()">
+      <div class="reconcile-toggle" *ngIf="isDual()">
+        <button [class.active]="currency() === 'DOP'" (click)="currency.set('DOP')">{{ settings.currency() }}</button>
+        <button [class.active]="currency() === 'USD'" (click)="currency.set('USD')">US$</button>
+      </div>
+
+      <label>{{ 'Balance on your bank statement' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" [ngModel]="bankBalance()" (ngModelChange)="bankBalance.set($event === null || $event === '' ? null : +$event)" name="bank" />
+
+      <label>{{ 'Statement date' | t }}</label>
+      <input class="x-input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event)" name="date" />
+
+      <ng-container *ngIf="view() as v">
+        <div class="reconcile-row">
+          <span>{{ 'Calculated balance on that date' | t }}</span>
+          <strong>{{ symbol() }}{{ v.calculated | number:'1.2-2' }}</strong>
+        </div>
+        <div class="reconcile-row">
+          <span>{{ 'Difference' | t }}</span>
+          <strong [class.bad]="v.difference !== 0">{{ v.difference > 0 ? '+' : '' }}{{ symbol() }}{{ v.difference | number:'1.2-2' }}</strong>
+        </div>
+        <p class="reconcile-ok" *ngIf="v.difference === 0">✓ {{ 'Everything matches.' | t }}</p>
+        <p class="reconcile-hint" *ngIf="v.difference !== 0">
+          {{ 'Check the movements below for missing ones (open History to add them), or create an adjustment.' | t }}
+        </p>
+        <button class="x-btn reconcile-small" *ngIf="canAdjust()" (click)="adjust()">{{ 'Create an adjustment' | t }}</button>
+        <p class="reconcile-hint" *ngIf="canAdjust()">{{ 'The adjustment is a visible movement, listed in Change history and left out of income and expenses.' | t }}</p>
+
+        <h2>{{ 'Movements since the last reconciliation' | t }}</h2>
+        <p class="reconcile-hint">{{ 'Tick the ones that appear on your statement.' | t }}</p>
+        <p class="reconcile-hint" *ngIf="!v.pending.length">{{ 'No movements to check.' | t }}</p>
+        <label class="reconcile-tx" *ngFor="let t of v.pending">
+          <input type="checkbox" [checked]="marked().has(t.id)" (change)="toggle(t.id)" />
+          <span>{{ t.date }} · {{ label(t) }}<ng-container *ngIf="t.type === 'transfer'"> {{ accountName(t.accountId) }} → {{ accountName(t.toAccountId) }}</ng-container></span>
+          <strong [class.income]="t.type === 'income'">{{ t.type === 'income' ? '+' : t.type === 'expense' ? '-' : '' }}{{ symbol() }}{{ t.amount | number:'1.2-2' }}</strong>
+        </label>
+
+        <button class="x-btn" (click)="finish()">{{ 'Finish reconciliation' | t }}</button>
+      </ng-container>
+    </div>
+
+    <div class="x-card reconcile-card" *ngIf="done()">
+      <p class="reconcile-ok">✓ {{ 'Reconciliation saved.' | t }}</p>
+      <button class="x-btn" (click)="back()">{{ 'Back' | t }}</button>
+    </div>
+  </ng-container>
+</div>

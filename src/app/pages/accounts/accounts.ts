@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,6 +18,12 @@ import { TransactionService } from '../../../shared/services/transaction.service
 import { SettingsService } from '../../../shared/services/settings.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { bankById } from '../../../shared/data/banks';
+import { NetWorthService } from '../../../shared/services/net-worth.service';
+import { SuggestionsService } from '../../../shared/services/suggestions.service';
+import { NetWorth, defaultLiquid } from '../../../shared/domain/networth';
+import { TransferSuggestion } from '../../../shared/domain/transfers';
+import { Cadence, IncomePatternSuggestion } from '../../../shared/domain/income-patterns';
+import { TxErrorCode } from '../../../shared/domain/validation';
 
 @Component({
   selector: 'app-accounts',
@@ -34,6 +40,7 @@ export class AccountsComponent {
     { key: 'debit', type: 'card', cardKind: 'debit', icon: '💳', label: 'Debit card' },
     { key: 'credit', type: 'card', cardKind: 'credit', icon: '💳', label: 'Credit card' },
     { key: 'savings', type: 'savings', icon: '💰', label: 'Savings' },
+    { key: 'other', type: 'other', icon: '🏷️', label: 'Other account' },
   ];
 
   bankKinds: { kind: BankAccountKind; label: string }[] = [
@@ -53,14 +60,28 @@ export class AccountsComponent {
   formLast4 = '';
   formBalance: number | null = 0;
   bankSearch = signal('');
+  formIcon = '';
+  formLiquid = true;
+  showArchived = signal(false);
+  message = signal('');
+
+  netWorth: Signal<NetWorth>;
+  transferSuggestions: Signal<TransferSuggestion[]>;
+  incomeSuggestions: Signal<IncomePatternSuggestion[]>;
 
   constructor(
     private router: Router,
     private translate: TranslateService,
     public accountService: AccountService,
     public transactionService: TransactionService,
-    public settings: SettingsService
-  ) {}
+    public settings: SettingsService,
+    private netWorthService: NetWorthService,
+    private suggestions: SuggestionsService
+  ) {
+    this.netWorth = netWorthService.summary;
+    this.transferSuggestions = suggestions.transfers;
+    this.incomeSuggestions = suggestions.incomes;
+  }
 
   abs(value: number): number {
     return Math.abs(value);
@@ -125,8 +146,8 @@ export class AccountsComponent {
   // Groups accounts by bank so cards/checking/savings of the same bank sit
   // together instead of a flat list in creation order
   sortedAccounts(): AccountModel[] {
-    const typeOrder: Record<AccountType, number> = { cash: 0, bank: 1, savings: 2, card: 3 };
-    return [...this.accountService.accounts()].sort((a, b) => {
+    const typeOrder: Record<AccountType, number> = { cash: 0, bank: 1, savings: 2, card: 3, other: 4 };
+    return [...this.accountService.activeAccounts()].sort((a, b) => {
       const bankA = this.bankName(a.bankId);
       const bankB = this.bankName(b.bankId);
       if (bankA !== bankB) return bankA.localeCompare(bankB);
@@ -134,6 +155,18 @@ export class AccountsComponent {
       if (orderDiff !== 0) return orderDiff;
       return a.name.localeCompare(b.name);
     });
+  }
+
+  archivedAccounts(): AccountModel[] {
+    return this.accountService.accounts().filter((a) => a.archived);
+  }
+
+  accountName(id: string): string {
+    return this.accountService.byId(id)?.name ?? '?';
+  }
+
+  cadenceLabel(c: Cadence): string {
+    return c === 'weekly' ? 'Weekly' : c === 'biweekly' ? 'Every two weeks' : 'Monthly';
   }
 
   // Bank picker filtered by search text (accent/case-insensitive)
@@ -161,6 +194,8 @@ export class AccountsComponent {
     this.formName = '';
     this.formLast4 = '';
     this.formBalance = 0;
+    this.formIcon = '';
+    this.formLiquid = true;
     this.bankSearch.set('');
     this.showForm.set(true);
   }
@@ -177,6 +212,8 @@ export class AccountsComponent {
     this.formName = account.name;
     this.formLast4 = account.last4 ?? '';
     this.formBalance = account.initialBalance;
+    this.formIcon = account.type === 'other' ? account.icon : '';
+    this.formLiquid = account.liquid ?? defaultLiquid(account.type);
     this.bankSearch.set('');
     this.showForm.set(true);
   }
@@ -192,6 +229,11 @@ export class AccountsComponent {
     if (key !== 'bank') this.formBankKind.set('');
     if (key !== 'credit' && this.formCurrency() === 'dual') this.formCurrency.set('DOP');
     if (key !== 'debit') this.formLinkedId.set('');
+    this.formLiquid = defaultLiquid(this.selectedType().type); // the usual default of each kind, editable
+  }
+
+  isOther(): boolean {
+    return this.selectedType().type === 'other';
   }
 
   isBank(): boolean {
@@ -228,7 +270,7 @@ export class AccountsComponent {
 
   isValid(): boolean {
     if (!this.formName.trim()) return false;
-    if (!this.isCash() && !this.formBankId()) return false;
+    if (!this.isCash() && !this.isOther() && !this.formBankId()) return false;
     if (this.formLast4 && !/^\d{4}$/.test(this.formLast4.trim())) return false;
     return true;
   }
@@ -240,7 +282,9 @@ export class AccountsComponent {
       name: this.formName.trim(),
       type: selected.type,
       cardKind: selected.cardKind,
-      bankId: selected.type === 'cash' ? undefined : this.formBankId() || undefined,
+      bankId: selected.type === 'cash' || selected.type === 'other' ? undefined : this.formBankId() || undefined,
+      icon: selected.type === 'other' ? this.formIcon.trim() || undefined : undefined,
+      liquid: this.formLiquid,
       bankKind: selected.type === 'bank' && this.formBankKind() ? (this.formBankKind() as BankAccountKind) : undefined,
       last4: selected.type === 'card' && this.formLast4.trim() ? this.formLast4.trim() : undefined,
       currency: this.formCurrency(),
@@ -250,22 +294,70 @@ export class AccountsComponent {
     };
     if (this.editingId) {
       const existing = this.accountService.byId(this.editingId);
-      if (existing) this.accountService.update({ ...existing, ...data });
+      if (existing) this.accountService.update({ ...existing, ...data, icon: data.icon ?? existing.icon });
     } else {
       this.accountService.add(data);
     }
     this.cancelForm();
   }
 
+  // Accounts with movements are archived, never deleted; an empty one can be deleted
   delete(): void {
     if (!this.editingId) return;
     if (this.accountService.accounts().length <= 1) {
       alert(this.translate.instant('You need at least one account.'));
       return;
     }
-    if (!confirm(this.translate.instant('Remove this account? Its transactions will keep showing as "Unknown" account.'))) return;
+    if (!this.transactionService.canDeleteAccount(this.editingId)) {
+      alert(this.translate.instant('This account has movements, so it cannot be deleted. Archive it instead: it disappears from lists and totals and keeps its history.'));
+      return;
+    }
+    if (!confirm(this.translate.instant('Delete this empty account?'))) return;
     this.accountService.remove(this.editingId);
     this.cancelForm();
+  }
+
+  archive(): void {
+    if (!this.editingId) return;
+    if (this.accountService.activeAccounts().length <= 1) {
+      alert(this.translate.instant('You need at least one account.'));
+      return;
+    }
+    if (!confirm(this.translate.instant('Archive this account? It disappears from lists and totals and keeps its history.'))) return;
+    this.accountService.setArchived(this.editingId, true);
+    this.cancelForm();
+  }
+
+  unarchive(account: AccountModel): void {
+    this.accountService.setArchived(account.id, false);
+  }
+
+  reconcile(account: AccountModel, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/reconcile', account.id]);
+  }
+
+  // ----- suggestions (nothing happens until the user confirms)
+
+  convertTransfer(s: TransferSuggestion): void {
+    const result = this.suggestions.convertTransfer(s);
+    this.message.set(result.ok ? this.translate.instant('Converted to a transfer. You can undo it in Settings → Change history.') : this.translate.instant(this.errorKey(result.error)));
+  }
+
+  dismissTransfer(s: TransferSuggestion): void {
+    this.suggestions.dismissTransfer(s);
+  }
+
+  confirmIncome(s: IncomePatternSuggestion): void {
+    this.suggestions.confirmIncome(s);
+  }
+
+  dismissIncome(s: IncomePatternSuggestion): void {
+    this.suggestions.dismissIncome(s);
+  }
+
+  private errorKey(code: TxErrorCode): string {
+    return code === 'reconciled' ? 'This movement is reconciled with your bank statement.' : 'These movements cannot be converted.';
   }
 
   viewTransactions(account: AccountModel, event: Event): void {

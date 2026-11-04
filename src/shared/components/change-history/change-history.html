@@ -1,0 +1,31 @@
+<section class="history">
+  <h2>{{ 'Change history' | t }}</h2>
+  <p class="history-hint">{{ 'Everything that changed your money data: created, edited, reversed or deleted movements, reconciliations, imports and migrations. Read only.' | t }}</p>
+  <p class="history-hint" *ngIf="trimmed()">{{ 'Only the latest events are kept; older ones were trimmed.' | t }}</p>
+
+  <div class="history-filters">
+    <select class="x-input" [ngModel]="accountFilter()" (ngModelChange)="accountFilter.set($event)" name="hAccount">
+      <option value="">{{ 'All accounts' | t }}</option>
+      <option *ngFor="let acc of accountService.accounts()" [value]="acc.id">{{ acc.name }}</option>
+    </select>
+    <select class="x-input" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)" name="hType">
+      <option value="">{{ 'All types' | t }}</option>
+      <option *ngFor="let type of types" [value]="type">{{ label(type) | t }}</option>
+    </select>
+  </div>
+
+  <p class="history-hint" *ngIf="message()">{{ message() }}</p>
+  <p class="history-hint" *ngIf="!filtered().length">{{ 'No events yet.' | t }}</p>
+
+  <div class="history-event x-card" *ngFor="let e of visible()">
+    <div class="history-row">
+      <strong>{{ label(e.type) | t }}</strong>
+      <small>{{ when(e.at) }}</small>
+    </div>
+    <small class="history-detail">{{ accountName(e.accountId) }}<ng-container *ngIf="accountName(e.accountId)"> · </ng-container>{{ summary(e) }}</small>
+    <small class="history-detail">{{ e.origin }} · {{ e.deviceId.slice(0, 8) }}</small>
+    <button class="history-small" *ngIf="e.type === 'convert-transfer'" (click)="undo(e)">{{ 'Undo conversion' | t }}</button>
+  </div>
+
+  <button class="history-small" *ngIf="filtered().length > shown()" (click)="shown.set(shown() + 50)">{{ 'Show more' | t }}</button>
+</section>

@@ -1,10 +1,16 @@
 <!-- One transaction row, taps through to the edit form -->
-<a class="transaction-item" [routerLink]="['/edit', transaction.id]">
+<a class="transaction-item" [class.reversed]="transaction.status === 'reversed'" [routerLink]="['/edit', transaction.id]">
+  <ng-template #tags>
+    <small class="transaction-item-tag" *ngIf="transaction.status === 'reversed' && transaction.reversedBy">{{ 'Reversed' | t }}</small>
+    <small class="transaction-item-tag" *ngIf="transaction.origin === 'reversal'">{{ 'Reversal' | t }}</small>
+    <small class="transaction-item-tag" *ngIf="transaction.origin === 'adjustment'">{{ 'Adjustment' | t }}</small>
+    <small class="transaction-item-tag ok" *ngIf="transaction.reconciled">✓</small>
+  </ng-template>
   <!-- Transfer row -->
   <ng-container *ngIf="transaction.type === 'transfer'; else normalRow">
     <span class="transaction-item-icon transaction-item-icon-transfer">🔁</span>
     <span class="transaction-item-info">
-      <span class="transaction-item-category">{{ 'Transfer' | t }}</span>
+      <span class="transaction-item-category">{{ (transaction.origin === 'card-payment' ? 'Card payment' : 'Transfer') | t }}<ng-container *ngTemplateOutlet="tags"></ng-container></span>
       <span class="transaction-item-meta">
         {{ account?.name || '?' }} → {{ toAccount?.name || '?' }}<ng-container *ngIf="transaction.fee"> · {{ 'fee' | t }} {{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.fee | number:'1.2-2' }}</ng-container><ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
       </span>
@@ -20,7 +26,7 @@
       {{ category?.icon || '❓' }}
     </span>
     <span class="transaction-item-info">
-      <span class="transaction-item-category">{{ category?.name || ('Unknown' | t) }}</span>
+      <span class="transaction-item-category">{{ category?.name || ('Unknown' | t) }}<ng-container *ngTemplateOutlet="tags"></ng-container></span>
       <span class="transaction-item-meta">
         {{ account?.name }}<ng-container *ngIf="transaction.fee"> · {{ 'fee' | t }} {{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.fee | number:'1.2-2' }}</ng-container><ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
       </span>

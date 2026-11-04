@@ -13,6 +13,56 @@
     </strong>
   </div>
 
+  <!-- Liquid net worth and net worth, per currency, with what adds up and what does not -->
+  <div class="accounts-networth x-card">
+    <div class="accounts-networth-row">
+      <span>{{ 'Liquid net worth' | t }}</span>
+      <strong>{{ settings.currency() }}{{ netWorth().liquid.DOP | number:'1.2-2' }}<ng-container *ngIf="netWorth().liquid.USD !== 0"> · US${{ netWorth().liquid.USD | number:'1.2-2' }}</ng-container></strong>
+    </div>
+    <div class="accounts-networth-row">
+      <span>{{ 'Net worth (after card debt)' | t }}</span>
+      <strong>{{ settings.currency() }}{{ netWorth().net.DOP | number:'1.2-2' }}<ng-container *ngIf="netWorth().net.USD !== 0 || netWorth().liquid.USD !== 0"> · US${{ netWorth().net.USD | number:'1.2-2' }}</ng-container></strong>
+    </div>
+    <details>
+      <summary>{{ 'What adds up' | t }}</summary>
+      <div class="accounts-networth-row small" *ngFor="let row of netWorth().rows">
+        <span>{{ accountName(row.accountId) }} · {{ (row.debt ? 'Card debt' : row.liquid ? 'Liquid' : 'Not liquid') | t }}</span>
+        <span>{{ settings.currency() }}{{ row.balance.DOP | number:'1.2-2' }}<ng-container *ngIf="row.balance.USD !== 0"> · US${{ row.balance.USD | number:'1.2-2' }}</ng-container></span>
+      </div>
+      <p class="accounts-form-hint">{{ 'Inventory and loans are not included yet. RD$ and US$ are never added together.' | t }}</p>
+    </details>
+  </div>
+
+  <p class="accounts-warn x-card" *ngIf="transactionService.orphans().length">
+    ⚠️ {{ transactionService.orphans().length }} {{ 'movements belong to an account that was removed. They still count in your total.' | t }}
+  </p>
+
+  <!-- Suggestions: nothing happens until you confirm -->
+  <div class="accounts-suggestions x-card" *ngIf="transferSuggestions().length || incomeSuggestions().length || message()">
+    <h2>{{ 'Suggestions' | t }}</h2>
+    <p class="accounts-form-hint" *ngIf="message()">{{ message() }}</p>
+    <div class="accounts-suggestion" *ngFor="let s of transferSuggestions()">
+      <p>
+        <b>{{ 'Is this a transfer between your accounts?' | t }}</b><br />
+        {{ settings.currency() }}{{ s.amount | number:'1.2-2' }} · {{ accountName(s.fromAccountId) }} → {{ accountName(s.toAccountId) }} · {{ s.date }}<ng-container *ngIf="s.fee > 0"> · {{ 'fee' | t }} {{ settings.currency() }}{{ s.fee | number:'1.2-2' }}</ng-container>
+      </p>
+      <div class="accounts-suggestion-actions">
+        <button class="x-btn" (click)="convertTransfer(s)">{{ 'Yes, convert' | t }}</button>
+        <button class="x-btn accounts-form-cancel" (click)="dismissTransfer(s)">{{ 'No' | t }}</button>
+      </div>
+    </div>
+    <div class="accounts-suggestion" *ngFor="let s of incomeSuggestions()">
+      <p>
+        <b>{{ 'Looks like a recurring income (payroll?)' | t }}</b><br />
+        {{ settings.currency() }}{{ s.amount | number:'1.0-0' }} · {{ cadenceLabel(s.cadence) | t }} · {{ s.count }} {{ 'deposits in' | t }} {{ accountName(s.accountId) }}
+      </p>
+      <div class="accounts-suggestion-actions">
+        <button class="x-btn" (click)="confirmIncome(s)">{{ 'Confirm' | t }}</button>
+        <button class="x-btn accounts-form-cancel" (click)="dismissIncome(s)">{{ 'No' | t }}</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Account cards, grouped by bank so cards/checking/savings of the same bank sit together -->
   <div
     class="accounts-card x-card"
@@ -36,12 +86,24 @@
           {{ usdBalanceOf(acc) < 0 ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
         </strong>
       </div>
+      <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Reconcile' | t }}</button>
       <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
           <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
       </button>
+    </div>
+  </div>
+
+  <!-- Archived accounts keep their history -->
+  <div class="accounts-archived" *ngIf="archivedAccounts().length">
+    <button class="accounts-archived-toggle" (click)="showArchived.set(!showArchived())">
+      {{ (showArchived() ? 'Hide archived accounts' : 'Show archived accounts') | t }} ({{ archivedAccounts().length }})
+    </button>
+    <div class="accounts-card x-card" *ngFor="let acc of archivedAccounts()" [hidden]="!showArchived()">
+      <span class="accounts-card-name">{{ acc.name }}</span>
+      <button class="accounts-card-reconcile" (click)="unarchive(acc)">{{ 'Restore' | t }}</button>
     </div>
   </div>
 
@@ -74,12 +136,18 @@
       </select>
     </ng-container>
 
+    <!-- Emoji of an "other" account -->
+    <ng-container *ngIf="isOther()">
+      <label class="accounts-form-label">{{ 'Icon (emoji)' | t }}</label>
+      <input class="x-input" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="formIcon" name="formIcon" />
+    </ng-container>
+
     <!-- Name -->
     <label class="accounts-form-label">{{ 'Account name' | t }}</label>
     <input class="x-input" type="text" maxlength="24" [placeholder]="'e.g. Payroll account' | t" [(ngModel)]="formName" name="formName" />
 
     <!-- Bank picker -->
-    <ng-container *ngIf="!isCash()">
+    <ng-container *ngIf="!isCash() && !isOther()">
       <label class="accounts-form-label">{{ 'Bank' | t }}</label>
       <input
         class="x-input accounts-form-bank-search"
@@ -140,11 +208,17 @@
       <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
     </ng-container>
 
+    <label class="accounts-form-check">
+      <input type="checkbox" [(ngModel)]="formLiquid" name="formLiquid" />
+      {{ 'Liquid account (counts in liquid net worth)' | t }}
+    </label>
+
     <div class="accounts-form-actions">
       <button class="x-btn" [disabled]="!isValid()" (click)="save()">
         {{ (editingId ? 'Save changes' : 'Add account') | t }}
       </button>
       <button class="x-btn accounts-form-cancel" (click)="cancelForm()">{{ 'Cancel' | t }}</button>
+      <button class="x-btn" *ngIf="editingId" (click)="archive()">{{ 'Archive account' | t }}</button>
       <button class="x-btn x-btn-danger" *ngIf="editingId" (click)="delete()">{{ 'Delete account' | t }}</button>
     </div>
   </div>

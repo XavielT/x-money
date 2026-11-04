@@ -1,0 +1,89 @@
+.reconcile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reconcile-back {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.reconcile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+
+  h2 {
+    font-size: 1rem;
+    margin-top: 8px;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: var(--main-ultra-light);
+  }
+}
+
+.reconcile-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+
+  .bad {
+    color: var(--expense);
+  }
+}
+
+.reconcile-hint {
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+}
+
+.reconcile-ok {
+  color: var(--income);
+  font-weight: 600;
+}
+
+.reconcile-toggle {
+  display: flex;
+  gap: 8px;
+
+  button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.reconcile-small {
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+.reconcile-tx {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text) !important;
+
+  span {
+    flex: 1;
+  }
+
+  .income {
+    color: var(--income);
+  }
+}

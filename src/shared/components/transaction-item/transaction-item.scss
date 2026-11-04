@@ -60,3 +60,22 @@
 .transaction-item-icon-transfer {
   background: var(--Hub-translucid);
 }
+
+.transaction-item.reversed {
+  opacity: 0.55;
+}
+
+.transaction-item-tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--secondary);
+  color: var(--main-ultra-light);
+  font-size: 0.65rem;
+  font-weight: 600;
+  vertical-align: middle;
+
+  &.ok {
+    color: var(--income);
+  }
+}

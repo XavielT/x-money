@@ -18,11 +18,12 @@ import { SyncService } from '../../../shared/services/sync.service';
 import { StorageService } from '../../../shared/services/storage.service';
 import { BackupReminderService } from '../../../shared/services/backup-reminder.service';
 import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
+import { ChangeHistoryComponent } from '../../../shared/components/change-history/change-history';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent, ChangeHistoryComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
@@ -149,11 +150,28 @@ export class SettingsComponent {
     const file = input.files?.[0];
     if (!file) return;
     const text = await file.text();
+    const reject = (key: string, detail = '') => {
+      alert(this.translate.instant(key) + detail);
+      input.value = '';
+    };
+
+    // Validate the whole file first: a bad backup never touches the current data
+    const preview = this.settingsService.previewImport(text);
+    if (!preview.ok) {
+      const e = preview.error;
+      if (e.code === 'not-json') return reject('That file is not valid JSON.');
+      if (e.code === 'not-xmoney') return reject('That file is not a valid X Money backup.');
+      if (e.code === 'newer-version') return reject('That backup is from a newer version of X Money. Update the app first.');
+      return reject('The backup has a problem and was not imported. Your data was not touched.', ` (${e.key}${e.index !== undefined ? ' #' + (e.index + 1) : ''}${e.field ? ': ' + e.field : ''})`);
+    }
+
     const warning =
       this.auth.mode() === 'local'
         ? 'Import this backup? It replaces the data on this device. A backup of the current data is saved first.'
         : 'Import this backup? It replaces your data on ALL your devices. A backup of the current data is saved first.';
-    if (!confirm(this.translate.instant(warning))) {
+    const c = preview.counts;
+    const counts = `${this.translate.instant('Backup contents:')} ${c.accounts} ${this.translate.instant('Accounts')} · ${c.transactions} ${this.translate.instant('Transactions')} · ${c.categories} ${this.translate.instant('Categories')} · ${c.budgets} ${this.translate.instant('Budgets')}`;
+    if (!confirm(`${this.translate.instant(warning)}\n\n${counts}`)) {
       input.value = '';
       return;
     }
@@ -165,13 +183,13 @@ export class SettingsComponent {
         return;
       }
     }
-    if (this.settingsService.importData(text)) {
+    const result = this.settingsService.importData(text);
+    if (result.ok) {
       await this.storage.flush(); // make sure the copy is on disk before reloading
       alert(this.translate.instant('Backup restored.'));
       location.reload();
     } else {
-      alert(this.translate.instant('That file is not a valid X Money backup.'));
-      input.value = '';
+      reject('The backup has a problem and was not imported. Your data was not touched.');
     }
   }
 

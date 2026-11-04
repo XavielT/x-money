@@ -289,3 +289,96 @@
   color: var(--text);
   border: 1px solid var(--card-border);
 }
+
+.accounts-networth {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.accounts-networth-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+
+  &.small {
+    font-size: 0.8rem;
+    color: var(--main-ultra-light);
+    margin-top: 6px;
+  }
+}
+
+.accounts-networth summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--Hub);
+}
+
+.accounts-warn {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+}
+
+.accounts-suggestions {
+  padding: 14px;
+  margin-bottom: 12px;
+
+  h2 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+}
+
+.accounts-suggestion {
+  font-size: 0.85rem;
+  padding: 8px 0;
+  border-top: 1px solid var(--card-border);
+
+  p {
+    margin-bottom: 8px;
+  }
+}
+
+.accounts-suggestion-actions {
+  display: flex;
+  gap: 8px;
+
+  .x-btn {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+}
+
+.accounts-card-reconcile,
+.accounts-archived-toggle {
+  background: var(--secondary);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.accounts-archived {
+  margin-top: 12px;
+
+  .accounts-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    margin-top: 8px;
+  }
+}
+
+.accounts-form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.85rem;
+}
