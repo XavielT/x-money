@@ -5,7 +5,7 @@ import { CLIENT_SCHEMA_VERSION } from './registry';
 import { migrateSnapshot } from './migrations';
 
 // Collections that make up a backup (the PIN hash and the language are device matters)
-export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts', 'goals', 'loans', 'loanSimulations', 'loanSettings', 'insightStates', 'insightSettings'] as const;
+export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts', 'goals', 'loans', 'loanSimulations', 'loanSettings', 'insightStates', 'insightSettings', 'textRules'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 
 export interface BackupCounts {
@@ -69,6 +69,7 @@ const CHECKS: Record<string, Check> = {
     : !Array.isArray(o['sales']) ? 'sales'
     : !Array.isArray(o['expenses']) ? 'expenses'
     : null,
+  textRules: (r) => (!str(r['id']) ? 'id' : !str(r['word']) ? 'word' : !str(r['target']) ? 'target' : null),
   insightStates: (s) => (!str(s['id']) ? 'id' : !str(s['insightId']) ? 'insightId' : !str(s['fingerprint']) ? 'fingerprint' : null),
   loans: (l) => (!str(l['id']) ? 'id' : !str(l['name']) ? 'name' : !fin(l['amount']) ? 'amount' : !Array.isArray(l['schedule']) ? 'schedule' : !Array.isArray(l['payments']) ? 'payments' : null),
   loanSimulations: (l) => (!str(l['id']) ? 'id' : !str(l['name']) ? 'name' : !fin(l['amount']) ? 'amount' : null),

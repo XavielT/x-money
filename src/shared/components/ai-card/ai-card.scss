@@ -1,0 +1,44 @@
+.ai-card {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h3 {
+    font-size: 0.92rem;
+    margin: 0;
+  }
+}
+
+.ai-card-text {
+  font-size: 0.85rem;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.ai-card-tag,
+.ai-card-note {
+  color: var(--main-ultra-light);
+  font-size: 0.72rem;
+  margin: 0;
+}
+
+.ai-card-message {
+  color: var(--expense);
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.ai-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.ai-card-link {
+  color: var(--main-ultra-light);
+  font-size: 0.78rem;
+  text-decoration: underline;
+}

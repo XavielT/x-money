@@ -1,0 +1,27 @@
+<section class="ai-card x-card">
+  <h3 *ngIf="showTitle">{{ label | t }}</h3>
+
+  <ng-container *ngIf="prepared() as p; else nothing">
+    <!-- The calculated text: always there, with AI on or off -->
+    <p class="ai-card-text" *ngIf="outcome()?.source !== 'ai'">{{ p.fallback }}</p>
+    <small class="ai-card-tag" *ngIf="outcome()?.source !== 'ai'">{{ 'Calculated on your device' | t }}</small>
+
+    <ng-container *ngIf="outcome()?.source === 'ai'">
+      <p class="ai-card-text">{{ outcome()!.text }}</p>
+      <app-ai-label></app-ai-label>
+    </ng-container>
+
+    <p class="ai-card-message" *ngIf="message()">{{ message() }}</p>
+
+    <div class="ai-card-actions">
+      <button class="x-btn" *ngIf="ai.prefs().enabled && moduleOn" (click)="write()" [disabled]="busy()">{{ (busy() ? 'Writing…' : outcome()?.source === 'ai' ? 'Write it again' : 'Write it with AI') | t }}</button>
+      <a class="ai-card-link" routerLink="/settings" *ngIf="!ai.prefs().enabled">{{ 'Turn on AI in Settings to get a written version' | t }}</a>
+      <a class="ai-card-link" routerLink="/settings" *ngIf="ai.prefs().enabled && !moduleOn">{{ 'This module has AI turned off in Settings.' | t }}</a>
+    </div>
+  </ng-container>
+  <ng-template #nothing>
+    <p class="ai-card-note">{{ 'Nothing to summarize yet: this needs some data first.' | t }}</p>
+  </ng-template>
+
+  <app-ai-consent-sheet *ngIf="consent()" [title]="label | t" [description]="'Calculated aggregates only: totals, shares and trends. No names, ids or card digits.' | t" [preview]="previewBody()" (confirmed)="confirm()" (cancelled)="consent.set(false)"></app-ai-consent-sheet>
+</section>

@@ -158,6 +158,15 @@
       <p class="sim-note" *ngIf="!sus.insight">{{ 'Needs some income registered to evaluate it.' | t }}</p>
     </section>
 
+    <!-- AI in plain words: the simulation, explained (optional; the calculated text is always shown) -->
+    <section class="x-card sim-block">
+      <h2>{{ 'In plain words' | t }}</h2>
+      <app-ai-card featureId="loan-scenarios" [arg]="input()"></app-ai-card>
+      <app-ai-card featureId="loan-capacity" [arg]="input()"></app-ai-card>
+      <app-ai-card featureId="loan-installments" [arg]="input()"></app-ai-card>
+      <app-ai-card featureId="loan-advice" [arg]="input()"></app-ai-card>
+    </section>
+
     <!-- Terms -->
     <section class="x-card sim-block">
       <h2>{{ 'Compare terms' | t }} <small>({{ 'Estimate' | t }})</small></h2>

@@ -19,6 +19,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   audit: 'entities', // append-only change history (capped), each event names its device
   incomeSources: 'entities', // where income comes from (2.9.0)
   benefits: 'entities', // non-monetary work benefits with their usage notes (2.9.0): never money
+  textRules: 'entities', // words learned from accepted AI suggestions: word -> category, income kind or item family (2.17.0)
   insightStates: 'entities', // dismissed and snoozed insights with their evidence fingerprint (2.15.0)
   insightSettings: 'doc', // which smart alerts are on and their thresholds (2.15.0)
   loans: 'entities', // registered loans with their schedule and payments (2.14.0)
@@ -36,7 +37,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
 };
 
 // Never leave this device: PIN hash and local preferences of this install
-export const DEVICE_ONLY_KEYS: readonly string[] = ['lock', 'device-prefs'];
+export const DEVICE_ONLY_KEYS: readonly string[] = ['lock', 'device-prefs', 'ai-prefs', 'ai-cache']; // ai-*: consent and answers are per device (2.16.0)
 
 export const DOC_ID = 'doc';
 

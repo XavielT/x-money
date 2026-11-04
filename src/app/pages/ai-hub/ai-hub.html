@@ -1,0 +1,126 @@
+<div class="x-page hub">
+  <h1 class="x-page-title">{{ 'AI suggestions' | t }}</h1>
+  <p class="hub-note">{{ 'Each function shows its calculated text first. AI only adds natural language, classification or grouping, and every suggestion waits for you: nothing changes on its own.' | t }}</p>
+
+  <div class="x-card hub-off" *ngIf="!ai.prefs().enabled">
+    <p>{{ 'AI is off, so you see the calculated summaries.' | t }} <a routerLink="/settings">{{ 'Turn it on in Settings' | t }}</a></p>
+  </div>
+  <p class="hub-message" *ngIf="message()">{{ message() }}</p>
+  <p class="hub-ok" *ngIf="notice()">{{ notice() }}</p>
+
+  <div class="hub-tabs">
+    <button class="hub-chip" *ngFor="let m of modules" [class.on]="tab() === m" (click)="tab.set(m); message.set(''); notice.set('')">{{ label(m) | t }}</button>
+  </div>
+
+  <ng-container *ngFor="let f of features()">
+    <ng-container [ngSwitch]="f.id">
+
+      <!-- Dashboard -->
+      <ng-container *ngSwitchCase="'dashboard-summary'">
+        <div class="hub-row">
+          <button class="hub-chip" [class.on]="period() === 'month'" (click)="period.set('month')">{{ 'Month' | t }}</button>
+          <button class="hub-chip" [class.on]="period() === 'week'" (click)="period.set('week')">{{ 'Week' | t }}</button>
+        </div>
+        <app-ai-card [featureId]="f.id" [arg]="period()"></app-ai-card>
+      </ng-container>
+      <ng-container *ngSwitchCase="'dashboard-explain'">
+        <select class="x-input" [ngModel]="explainId()" (ngModelChange)="explainId.set($event)" name="explain">
+          <option *ngFor="let i of indicators()" [value]="i.id">{{ i.label | t }}</option>
+        </select>
+        <app-ai-card [featureId]="f.id" [arg]="explainId()"></app-ai-card>
+      </ng-container>
+      <section class="x-card hub-block" *ngSwitchCase="'dashboard-indicators-rank'">
+        <h3>{{ f.labelKey | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id)"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="ai.prefs().enabled && ai.moduleEnabled('dashboard') && !needsConsent(f.id)" (click)="rank()" [disabled]="busy() === 'rank'">{{ 'Rank with AI' | t }}</button>
+        <ol *ngIf="ranking() as r"><li *ngFor="let id of r.order">{{ indicatorLabel(id) | t }}</li></ol>
+        <app-ai-label *ngIf="ranking()?.source === 'ai'"></app-ai-label>
+        <small class="hub-note" *ngIf="ranking()?.source === 'fallback'">{{ 'Ordered by the size of the change (calculated).' | t }}</small>
+      </section>
+
+      <!-- Budgets -->
+      <section class="x-card hub-block" *ngSwitchCase="'budget-strategy-pick'">
+        <h3>{{ f.labelKey | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id)"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="!needsConsent(f.id)" [disabled]="busy() === 'strategy'" (click)="chooseStrategy()">{{ (ai.prefs().enabled && ai.moduleEnabled('budgets') ? 'Choose with AI' : 'Show the calculated choice') | t }}</button>
+        <ng-container *ngIf="strategy() as s">
+          <p class="hub-text">{{ s.text }}</p>
+          <app-ai-label *ngIf="s.source === 'ai'"></app-ai-label>
+          <small class="hub-note" *ngIf="s.source === 'fallback'">{{ 'Calculated on your device' | t }}</small>
+        </ng-container>
+      </section>
+
+      <!-- Income -->
+      <section class="x-card hub-block" *ngSwitchCase="'income-classify'">
+        <h3>{{ 'Review income without a source' | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <p class="hub-note" *ngIf="!incomeGroups().length">{{ 'Nothing to review.' | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id) && incomeGroups().length"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="incomeGroups().length && ai.prefs().enabled && ai.moduleEnabled('income') && !needsConsent(f.id)" [disabled]="busy() === 'income'" (click)="suggestIncome()">{{ 'Suggest with AI' | t }}</button>
+        <div class="hub-item" *ngFor="let g of incomeGroups()">
+          <span>{{ g.text }} <small>×{{ g.count }}</small></span>
+          <button class="hub-chip" *ngFor="let s of (incomeSuggestions()[g.key] || [])" (click)="acceptIncome(g, s)">{{ s.label }}<small *ngIf="s.source === 'ai'"> {{ s.confidence * 100 | number:'1.0-0' }}%</small></button>
+        </div>
+        <app-ai-label *ngIf="hasAi(incomeSuggestions())"></app-ai-label>
+      </section>
+
+      <!-- Expenses -->
+      <section class="x-card hub-block" *ngSwitchCase="'expense-categorize'">
+        <h3>{{ 'Review expenses without a category' | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <p class="hub-note" *ngIf="!expenseGroups().length">{{ 'Nothing to review.' | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id) && expenseGroups().length"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="expenseGroups().length && ai.prefs().enabled && ai.moduleEnabled('expenses') && !needsConsent(f.id)" [disabled]="busy() === 'expenses'" (click)="suggestExpenses()">{{ 'Suggest with AI' | t }}</button>
+        <p class="hub-note" *ngIf="expenseGroups().length">{{ 'Equal notes are grouped to ask once.' | t }}</p>
+        <div class="hub-item" *ngFor="let g of expenseGroups()">
+          <span>{{ g.text }} <small>×{{ g.count }}</small></span>
+          <button class="hub-chip" *ngFor="let s of (expenseSuggestions()[g.key] || [])" (click)="acceptExpense(g, s)">{{ s.label }}<small *ngIf="s.source === 'ai'"> {{ s.confidence * 100 | number:'1.0-0' }}%</small><small *ngIf="s.source === 'rule'"> ({{ 'learned' | t }})</small></button>
+        </div>
+        <app-ai-label *ngIf="hasAi(expenseSuggestions())"></app-ai-label>
+      </section>
+      <section class="x-card hub-block" *ngSwitchCase="'expense-recurring-normalize'">
+        <h3>{{ f.labelKey | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id)"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="ai.prefs().enabled && ai.moduleEnabled('expenses') && !needsConsent(f.id)" [disabled]="busy() === 'normalize'" (click)="normalize()">{{ 'Normalize with AI' | t }}</button>
+        <div class="hub-item" *ngFor="let r of recurring()"><span>{{ r.note }}</span><b>{{ r.name || '—' }}</b></div>
+        <app-ai-label *ngIf="recurring().length"></app-ai-label>
+      </section>
+
+      <!-- Business -->
+      <section class="x-card hub-block" *ngSwitchCase="'business-grouping'">
+        <h3>{{ f.labelKey | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id)"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="ai.prefs().enabled && ai.moduleEnabled('business') && !needsConsent(f.id)" [disabled]="busy() === 'group'" (click)="group()">{{ 'Group with AI' | t }}</button>
+        <div class="hub-item" *ngFor="let g of (groups()?.groups || [])">
+          <span><b>{{ g.name }}</b>: <ng-container *ngFor="let m of g.members; let last = last">{{ groups()!.names[m] }}{{ last ? '' : ' · ' }}</ng-container></span>
+          <button class="hub-chip" (click)="confirmGroup(g)">{{ 'Confirm group' | t }}</button>
+        </div>
+        <app-ai-label *ngIf="groups()?.groups?.length"></app-ai-label>
+        <h4>{{ 'Best sellers (on the confirmed groups)' | t }}</h4>
+        <p class="hub-note" *ngIf="!sellers().length">{{ 'No sales yet.' | t }}</p>
+        <div class="hub-item" *ngFor="let s of sellers()"><span>{{ s.group }} <small *ngIf="s.members > 1">({{ s.members }} {{ 'items' | t }})</small></span><span>{{ s.units }} {{ 'units' | t }} · {{ money(s.netProfit) }}</span></div>
+      </section>
+
+      <!-- Cards and accounts -->
+      <section class="x-card hub-block" *ngSwitchCase="'duplicate-judge'">
+        <h3>{{ f.labelKey | t }}</h3>
+        <p class="hub-note">{{ f.describeKey | t }} {{ 'You decide: nothing is merged or deleted.' | t }}</p>
+        <ng-container *ngIf="needsConsent(f.id)"><pre class="hub-pre">{{ assistPreview(f.id) | json }}</pre><button class="x-btn" (click)="acknowledge(f.id)">{{ 'Confirm what is sent' | t }}</button></ng-container>
+        <button class="x-btn" *ngIf="ai.prefs().enabled && ai.moduleEnabled('cards') && !needsConsent(f.id)" [disabled]="busy() === 'judge'" (click)="judge()">{{ 'Judge with AI' | t }}</button>
+        <div class="hub-item" *ngFor="let d of duplicates()">
+          <span>{{ d.a || '—' }} / {{ d.b || '—' }} · {{ money(d.amount) }}<small *ngIf="d.reason"> · {{ d.reason }}</small></span>
+          <b *ngIf="d.verdict">{{ (d.verdict === 'duplicate' ? 'Duplicate' : d.verdict === 'not-duplicate' ? 'Not a duplicate' : 'Doubtful') | t }}</b>
+        </div>
+        <a routerLink="/insights">{{ 'See all the candidates in Smart alerts' | t }}</a>
+        <app-ai-label *ngIf="duplicates().length"></app-ai-label>
+      </section>
+
+      <!-- Everything else narrates -->
+      <app-ai-card *ngSwitchDefault [featureId]="f.id"></app-ai-card>
+    </ng-container>
+  </ng-container>
+</div>

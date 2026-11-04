@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionCurrency, TransactionKind } from '../../../shared/models/transaction.model';
 import { AccountModel } from '../../../shared/models/account.model';
+import { AiCategoryHintComponent } from '../../../shared/components/ai-category-hint/ai-category-hint';
 import { CategoryModel } from '../../../shared/models/category.model';
 import { RecurringFrequency } from '../../../shared/models/recurring.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
@@ -24,7 +25,7 @@ import { round2, sumMoney } from '../../../shared/utils/money';
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, AiCategoryHintComponent],
   templateUrl: './transaction-form.html',
   styleUrl: './transaction-form.scss',
 })

@@ -8,6 +8,7 @@ import { AccountService } from '../../../shared/services/account.service';
 import { BorrowingService } from '../../../shared/services/borrowing.service';
 import { LoanService } from '../../../shared/services/loan.service';
 import { SmartInsightService } from '../../../shared/services/smart-insight.service';
+import { AiCardComponent } from '../../../shared/components/ai-card/ai-card';
 import { ExplainSheetComponent } from '../../../shared/components/explain-sheet/explain-sheet';
 import { SettingsService } from '../../../shared/services/settings.service';
 import { TranslateService } from '../../../shared/services/translate.service';
@@ -55,7 +56,7 @@ const ERRORS: Record<string, string> = {
 @Component({
   selector: 'app-loan-simulator',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ExplainSheetComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ExplainSheetComponent, AiCardComponent],
   templateUrl: './loan-simulator.html',
   styleUrl: './loan-simulator.scss',
 })

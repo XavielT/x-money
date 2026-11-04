@@ -32,4 +32,7 @@
 
   <h3>{{ 'Where it comes from' | t }}</h3>
   <p class="sheet-text">{{ indicator.sources.join(' · ') }}</p>
+
+  <!-- Explain me: the calculated components, in plain words (AI is optional) -->
+  <app-ai-card featureId="dashboard-explain" [arg]="indicator.id" [showTitle]="false"></app-ai-card>
 </div>

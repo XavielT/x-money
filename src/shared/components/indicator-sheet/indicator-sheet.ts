@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Indicator } from '../../domain/dashboard';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { AiCardComponent } from '../ai-card/ai-card';
 import { SettingsService } from '../../services/settings.service';
 
 // "How was it calculated?": the formula, every component with its amount, and what is data and
@@ -9,7 +10,7 @@ import { SettingsService } from '../../services/settings.service';
 @Component({
   selector: 'app-indicator-sheet',
   standalone: true,
-  imports: [CommonModule, TranslatePipe],
+  imports: [CommonModule, TranslatePipe, AiCardComponent],
   templateUrl: './indicator-sheet.html',
   styleUrl: './indicator-sheet.scss',
 })

@@ -200,6 +200,9 @@
   <!-- Note -->
   <label class="transaction-form-label">{{ 'Note (optional)' | t }}</label>
   <input class="x-input" type="text" maxlength="80" [placeholder]="'e.g. Lunch with friends' | t" [(ngModel)]="note" name="note" />
+  @defer (on idle) {
+    <app-ai-category-hint *ngIf="kind() === 'expense'" [note]="note" (picked)="selectCategory($event)"></app-ai-category-hint>
+  }
 
   <p class="transaction-form-fee-hint" *ngIf="showCardHint()">
     💳 {{ 'Paying a credit card? Use Transfer to the card: as an expense it would be counted twice.' | t }}
