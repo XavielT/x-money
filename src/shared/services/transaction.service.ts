@@ -393,6 +393,53 @@ export class TransactionService {
     return ok(before.expense.id);
   }
 
+  // Rule 3: an expense that was really the payment of a credit card becomes a transfer to
+  // that card, in place (same id and date). Purchases stop being counted twice. The audit keeps
+  // the original so it can be undone.
+  convertToCardPayment(expenseId: string, cardId: string): TxResult {
+    if (this.storage.readOnly()) return fail('read-only');
+    const e = this.byId(expenseId);
+    const card = this.accountService.byId(cardId);
+    if (!e || !card) return fail('not-found');
+    if (e.type !== 'expense' || e.linkedId || e.status === 'reversed' || e.origin === 'adjustment') return fail('not-a-pair');
+    if (e.reconciled) return fail('reconciled');
+    const transfer: TransactionModel = {
+      ...e,
+      type: 'transfer',
+      toAccountId: cardId,
+      categoryId: undefined,
+      origin: 'card-payment',
+      updatedAt: this.nowIso(),
+    };
+    const error = validateTransaction(transfer, this.accountService.accounts(), this.today(), { confirmFarFuture: true });
+    if (error) return fail(error);
+    this.commit(this._transactions().map((t) => (t.id === e.id ? transfer : t)));
+    this.audit.log({
+      type: 'card-payment-convert',
+      entity: 'transaction',
+      entityId: e.id,
+      accountId: e.accountId,
+      before: e,
+      after: summarizeTransaction(transfer),
+    });
+    return ok(e.id);
+  }
+
+  // Puts the expense back, if the payment was not touched since
+  undoCardPaymentConversion(eventId: string): TxResult {
+    if (this.storage.readOnly()) return fail('read-only');
+    const event = this.audit.byId(eventId);
+    if (!event || event.type !== 'card-payment-convert') return fail('not-found');
+    const before = event.before as TransactionModel;
+    const current = this.byId(before.id);
+    if (!current || current.type !== 'transfer' || current.origin !== 'card-payment' || current.reversedBy || current.reconciled || current.amount !== before.amount) {
+      return fail('changed');
+    }
+    this.commit(this._transactions().map((t) => (t.id === before.id ? before : t)));
+    this.audit.log({ type: 'undo-convert', entity: 'transaction', entityId: before.id, accountId: before.accountId, before: event.after, after: summarizeTransaction(before) });
+    return ok(before.id);
+  }
+
   // Marks movements as seen on the bank statement (or not)
   setReconciled(ids: readonly string[], value: boolean): void {
     const set = new Set(ids);

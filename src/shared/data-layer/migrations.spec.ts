@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { MIGRATIONS, Migration, migrateRecord, migrateSnapshot } from './migrations';
 import { parseBackup } from './backup';
+import { isSyncedKey } from './registry';
 import { MemoryLocalDb } from './local-db';
 import { StorageService } from '../services/storage.service';
 import { MigrationService } from '../services/migration.service';
@@ -213,5 +214,35 @@ describe('records from another device and backups of older versions', () => {
     expect(tx({ fee: 'a' })).toMatchObject({ error: { field: 'fee' } });
     expect(parseBackup(JSON.stringify({ ...base, accounts: [{ id: 'a', name: 'x', initialBalance: null }] }))).toMatchObject({ error: { key: 'accounts', field: 'initialBalance' } });
     expect(parseBackup(JSON.stringify({ ...base, settings: 5 }))).toMatchObject({ error: { key: 'settings' } });
+  });
+});
+
+// 2.8.0 added optional card data and the "statements" collection. Nothing old needs rewriting,
+// and that is the point: a 2.7.0 card must come through untouched, with no invented data.
+describe('2.8.0 additions (credit cards): no migration needed, old shapes survive', () => {
+  const card27 = { id: 'visa', name: 'Visa', icon: '💳', type: 'card', cardKind: 'credit', currency: 'DOP', initialBalance: -2500, liquid: false };
+
+  it('a 2.7.0 credit card passes through the migrations unchanged (no limit, cut or due is guessed)', () => {
+    const out = migrateSnapshot({ accounts: [card27] }, 2) as { accounts: any[] };
+    expect(out.accounts[0]).toEqual(card27);
+    expect(out.accounts[0]).not.toHaveProperty('card');
+    // and a 2.5.1 card gets the 2.7.0 flags only
+    const old = migrateSnapshot({ accounts: [{ id: 'v', name: 'Visa', icon: '💳', type: 'card', cardKind: 'credit', initialBalance: 0 }] }, 1) as { accounts: any[] };
+    expect(old.accounts[0]).toMatchObject({ liquid: false });
+    expect(old.accounts[0]).not.toHaveProperty('card');
+  });
+
+  it('the statements collection is registered as synced and travels in backups', () => {
+    expect(isSyncedKey('statements')).toBe(true);
+    const stmt = { id: 'stmt-visa-DOP-2026-11-15', accountId: 'visa', cutDate: '2026-11-15', dueDate: '2026-12-05', calculatedBalance: 100 };
+    const parsed = parseBackup(JSON.stringify({ app: 'x-money', schemaVersion: 2, accounts: [{ ...card27, card: { creditLimit: 5000, cutDay: 15 } }], statements: [stmt] }));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect((parsed.data as any).statements).toEqual([stmt]);
+  });
+
+  it('a backup of 2.7.0 or older has no statements and imports fine; a malformed statement is rejected before any write', () => {
+    expect(parseBackup(JSON.stringify({ app: 'x-money', schemaVersion: 2, accounts: [card27] })).ok).toBe(true);
+    const bad = parseBackup(JSON.stringify({ app: 'x-money', schemaVersion: 2, statements: [{ id: 's', accountId: 'a', cutDate: 'nope', dueDate: '2026-12-05', calculatedBalance: 1 }] }));
+    expect(bad).toEqual({ ok: false, error: { code: 'bad-shape', key: 'statements', index: 0, field: 'cutDate' } });
   });
 });

@@ -1,7 +1,7 @@
 // Characterization tests (prompt 00 / v2.5.2) for the integrity cases of
 // docs/AUDITORIA-2026-11.md §2 (C1-C9). Prompt 01 (v2.7.0) flipped the gaps it fixes into
 // tests of the correct behavior; the ones still named "KNOWN GAP:" document a violation that a
-// later prompt owns (02: cards and dual accounts, 04: budgets/stats, recurring clock).
+// later prompt owns (02: the US$ opening balance of a dual card, 04: budgets/stats, recurring clock).
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { BudgetsComponent } from '../../app/pages/budgets/budgets';
@@ -45,9 +45,10 @@ describe('C1 credit card purchase and card payment (R2, R3)', () => {
     expect(s.transactions.totalBalance()).toBe(7000);
   });
 
-  it('KNOWN GAP: paying the card as an expense counts the purchases twice (AUDITORIA §2/C1)', () => {
-    // There is no "card payment" kind: nothing stops the user (or a recurring
-    // rule) from registering the payment as a plain expense.
+  it('a payment typed as a plain expense still counts twice until the user confirms the suggested conversion (AUDITORIA §2/C1)', () => {
+    // 2.8.0 added the Pay card flow (a card-payment transfer) and detects an expense that matches
+    // a statement and offers the conversion (credit-card.spec.ts). It never converts on its own,
+    // so until the user confirms, the plain expense is what it is: this pins that fact.
     const s = session();
     s.transactions.add(transaction({ accountId: 'card', amount: 3000 }));
     s.transactions.add(transaction({ accountId: 'bank', amount: 3000, categoryId: 'cat-bills' }));

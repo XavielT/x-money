@@ -6,6 +6,8 @@ import { TransactionService } from './transaction.service';
 import { TransferSuggestion, detectUnmarkedTransfers } from '../domain/transfers';
 import { IncomePatternSuggestion, detectRecurringIncomes } from '../domain/income-patterns';
 import { TxResult } from '../domain/validation';
+import { CardPaymentSuggestion, detectCardPaymentExpenses } from '../domain/card-payments';
+import { CreditCardService } from './credit-card.service';
 
 // Suggestions are computed from the data on every change and only ever ACT after the user
 // confirms: nothing is converted or tagged on its own.
@@ -20,16 +22,37 @@ export class SuggestionsService {
     return detectRecurringIncomes(this.transactions.transactions(), this.accounts.accounts(), [...memory.incomeDismissed, ...memory.incomeConfirmed]);
   });
 
+  // Rule 3: expenses that look like the payment of a card statement
+  cardPayments = computed<CardPaymentSuggestion[]>(() =>
+    detectCardPaymentExpenses(
+      this.transactions.transactions(),
+      this.accounts.accounts(),
+      this.cards.statements(),
+      (s) => this.cards.paidAfterCut(s),
+      this.settings.suggestions().transferDismissed
+    )
+  );
+
   constructor(
     private transactions: TransactionService,
     private accounts: AccountService,
     private settings: SettingsService,
-    private audit: AuditLogService
+    private audit: AuditLogService,
+    private cards: CreditCardService
   ) {}
 
   // "Is this a transfer between your accounts?" -> yes
   convertTransfer(s: TransferSuggestion): TxResult {
     return this.transactions.convertToTransfer(s.expenseId, s.incomeId);
+  }
+
+  // "Was this the payment of your card?" -> yes: the expense becomes a payment to the card
+  convertCardPayment(s: CardPaymentSuggestion): TxResult {
+    return this.transactions.convertToCardPayment(s.expenseId, s.cardId);
+  }
+
+  dismissCardPayment(s: CardPaymentSuggestion): void {
+    this.settings.dismissTransferSuggestion(s.key);
   }
 
   dismissTransfer(s: TransferSuggestion): void {

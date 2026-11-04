@@ -1,14 +1,13 @@
 import { Injectable } from '@angular/core';
-import { sumMoney } from '../utils/money';
+import { TransactionCurrency } from '../models/transaction.model';
+import { ownerId } from '../domain/ledger';
+import { SmallPurchases, smallPurchases } from '../domain/small-purchases';
+import { isCounted } from '../domain/stats';
+import { AccountService } from './account.service';
 import { TransactionService } from './transaction.service';
 import { RecurringService } from './recurring.service';
 
-export interface AntExpensesInsight {
-  count: number;
-  total: number;
-  percent: number; // share of the month's expenses
-  threshold: number;
-}
+export type AntExpensesInsight = SmallPurchases;
 
 export interface SubscriptionInsight {
   count: number;
@@ -24,32 +23,39 @@ export interface MomChangeInsight {
 
 // Awareness helpers inspired by Fintonic/Rocket Money: small "ant expenses"
 // that add up, the real cost of recurring services, and spending spikes.
-// Everything works in the primary currency.
+// Everything works in the primary currency unless told otherwise.
 @Injectable({ providedIn: 'root' })
 export class InsightsService {
   constructor(
     private transactionService: TransactionService,
-    private recurringService: RecurringService
+    private recurringService: RecurringService,
+    private accountService: AccountService
   ) {}
 
   // Small purchases (below ~2% of the month's spending, min 100) that in
   // volume become a meaningful share of the month
   antExpenses(year: number, month: number): AntExpensesInsight {
-    const expenses = this.transactionService
-      .countedForMonth(year, month)
-      .filter((t) => t.type === 'expense' && this.transactionService.currencyOf(t) === 'DOP');
-    const total = sumMoney(expenses.map((t) => t.amount));
-    if (!total) return { count: 0, total: 0, percent: 0, threshold: 0 };
+    const prefix = `${year}-${String(month).padStart(2, '0')}`;
+    return this.antExpensesFor({ from: `${prefix}-01`, to: `${prefix}-31` });
+  }
 
-    const threshold = Math.max(100, total * 0.02);
-    const small = expenses.filter((t) => t.amount <= threshold);
-    const smallTotal = sumMoney(small.map((t) => t.amount));
-    return {
-      count: small.length,
-      total: smallTotal,
-      percent: Math.round((smallTotal / total) * 100),
-      threshold,
-    };
+  // The same rule for one account (a credit card, for instance) and any period, inclusive
+  antExpensesFor(options: { accountId?: string; from: string; to: string; currency?: TransactionCurrency; ceiling?: number }): AntExpensesInsight {
+    const currency = options.currency ?? 'DOP';
+    const accounts = this.accountService.accounts();
+    const amounts = this.transactionService
+      .transactions()
+      .filter(
+        (t) =>
+          t.type === 'expense' &&
+          isCounted(t) &&
+          this.transactionService.currencyOf(t) === currency &&
+          t.date >= options.from &&
+          t.date <= options.to &&
+          (options.accountId === undefined || ownerId(accounts, t.accountId) === options.accountId)
+      )
+      .map((t) => t.amount);
+    return smallPurchases(amounts, options.ceiling);
   }
 
   // What active recurring expense rules cost per month / per year

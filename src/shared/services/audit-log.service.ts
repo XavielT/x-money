@@ -17,9 +17,13 @@ export type AuditType =
   | 'account-unarchive'
   | 'recurring-post'
   | 'income-pattern'
-  | 'audit-trim';
+  | 'audit-trim'
+  | 'card-config'
+  | 'statement-bank-figures'
+  | 'statement-interest'
+  | 'card-payment-convert';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement';
 
 export interface AuditEvent {
   id: string;

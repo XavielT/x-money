@@ -14,7 +14,7 @@ import { FIXTURE_251, FakeLegacy, asLegacy } from '../testing/fixtures';
 
 describe('registry', () => {
   it('every key the services use is registered as synced or device-only', () => {
-    const used = ['accounts', 'transactions', 'categories', 'budgets', 'recurring', 'settings', 'lang', 'lock', 'device-prefs', 'conflicts'];
+    const used = ['accounts', 'transactions', 'categories', 'budgets', 'recurring', 'settings', 'lang', 'lock', 'device-prefs', 'conflicts', 'audit', 'statements'];
     for (const key of used) expect(isKnownKey(key), key).toBe(true);
   });
 
