@@ -290,3 +290,18 @@
     color: var(--expense);
   }
 }
+
+.home-links {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  a {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+}

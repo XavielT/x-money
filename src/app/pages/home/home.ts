@@ -14,11 +14,12 @@ import { InsightsService } from '../../../shared/services/insights.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { CreditCardService } from '../../../shared/services/credit-card.service';
 import { CardAlert } from '../../../shared/domain/cards';
+import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe],
+  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })

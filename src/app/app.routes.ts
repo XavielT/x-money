@@ -18,6 +18,8 @@ export const routes: Routes = [
   { path: 'accounts', component: AccountsComponent },
   { path: 'reconcile/:id', loadComponent: () => import('./pages/reconcile/reconcile').then((m) => m.ReconcileComponent) },
   // heavier pages load on demand to keep the first screen light
+  { path: 'income', loadComponent: () => import('./pages/income/income').then((m) => m.IncomeComponent) },
+  { path: 'benefits', loadComponent: () => import('./pages/benefits/benefits').then((m) => m.BenefitsComponent) },
   { path: 'card/:id', loadComponent: () => import('./pages/card/card').then((m) => m.CardComponent) },
   { path: 'card/:id/pay', loadComponent: () => import('./pages/card-pay/card-pay').then((m) => m.CardPayComponent) },
   { path: '**', redirectTo: '' },

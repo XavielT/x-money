@@ -75,6 +75,37 @@
     </div>
   </ng-container>
 
+  <!-- Income: source, gross / net and, for sales, cost (all optional) -->
+  <ng-container *ngIf="kind() === 'income'">
+    <label class="transaction-form-label">{{ 'Income source (optional)' | t }}</label>
+    <select class="x-input" [ngModel]="sourceId" (ngModelChange)="sourceChanged($event)" name="sourceId">
+      <option value="">{{ 'Unclassified' | t }}</option>
+      <option *ngFor="let s of activeSources()" [value]="s.id">{{ s.icon }} {{ s.name }}</option>
+    </select>
+
+    <details class="transaction-form-details" [open]="!!grossAmount || deductions.length || sourceIsCommercial()">
+      <summary>{{ 'Gross and deductions' | t }}</summary>
+      <p class="transaction-form-fee-hint">{{ 'The amount above is what reached your account (the net).' | t }}</p>
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="grossAmount" name="grossAmount" [placeholder]="'Gross amount (optional)' | t" />
+      <div class="transaction-form-deduction" *ngFor="let d of deductions; let i = index">
+        <input class="x-input" type="text" maxlength="30" [(ngModel)]="d.name" [name]="'dn' + i" [placeholder]="'Deduction name' | t" />
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="d.amount" [name]="'da' + i" placeholder="0.00" />
+        <button (click)="removeDeduction(i)" aria-label="Remove deduction">✕</button>
+      </div>
+      <button class="transaction-form-fee-btn" (click)="addDeduction()">{{ 'Add deduction' | t }}</button>
+      <p class="transaction-form-fee-hint" *ngIf="deductionsGap() !== null && deductionsGap() !== 0">{{ 'The deductions do not explain the whole difference:' | t }} {{ deductionsGap() }}</p>
+    </details>
+
+    <ng-container *ngIf="sourceIsCommercial()">
+      <label class="transaction-form-label">{{ 'Cost of what you sold (optional)' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="costBasis" name="costBasis" />
+      <label class="transaction-form-label">{{ 'Expenses of this sale (optional)' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="saleExpenses" name="saleExpenses" />
+      <p class="transaction-form-fee-hint" *ngIf="saleBenefitPreview() !== null">{{ 'Net benefit of this sale' | t }}: {{ saleBenefitPreview() }} · {{ 'The selling price is revenue, not profit.' | t }}</p>
+      <p class="transaction-form-fee-hint">{{ 'Do you want to track this as a business operation with inventory? That arrives with the business module; for now the sale is recorded here.' | t }}</p>
+    </ng-container>
+  </ng-container>
+
   <!-- Accounts -->
   <label class="transaction-form-label">{{ (kind() === 'transfer' ? 'From account' : 'Account') | t }}</label>
   <select class="x-input" [ngModel]="accountId" (ngModelChange)="accountChanged($event)" name="accountId">

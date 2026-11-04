@@ -6,6 +6,7 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 import { CategoryService } from '../../services/category.service';
 import { AccountService } from '../../services/account.service';
 import { SettingsService } from '../../services/settings.service';
+import { IncomeSourceService } from '../../services/income-source.service';
 
 @Component({
   selector: 'app-transaction-item',
@@ -20,8 +21,18 @@ export class TransactionItem {
   constructor(
     public categoryService: CategoryService,
     public accountService: AccountService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    private incomeSources: IncomeSourceService
   ) {}
+
+  // Income: cash or bank transfer, told by the account it reached
+  get isCashIncome(): boolean {
+    return this.transaction.type === 'income' && this.account?.type === 'cash';
+  }
+
+  get sourceName(): string {
+    return this.incomeSources.byId(this.transaction.incomeSourceId)?.name ?? '';
+  }
 
   get category() {
     return this.transaction.categoryId

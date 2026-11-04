@@ -27,6 +27,10 @@ const LABELS: Record<AuditType, string> = {
   'statement-bank-figures': 'Statement bank figures',
   'statement-interest': 'Card interest registered',
   'card-payment-convert': 'Converted to card payment',
+  'income-source': 'Income source changed',
+  'income-received': 'Expected income confirmed',
+  'income-classify': 'Income classified',
+  benefit: 'Benefit changed',
 };
 
 // Settings -> Change history: read-only list of everything that changed money data
@@ -84,7 +88,7 @@ export class ChangeHistoryComponent {
     if (e.type === 'edit') return `${pick(e.before)} → ${pick(e.after)}`;
     if (e.type === 'convert-transfer') return `${this.accountName(e.accountId)} → ${this.accountName((e.after as { toAccountId?: string })?.toAccountId)}`;
     if (e.type === 'reconcile' || e.type === 'balance-adjustment') return JSON.stringify(e.after);
-    if (e.type === 'import' || e.type === 'migration' || e.type === 'recurring-post' || e.type === 'audit-trim' || e.type === 'card-config' || e.type === 'statement-bank-figures' || e.type === 'statement-interest') return JSON.stringify(e.after ?? e.before);
+    if (e.type === 'import' || e.type === 'migration' || e.type === 'recurring-post' || e.type === 'audit-trim' || e.type === 'card-config' || e.type === 'statement-bank-figures' || e.type === 'statement-interest' || e.type === 'income-source' || e.type === 'income-classify' || e.type === 'benefit') return JSON.stringify(e.after ?? e.before);
     return pick(e.before) || pick(e.after);
   }
 

@@ -1,0 +1,240 @@
+<div class="x-page income">
+  <header class="income-header">
+    <button class="income-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Income' | t }}</h1>
+  </header>
+
+  <p class="income-msg" *ngIf="message()">{{ message() }}</p>
+
+  <!-- ================= LIST ================= -->
+  <ng-container *ngIf="view() === 'list'">
+    <app-expected-income [limit]="5"></app-expected-income>
+
+    <!-- This month -->
+    <section class="x-card income-card">
+      <h2>{{ 'This month' | t }}</h2>
+      <div class="income-row"><span>{{ 'Personal income received (net)' | t }}</span><strong>{{ settings.currency() }}{{ breakdown().personalNet | number:'1.2-2' }}</strong></div>
+      <div class="income-row"><span>{{ 'Commercial sales (gross revenue)' | t }}</span><strong>{{ settings.currency() }}{{ breakdown().commercialGross | number:'1.2-2' }}</strong></div>
+      <div class="income-row"><span>{{ 'Commercial net benefit' | t }}</span><strong>{{ settings.currency() }}{{ breakdown().commercialNetBenefit | number:'1.2-2' }}</strong></div>
+      <small class="income-hint" *ngIf="breakdown().commercialWithoutCost">{{ breakdown().commercialWithoutCost }} {{ 'sales have no cost yet, so their benefit is unknown.' | t }}</small>
+      <div class="income-row total"><span>{{ 'Available income' | t }}</span><strong>{{ settings.currency() }}{{ breakdown().available | number:'1.2-2' }}</strong></div>
+      <small class="income-hint">{{ 'Available income = personal net income + commercial net benefit. The selling price is not profit, and the cost recovered from a sale is working capital, not personal income.' | t }}</small>
+      <div class="income-row" *ngIf="breakdown().unclassified > 0"><span>{{ 'Unclassified (not counted above)' | t }}</span><strong>{{ settings.currency() }}{{ breakdown().unclassified | number:'1.2-2' }}</strong></div>
+    </section>
+
+    <!-- Guaranteed vs variable (rule 7) -->
+    <section class="x-card income-card">
+      <h2>{{ 'Guaranteed and variable' | t }} <span class="income-tag">{{ 'Estimate' | t }}</span></h2>
+      <div class="income-row"><span>{{ 'Guaranteed per month' | t }}</span><strong>{{ settings.currency() }}{{ capacity().guaranteedMonthly | number:'1.2-2' }}</strong></div>
+      <small class="income-hint">{{ 'Only recurring, documented sources, with their expected net amount.' | t }}</small>
+      <div class="income-row"><span>{{ 'Variable: average per month' | t }}</span><strong>{{ settings.currency() }}{{ capacity().variableAverage | number:'1.2-2' }}</strong></div>
+      <small class="income-hint">{{ 'Average, not guaranteed: it never counts as guaranteed income.' | t }}</small>
+      <small class="income-hint" *ngIf="capacity().missingExpected.length">{{ 'Some recurring documented sources have no expected net amount, so they add nothing yet.' | t }}</small>
+    </section>
+
+    <!-- Suggestions from the detector -->
+    <section class="x-card income-card" *ngIf="patternSuggestions().length">
+      <h2>{{ 'Looks like a recurring income' | t }}</h2>
+      <div class="income-suggestion" *ngFor="let s of patternSuggestions()">
+        <p>{{ settings.currency() }}{{ s.amount | number:'1.0-0' }} · {{ s.count }} {{ 'deposits in' | t }} {{ accountName(s.accountId) }}</p>
+        <div class="income-actions">
+          <button class="x-btn" (click)="createFromPattern(s)">{{ 'Create an income source' | t }}</button>
+          <button class="x-btn income-ghost" (click)="dismissPattern(s)">{{ 'No' | t }}</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Unclassified review -->
+    <section class="x-card income-card" *ngIf="unclassified().length">
+      <p>{{ unclassified().length }} {{ 'income movements have no source yet.' | t }}</p>
+      <button class="x-btn" (click)="view.set('review')">{{ 'Review and classify' | t }}</button>
+    </section>
+
+    <!-- Sources -->
+    <section class="income-sources">
+      <h2>{{ 'Income sources' | t }}</h2>
+      <p class="income-hint" *ngIf="!sources.sources().length">{{ 'No sources yet. Add one to see averages, expectations and stability.' | t }}</p>
+      <button class="income-source x-card" *ngFor="let s of sources.sources()" [class.inactive]="!s.active" (click)="open(s)">
+        <span class="income-dot" [style.background]="s.color">{{ s.icon }}</span>
+        <span class="income-source-info">
+          <strong>{{ s.name }}</strong>
+          <small>{{ kindLabel(s) | t }} · {{ stabilityLabel(s.stability) | t }} · {{ (s.verifiability === 'documented' ? 'Documented' : 'Declared') | t }}<ng-container *ngIf="!s.active"> · {{ 'Inactive' | t }}</ng-container></small>
+          <small>{{ 'Average per month' | t }} ({{ 'estimate' | t }}): {{ settings.currency() }}{{ monthlyAverage(s) | number:'1.0-0' }}<ng-container *ngIf="last(s) as l"> · {{ 'last' | t }} {{ l.date }}</ng-container><ng-container *ngIf="nextExpected(s)"> · {{ 'next expected' | t }} {{ nextExpected(s) }}</ng-container></small>
+        </span>
+        <span class="income-weight" *ngIf="weightOf(s) > 0">{{ weightOf(s) | number:'1.0-0' }}%</span>
+      </button>
+      <button class="x-btn" (click)="openForm()">{{ 'Add income source' | t }}</button>
+    </section>
+
+    <!-- Old recurring income rules -->
+    <section class="x-card income-card" *ngIf="recurringRules().length && sources.sources().length">
+      <h2>{{ 'Recurring income rules' | t }}</h2>
+      <small class="income-hint">{{ 'These rules keep posting as before. Link one to a source to classify what it posts.' | t }}</small>
+      <div class="income-row" *ngFor="let r of recurringRules()">
+        <span>{{ ruleName(r.note, r.amount) }}</span>
+        <select class="x-input income-select" [ngModel]="r.incomeSourceId || ''" (ngModelChange)="link(r.id, $event)" [name]="'rule' + r.id">
+          <option value="">{{ 'Not linked' | t }}</option>
+          <option *ngFor="let s of sources.sources()" [value]="s.id">{{ s.name }}</option>
+        </select>
+      </div>
+    </section>
+  </ng-container>
+
+  <!-- ================= DETAIL ================= -->
+  <ng-container *ngIf="view() === 'detail' && selected() as s">
+    <section class="x-card income-card">
+      <h2><span class="income-dot small" [style.background]="s.color">{{ s.icon }}</span> {{ s.name }}</h2>
+      <small class="income-hint">{{ kindLabel(s) | t }} · {{ stabilityLabel(s.stability) | t }} · {{ (s.verifiability === 'documented' ? 'Documented' : 'Declared') | t }} · {{ (s.method === 'cash' ? 'Cash' : 'Bank transfer') | t }}<ng-container *ngIf="s.defaultAccountId"> · {{ accountName(s.defaultAccountId) }}</ng-container></small>
+      <div class="income-row" *ngIf="s.expectedNet"><span>{{ 'Expected net' | t }}</span><strong>{{ settings.currency() }}{{ s.expectedNet | number:'1.2-2' }}</strong></div>
+      <div class="income-row" *ngIf="s.expectedGross"><span>{{ 'Expected gross' | t }}</span><strong>{{ settings.currency() }}{{ s.expectedGross | number:'1.2-2' }}</strong></div>
+
+      <ng-container *ngIf="income.averagesOf(s.id) as a">
+        <h3>{{ 'Averages' | t }} <span class="income-tag">{{ 'Estimate' | t }}</span></h3>
+        <div class="income-row"><span>{{ 'Monthly' | t }}</span><strong>{{ settings.currency() }}{{ a.monthly | number:'1.2-2' }}</strong></div>
+        <div class="income-row"><span>{{ 'Quarterly' | t }}</span><strong>{{ settings.currency() }}{{ a.quarterly | number:'1.2-2' }}</strong></div>
+        <div class="income-row"><span>{{ 'Annual' | t }}</span><strong>{{ settings.currency() }}{{ a.annual | number:'1.2-2' }}</strong></div>
+        <small class="income-hint">{{ 'Based on' | t }} {{ a.months }} {{ 'complete months; months without income count as zero. This month so far:' | t }} {{ settings.currency() }}{{ a.currentMonthSoFar | number:'1.2-2' }} ({{ 'not included' | t }}).</small>
+      </ng-container>
+
+      <ng-container *ngIf="stabilityOf(s) as st">
+        <h3>{{ 'Stability' | t }}</h3>
+        <p *ngIf="st.calculated === 'insufficient'" class="income-hint">{{ 'Not enough history' | t }} ({{ st.months }} {{ 'months, at least 3 needed' | t }}).</p>
+        <p *ngIf="st.calculated !== 'insufficient'">
+          {{ 'Declared' | t }}: <b>{{ stabilityLabel(s.stability) | t }}</b> · {{ 'Calculated' | t }}: <b>{{ (st.calculated === 'stable' ? 'Stable' : 'Variable') | t }}</b> ({{ 'variation' | t }} {{ st.variationPercent }}%)
+        </p>
+        <p class="income-warn" *ngIf="st.mismatch">⚠️ {{ mismatchText(s) }}</p>
+      </ng-container>
+
+      <h3>{{ 'Last months' | t }}</h3>
+      <svg class="income-bars" viewBox="0 0 140 70" role="img" [attr.aria-label]="'Income by month' | t">
+        <g *ngFor="let b of bars(s); let i = index">
+          <rect [attr.x]="i * 20 + 3" [attr.y]="60 - b.height * 0.55" width="14" [attr.height]="b.height * 0.55" rx="2" [attr.fill]="s.color" [attr.opacity]="b.current ? 0.45 : 1"></rect>
+          <text [attr.x]="i * 20 + 10" y="68" text-anchor="middle" font-size="6" fill="currentColor">{{ b.label }}</text>
+        </g>
+      </svg>
+      <small class="income-hint">{{ 'The lighter bar is the running month.' | t }}</small>
+
+      <h3>{{ 'History' | t }}</h3>
+      <p class="income-hint" *ngIf="!history(s).length">{{ 'No income recorded for this source yet.' | t }}</p>
+      <div class="income-row" *ngFor="let t of history(s)">
+        <span>{{ t.date }} · {{ (isCash(t) ? 'Cash' : 'Bank transfer') | t }}<ng-container *ngIf="t.grossAmount"> · {{ 'gross' | t }} {{ t.grossAmount | number:'1.0-0' }}</ng-container></span>
+        <strong>{{ settings.currency() }}{{ t.amount | number:'1.2-2' }}</strong>
+      </div>
+
+      <div class="income-actions">
+        <button class="x-btn" (click)="openForm(s)">{{ 'Edit' | t }}</button>
+        <button class="x-btn income-ghost" (click)="toggleActive(s)">{{ (s.active ? 'Deactivate' : 'Activate') | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="remove(s)">{{ 'Delete' | t }}</button>
+      </div>
+    </section>
+  </ng-container>
+
+  <!-- ================= FORM ================= -->
+  <section class="x-card income-card income-form" *ngIf="view() === 'form'">
+    <h2>{{ (editingId ? 'Edit income source' : 'New income source') | t }}</h2>
+
+    <label>{{ 'Name' | t }}</label>
+    <input class="x-input" type="text" maxlength="40" [(ngModel)]="fName" name="fName" />
+
+    <label>{{ 'Type' | t }}</label>
+    <select class="x-input" [(ngModel)]="fKind" name="fKind">
+      <option *ngFor="let k of kinds" [value]="k">{{ kindText(k) | t }}</option>
+    </select>
+    <input *ngIf="fKind === 'custom'" class="x-input" type="text" maxlength="30" [placeholder]="'Name of the type' | t" [(ngModel)]="fCustomKind" name="fCustomKind" />
+    <small class="income-hint" *ngIf="isCommercial(fKind)">{{ 'Sales are revenue, not profit. Record the cost of each sale to see its net benefit.' | t }}</small>
+
+    <label>{{ 'Icon (emoji)' | t }}</label>
+    <input class="x-input" type="text" maxlength="4" [(ngModel)]="fIcon" name="fIcon" />
+    <div class="income-colors">
+      <button *ngFor="let c of colors" [style.background]="c" [class.active]="fColor === c" (click)="fColor = c" [attr.aria-label]="c"></button>
+    </div>
+
+    <label>{{ 'Stability' | t }}</label>
+    <div class="income-toggle">
+      <button *ngFor="let st of stabilities" [class.active]="fStability === st" (click)="fStability = st">{{ stabilityLabel(st) | t }}</button>
+    </div>
+
+    <label>{{ 'How often' | t }}</label>
+    <select class="x-input" [(ngModel)]="fPeriodicity" name="fPeriodicity">
+      <option value="none">{{ 'No fixed schedule' | t }}</option>
+      <option value="weekly">{{ 'Weekly' | t }}</option>
+      <option value="biweekly">{{ 'Every two weeks (two days of the month)' | t }}</option>
+      <option value="monthly">{{ 'Monthly' | t }}</option>
+      <option value="days">{{ 'Fixed days of the month' | t }}</option>
+      <option value="every">{{ 'Every N days, weeks or months' | t }}</option>
+    </select>
+    <select *ngIf="fPeriodicity === 'weekly'" class="x-input" [(ngModel)]="fWeekday" name="fWeekday">
+      <option *ngFor="let d of weekdays; let i = index" [ngValue]="i">{{ d | t }}</option>
+    </select>
+    <div class="income-pair" *ngIf="fPeriodicity === 'biweekly'">
+      <input class="x-input" type="number" min="1" max="31" [(ngModel)]="fDay1" name="fDay1" />
+      <input class="x-input" type="number" min="1" max="31" [(ngModel)]="fDay2" name="fDay2" />
+    </div>
+    <input *ngIf="fPeriodicity === 'monthly'" class="x-input" type="number" min="1" max="31" [(ngModel)]="fDay1" name="fDayM" [placeholder]="'Day of the month' | t" />
+    <input *ngIf="fPeriodicity === 'days'" class="x-input" type="text" [(ngModel)]="fDays" name="fDays" [placeholder]="'e.g. 15, 30' | t" />
+    <div class="income-pair" *ngIf="fPeriodicity === 'every'">
+      <input class="x-input" type="number" min="1" [(ngModel)]="fEveryN" name="fEveryN" />
+      <select class="x-input" [(ngModel)]="fEveryUnit" name="fEveryUnit">
+        <option value="days">{{ 'days' | t }}</option>
+        <option value="weeks">{{ 'weeks' | t }}</option>
+        <option value="months">{{ 'months' | t }}</option>
+      </select>
+    </div>
+    <ng-container *ngIf="fPeriodicity === 'every'">
+      <label>{{ 'Starting on' | t }}</label>
+      <input class="x-input" type="date" [(ngModel)]="fAnchor" name="fAnchor" />
+    </ng-container>
+    <small class="income-hint" *ngIf="fPeriodicity !== 'none'">{{ 'In short months a day that does not exist falls on the last day of the month.' | t }}</small>
+
+    <label>{{ 'Usual method' | t }}</label>
+    <div class="income-toggle">
+      <button [class.active]="fMethod === 'transfer'" (click)="setMethod('transfer')">{{ 'Bank transfer' | t }}</button>
+      <button [class.active]="fMethod === 'cash'" (click)="setMethod('cash')">{{ 'Cash' | t }}</button>
+    </div>
+    <label>{{ 'Default account' | t }}</label>
+    <select class="x-input" [(ngModel)]="fAccountId" name="fAccountId">
+      <option value="">{{ 'None' | t }}</option>
+      <option *ngFor="let a of accountService.activeAccounts()" [value]="a.id">{{ a.name }}</option>
+    </select>
+
+    <label>{{ 'Verifiability' | t }}</label>
+    <div class="income-toggle">
+      <button [class.active]="fVerifiability === 'documented'" (click)="fVerifiability = 'documented'">{{ 'Documented' | t }}</button>
+      <button [class.active]="fVerifiability === 'declared'" (click)="fVerifiability = 'declared'">{{ 'Declared' | t }}</button>
+    </div>
+    <small class="income-hint">{{ 'Documented = you can prove it (payroll stub, certificate). Only recurring and documented sources count as guaranteed income.' | t }}</small>
+
+    <label>{{ 'Expected gross (optional)' | t }}</label>
+    <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fGross" name="fGross" />
+    <label>{{ 'Expected net: what reaches the account (optional)' | t }}</label>
+    <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fNet" name="fNet" />
+
+    <label class="income-check"><input type="checkbox" [(ngModel)]="fActive" name="fActive" /> {{ 'Active' | t }}</label>
+
+    <p class="income-error" *ngIf="error()">{{ error() }}</p>
+    <div class="income-actions">
+      <button class="x-btn" (click)="save()">{{ 'Save' | t }}</button>
+      <button class="x-btn income-ghost" (click)="back()">{{ 'Cancel' | t }}</button>
+    </div>
+  </section>
+
+  <!-- ================= REVIEW ================= -->
+  <section class="x-card income-card" *ngIf="view() === 'review'">
+    <h2>{{ 'Classify your income' | t }}</h2>
+    <p class="income-hint">{{ 'Tick the movements and choose their source. Amounts and dates do not change.' | t }}</p>
+    <div class="income-actions">
+      <select class="x-input income-select" [ngModel]="reviewSource()" (ngModelChange)="reviewSource.set($event)" name="reviewSource">
+        <option value="">{{ 'Choose a source' | t }}</option>
+        <option *ngFor="let s of sources.sources()" [value]="s.id">{{ s.name }}</option>
+      </select>
+      <button class="x-btn" [disabled]="!reviewSource() || !marked().size" (click)="assign()">{{ 'Assign' | t }}</button>
+      <button class="x-btn income-ghost" (click)="markAll()">{{ 'Select all' | t }}</button>
+    </div>
+    <p class="income-hint" *ngIf="!sources.sources().length">{{ 'Create a source first.' | t }}</p>
+    <label class="income-tx" *ngFor="let t of unclassified()">
+      <input type="checkbox" [checked]="marked().has(t.id)" (change)="toggle(t.id)" />
+      <span>{{ t.date }} · {{ accountName(t.accountId) }} · {{ (isCash(t) ? 'Cash' : 'Bank transfer') | t }}</span>
+      <strong>{{ settings.currency() }}{{ t.amount | number:'1.2-2' }}</strong>
+    </label>
+  </section>
+</div>

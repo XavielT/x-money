@@ -1,0 +1,19 @@
+<section class="expected" *ngIf="visible()">
+  <p class="expected-msg" *ngIf="message()">{{ message() }}</p>
+
+  <div class="expected-item x-card" *ngFor="let e of pending()">
+    <strong>{{ icon(e) }} {{ 'Did your income arrive?' | t }}</strong>
+    <span>{{ name(e) }} · {{ weekday(e) }} {{ e.date }}<ng-container *ngIf="expectedNet(e)"> · {{ settings.currency() }}{{ expectedNet(e) | number:'1.2-2' }}</ng-container></span>
+    <small>{{ 'Until you confirm it, it is only an expectation: it is not in your balance.' | t }}</small>
+    <div class="expected-actions">
+      <button class="x-btn" *ngIf="expectedNet(e)" (click)="confirm(e)">{{ 'Yes, it arrived' | t }}</button>
+      <button class="x-btn expected-ghost" (click)="other(e)">{{ (expectedNet(e) ? 'Different amount' : 'Yes, enter the amount') | t }}</button>
+      <button class="x-btn expected-ghost" (click)="skip(e)">{{ 'It did not happen' | t }}</button>
+    </div>
+  </div>
+
+  <div class="expected-item x-card" *ngFor="let e of upcoming()">
+    <strong>{{ icon(e) }} {{ 'Expected this week' | t }}</strong>
+    <span>{{ name(e) }} · {{ weekday(e) }} {{ e.date }}<ng-container *ngIf="expectedNet(e)"> · {{ settings.currency() }}{{ expectedNet(e) | number:'1.2-2' }}</ng-container></span>
+  </div>
+</section>

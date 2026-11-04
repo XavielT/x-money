@@ -36,6 +36,7 @@ export class TransactionsComponent {
   searchText = signal('');
   filterCategoryId = signal('');
   filterAccountId = signal('');
+  filterMethod = signal(''); // income only: 'cash' or 'transfer'
 
   monthLabel = computed(() =>
     new Date(this.year(), this.month() - 1, 1).toLocaleString(this.translate.locale(), {
@@ -52,9 +53,15 @@ export class TransactionsComponent {
     const text = this.searchText().trim().toLowerCase();
     const categoryId = this.filterCategoryId();
     const accountId = this.filterAccountId();
+    const method = this.filterMethod();
     return this.transactionService.forMonth(this.year(), this.month()).filter((t) => {
       if (categoryId && t.categoryId !== categoryId) return false;
       if (accountId && t.accountId !== accountId && t.toAccountId !== accountId) return false;
+      if (method) {
+        if (t.type !== 'income') return false;
+        const cash = this.accountService.byId(t.accountId)?.type === 'cash';
+        if ((method === 'cash') !== cash) return false;
+      }
       if (text) {
         const categoryName = t.categoryId
           ? this.categoryService.byId(t.categoryId)?.name.toLowerCase() ?? ''

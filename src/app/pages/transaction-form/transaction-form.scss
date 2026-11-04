@@ -260,3 +260,29 @@
   font-size: 0.85rem;
   margin-top: 8px;
 }
+
+.transaction-form-details {
+  margin: 8px 0;
+  font-size: 0.88rem;
+
+  summary {
+    cursor: pointer;
+    color: var(--main-ultra-light);
+  }
+
+  .x-input {
+    margin-top: 6px;
+  }
+}
+
+.transaction-form-deduction {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+
+  button {
+    background: none;
+    border: none;
+    color: var(--main-ultra-light);
+  }
+}

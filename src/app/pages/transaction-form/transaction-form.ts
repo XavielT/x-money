@@ -14,6 +14,11 @@ import { RecurringService } from '../../../shared/services/recurring.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { TxErrorCode, TxResult } from '../../../shared/domain/validation';
 import { TX_ERROR_TEXT } from '../../../shared/ui/tx-error-text';
+import { IncomeSourceService } from '../../../shared/services/income-source.service';
+import { IncomeService } from '../../../shared/services/income.service';
+import { isCommercialKind } from '../../../shared/models/income-source.model';
+import { saleBenefit } from '../../../shared/domain/income';
+import { round2, sumMoney } from '../../../shared/utils/money';
 
 @Component({
   selector: 'app-transaction-form',
@@ -35,6 +40,13 @@ export class TransactionFormComponent {
   date = '';
   note = '';
   repeat: RecurringFrequency | 'none' = 'none';
+
+  // income details (2.9.0)
+  sourceId = '';
+  grossAmount: number | null = null;
+  deductions: { name: string; amount: number | null }[] = [];
+  costBasis: number | null = null;
+  saleExpenses: number | null = null;
   error = signal<TxErrorCode | ''>('');
 
   private static readonly ERRORS = TX_ERROR_TEXT;
@@ -80,6 +92,8 @@ export class TransactionFormComponent {
     private router: Router,
     private transactionService: TransactionService,
     private recurringService: RecurringService,
+    public incomeSources: IncomeSourceService,
+    private incomeService: IncomeService,
     private translate: TranslateService,
     public categoryService: CategoryService,
     public accountService: AccountService,
@@ -103,17 +117,76 @@ export class TransactionFormComponent {
         this.fee = existing.fee ?? null;
         this.date = existing.date;
         this.note = existing.note ?? '';
+        this.sourceId = existing.incomeSourceId ?? '';
+        this.grossAmount = existing.grossAmount ?? null;
+        this.deductions = (existing.deductions ?? []).map((d) => ({ ...d }));
+        this.costBasis = existing.costBasis ?? null;
+        this.saleExpenses = existing.saleExpenses ?? null;
       } else {
         this.editId = null;
       }
     }
     if (!this.editId) this.syncCurrencyToAccount();
+
+    // "Did it arrive?" opens the form preloaded with the source and the expected date
+    const query = this.route.snapshot.queryParamMap;
+    if (!this.editId && query.get('kind') === 'income') {
+      this.kind.set('income');
+      const date = query.get('date');
+      if (date) this.date = date;
+      const source = query.get('source');
+      if (source) this.sourceChanged(source);
+    }
+  }
+
+  // ----- income source (optional): fills the usual account, category and expected amounts
+
+  activeSources() {
+    return this.incomeSources.active();
+  }
+
+  sourceChanged(id: string): void {
+    this.sourceId = id;
+    const s = this.incomeSources.byId(id);
+    if (!s) return;
+    const usable = s.defaultAccountId && this.accountService.byId(s.defaultAccountId)?.archived !== true ? s.defaultAccountId : undefined;
+    const preferred = usable ?? this.accountService.activeAccounts().find((a) => (s.method === 'cash' ? a.type === 'cash' : a.type === 'bank'))?.id;
+    if (preferred) this.accountChanged(preferred);
+    if (!this.categoryId()) this.categoryId.set(this.incomeService.categoryFor(s.kind));
+    if (this.amount == null && s.expectedNet) this.amount = s.expectedNet;
+    if (this.grossAmount == null && s.expectedGross) this.grossAmount = s.expectedGross;
+  }
+
+  sourceIsCommercial(): boolean {
+    const s = this.incomeSources.byId(this.sourceId);
+    return !!s && isCommercialKind(s.kind);
+  }
+
+  addDeduction(): void {
+    this.deductions = [...this.deductions, { name: '', amount: null }];
+  }
+
+  removeDeduction(i: number): void {
+    this.deductions = this.deductions.filter((_, idx) => idx !== i);
+  }
+
+  // gross - deductions - net: what the declared figures leave unexplained (shown, never forced)
+  deductionsGap(): number | null {
+    if (this.grossAmount == null || this.amount == null || !this.deductions.length) return null;
+    return round2(Number(this.grossAmount) - sumMoney(this.deductions.map((d) => Number(d.amount) || 0)) - Number(this.amount));
+  }
+
+  // price - cost - expenses of a sale; null until a cost is entered (the price alone says nothing)
+  saleBenefitPreview(): number | null {
+    if (this.costBasis == null || this.amount == null) return null;
+    return saleBenefit({ amount: Number(this.amount), costBasis: Number(this.costBasis), saleExpenses: Number(this.saleExpenses) || 0 }) ?? null;
   }
 
   setKind(kind: TransactionKind): void {
     if (this.kind() === kind) return;
     this.kind.set(kind);
     this.categoryId.set(''); // categories differ per type; transfers have none
+    if (kind !== 'income') this.sourceId = '';
     this.showNewCategory.set(false);
   }
 
@@ -253,6 +326,19 @@ export class TransactionFormComponent {
       fee: this.showFeeField() && this.fee && this.fee > 0 ? Number(this.fee) : undefined,
       date: this.date,
       note: this.note.trim() || undefined,
+      ...this.incomeFields(),
+    };
+  }
+
+  private incomeFields(): Partial<NewTransaction> {
+    if (this.kind() !== 'income') return {};
+    const deductions = this.deductions.filter((d) => d.name.trim() || d.amount).map((d) => ({ name: d.name.trim(), amount: Number(d.amount) || 0 }));
+    return {
+      incomeSourceId: this.sourceId || undefined,
+      grossAmount: this.grossAmount ? Number(this.grossAmount) : undefined,
+      deductions: deductions.length ? deductions : undefined,
+      costBasis: this.costBasis != null && String(this.costBasis) !== '' ? Number(this.costBasis) : undefined,
+      saleExpenses: this.saleExpenses ? Number(this.saleExpenses) : undefined,
     };
   }
 

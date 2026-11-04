@@ -1,0 +1,100 @@
+<div class="x-page benefits">
+  <header class="benefits-header">
+    <button class="benefits-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Benefits' | t }}</h1>
+  </header>
+
+  <p class="benefits-msg" *ngIf="message()">{{ message() }}</p>
+
+  <ng-container *ngIf="view() === 'list'">
+    <section class="x-card benefits-card">
+      <h2>{{ 'Estimated saving from benefits' | t }} <span class="benefits-tag">{{ estimateLabel | t }}</span></h2>
+      <div class="benefits-row"><span>{{ 'This month' | t }}</span><strong>{{ settings.currency() }}{{ monthSaving() | number:'1.2-2' }}</strong></div>
+      <div class="benefits-row"><span>{{ 'This year so far' | t }}</span><strong>{{ settings.currency() }}{{ yearSaving() | number:'1.2-2' }}</strong></div>
+      <small class="benefits-hint">{{ 'What you really used when you noted uses; otherwise the estimated monthly value. This is not money in your accounts and it never adds to your income, balances or payment capacity.' | t }}</small>
+    </section>
+
+    <p class="benefits-hint" *ngIf="!benefits.benefits().length">{{ 'No benefits yet. Add the ones your employer gives you that are not money.' | t }}</p>
+
+    <div class="x-card benefits-card" *ngFor="let b of benefits.benefits()" [class.inactive]="!b.active">
+      <div class="benefits-row">
+        <strong>{{ b.name }}</strong>
+        <span class="benefits-tag">{{ kindLabel(b.kind) | t }}</span>
+      </div>
+      <small class="benefits-hint"><ng-container *ngIf="b.provider">{{ b.provider }} · </ng-container>{{ 'Estimated value per month' | t }}: {{ settings.currency() }}{{ b.monthlyValue | number:'1.2-2' }} ({{ 'estimate' | t }})<ng-container *ngIf="!b.active"> · {{ 'Inactive' | t }}</ng-container></small>
+
+      <ng-container *ngIf="usage(b) as u">
+        <div class="benefits-row"><span>{{ 'Used this month' | t }}</span><strong>{{ settings.currency() }}{{ u.used | number:'1.2-2' }}</strong></div>
+        <ng-container *ngIf="u.limit !== undefined">
+          <div class="benefits-bar"><div class="benefits-bar-fill" [class.over]="u.overLimit" [style.width.%]="u.percentOfLimit! > 100 ? 100 : u.percentOfLimit"></div></div>
+          <small class="benefits-hint">{{ u.percentOfLimit | number:'1.0-1' }}% {{ 'of the limit' | t }} ({{ settings.currency() }}{{ u.limit | number:'1.0-0' }}) · {{ 'left' | t }} {{ settings.currency() }}{{ u.remaining | number:'1.2-2' }}</small>
+        </ng-container>
+      </ng-container>
+      <div class="benefits-row"><span>{{ 'Estimated saving this month' | t }}</span><strong>{{ settings.currency() }}{{ saving(b) | number:'1.2-2' }}</strong></div>
+      <small class="benefits-hint">{{ estimateLabel | t }}</small>
+
+      <div class="benefits-actions">
+        <button class="x-btn" (click)="toggleUse(b)">{{ 'Note a use' | t }}</button>
+        <button class="x-btn benefits-ghost" (click)="openForm(b)">{{ 'Edit' | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="remove(b)">{{ 'Delete' | t }}</button>
+      </div>
+
+      <div class="benefits-use" *ngIf="openUse() === b.id">
+        <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="uAmount" name="uAmount" [placeholder]="'Amount' | t" />
+        <input class="x-input" type="date" [(ngModel)]="uDate" name="uDate" />
+        <input class="x-input" type="text" maxlength="60" [(ngModel)]="uNote" name="uNote" [placeholder]="'Note (optional)' | t" />
+        <button class="x-btn" (click)="addUse(b)">{{ 'Save use' | t }}</button>
+        <small class="benefits-hint">{{ 'A use is only a note: no movement is created and no account changes.' | t }}</small>
+        <div class="benefits-row" *ngFor="let u of b.uses.slice(0, 8)">
+          <span>{{ u.date }}<ng-container *ngIf="u.note"> · {{ u.note }}</ng-container></span>
+          <span>{{ settings.currency() }}{{ u.amount | number:'1.2-2' }} <button class="benefits-x" (click)="removeUse(b, u.id)" aria-label="Delete use">✕</button></span>
+        </div>
+      </div>
+    </div>
+
+    <button class="x-btn" (click)="openForm()">{{ 'Add benefit' | t }}</button>
+  </ng-container>
+
+  <section class="x-card benefits-card" *ngIf="view() === 'form'">
+    <h2>{{ (editingId ? 'Edit benefit' : 'New benefit') | t }}</h2>
+
+    <label class="benefits-check"><input type="checkbox" [(ngModel)]="fMonetary" name="fMonetary" /> {{ 'It is money that reaches one of my accounts' | t }}</label>
+    <div class="benefits-callout" *ngIf="fMonetary">
+      <p>{{ 'This is money you receive: record it as an income source, not as a benefit.' | t }}</p>
+      <button class="x-btn" (click)="goToIncome()">{{ 'Go to income sources' | t }}</button>
+    </div>
+
+    <ng-container *ngIf="!fMonetary">
+      <label>{{ 'Name' | t }}</label>
+      <input class="x-input" type="text" maxlength="40" [(ngModel)]="fName" name="fName" />
+      <label>{{ 'Type' | t }}</label>
+      <select class="x-input" [(ngModel)]="fKind" name="fKind">
+        <option *ngFor="let k of kinds" [value]="k">{{ kindLabel(k) | t }}</option>
+      </select>
+      <label>{{ 'Provided by (optional)' | t }}</label>
+      <input class="x-input" type="text" maxlength="40" [(ngModel)]="fProvider" name="fProvider" />
+      <label>{{ 'Linked payroll source (optional)' | t }}</label>
+      <select class="x-input" [(ngModel)]="fSource" name="fSource">
+        <option value="">{{ 'None' | t }}</option>
+        <option *ngFor="let s of sources.sources()" [value]="s.id">{{ s.name }}</option>
+      </select>
+      <label>{{ 'Estimated value per month' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fValue" name="fValue" />
+      <label>{{ 'Monthly usage limit (optional)' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fLimit" name="fLimit" />
+      <label>{{ 'Valid from (optional)' | t }}</label>
+      <input class="x-input" type="date" [(ngModel)]="fFrom" name="fFrom" />
+      <label>{{ 'Valid until (optional)' | t }}</label>
+      <input class="x-input" type="date" [(ngModel)]="fTo" name="fTo" />
+      <label>{{ 'Notes' | t }}</label>
+      <input class="x-input" type="text" maxlength="120" [(ngModel)]="fNotes" name="fNotes" />
+      <label class="benefits-check"><input type="checkbox" [(ngModel)]="fActive" name="fActive" /> {{ 'Active' | t }}</label>
+
+      <p class="benefits-error" *ngIf="error()">{{ error() }}</p>
+      <div class="benefits-actions">
+        <button class="x-btn" (click)="save()">{{ 'Save' | t }}</button>
+        <button class="x-btn benefits-ghost" (click)="back()">{{ 'Cancel' | t }}</button>
+      </div>
+    </ng-container>
+  </section>
+</div>

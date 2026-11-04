@@ -49,6 +49,11 @@
           {{ acc.icon }} {{ acc.name }}
         </option>
       </select>
+      <select class="x-input" [ngModel]="filterMethod()" (ngModelChange)="filterMethod.set($event)" name="filterMethod">
+        <option value="">{{ 'All methods' | t }}</option>
+        <option value="cash">{{ 'Cash income' | t }}</option>
+        <option value="transfer">{{ 'Bank transfer income' | t }}</option>
+      </select>
     </div>
   </div>
 
