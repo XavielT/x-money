@@ -17,6 +17,8 @@ or storage; it takes plain data in and returns plain data out.
 
 **Dashboard (2.11.0):** `dashboard.ts` (desglose fijo/variable, flujo mensual, historial de ahorros, comparación de meses, dinero disponible, flujo de efectivo 30/60/90, gastos inusuales).
 
+**Insights (2.15.0):** `insights/` (contrato `Insight`/`Estimate<T>`, detectores de gastos pequeños, aumentos inusuales, ahorro bajo y estacional, ajustes de presupuesto, cuánto apartar, dependencia de ingreso variable, sostenibilidad de una deuda nueva, declarado vs registrado, posibles duplicados y compromisos próximos; motor de reglas, huella y descarte; adaptadores de proyecciones).
+
 **Loans (2.14.0):** `loans.ts` (tasas TNA/TEA/plana, periodicidad, tabla de amortización por método, costos y costo efectivo por TIR, cuadrícula monto × plazo, comparación de ofertas, abonos extra, cancelación anticipada y cambios de tasa), `loan-ops.ts` (saldo derivado, reparto interés → cargos → capital, recálculo tras un abono extra, alertas 7/3/1 días y vencida) y `borrowing.ts` (niveles de ingreso, tres lecturas, umbrales de referencia, caída de ingresos).
 
 **Goals (2.13.0):** `goals.ts` (reservado, progreso con excedente visible, recordatorios del plan, proyección con dos escenarios y «historial insuficiente», viabilidad contra el margen mensual, fondo de emergencia de N meses con aviso de cambio de meta, totales personal/comercial, validación).

@@ -35,6 +35,10 @@ Aún no hay código de IA. Este documento es el contrato que deben respetar los 
   separado (tabla `xmoney.ai_usage`) y aplica topes propios, para medir y limitar cuánto consume la app personal.
 - La service role key de Supabase jamás entra a la app.
 
+## Base determinística (2.15.0)
+
+La IA de los prompts 10 y 11 **narra y explica** lo que `shared/domain/insights/` ya calculó: cada `Insight` trae su evidencia (cifras con periodo e ids de movimientos), su fórmula, su estado de dato (`confirmed` / `estimate`) y su huella. Los candidatos a duplicados (`SmartInsightService.duplicateCandidates`) también alimentan la IA. La IA no calcula ni modifica ninguna cifra; todo lo que proyecta es `Estimate<T>` con sus supuestos.
+
 ## Funciones de IA (a llenar en el prompt 11)
 
 | Función de IA | Problema que resuelve | Alternativa determinística | Decisión |
