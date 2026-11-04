@@ -16,10 +16,20 @@ interface SettingsState {
   taxPercent?: number; // bank transfer tax (DGII), editable because it changes
   suggestions?: SuggestionMemory;
   budget?: BudgetSettings; // distribution base and risk threshold (2.10.0)
+  dashboard?: DashboardSettings;
   antMax?: number; // ceiling of a "small purchase"; empty = the usual relative rule
 }
 
 export const DEFAULT_BUDGET_SETTINGS: BudgetSettings = { base: 'avg3', riskAt: 90 };
+
+// Dashboard preferences (2.11.0)
+export interface DashboardSettings {
+  cushion: number; // the balance below which the cash-flow projection warns (0 = off)
+  includeVariableIncome: boolean; // add the average of variable income to the projection (off by default)
+  unusualMin: number; // unusual expenses below this amount are never flagged
+}
+
+export const DEFAULT_DASHBOARD_SETTINGS: DashboardSettings = { cushion: 0, includeVariableIncome: false, unusualMin: 500 };
 
 const NO_SUGGESTIONS: SuggestionMemory = { transferDismissed: [], incomeDismissed: [], incomeConfirmed: [] };
 
@@ -36,6 +46,9 @@ export class SettingsService {
 
   private _budget = signal<BudgetSettings>(DEFAULT_BUDGET_SETTINGS);
   budget = this._budget.asReadonly();
+
+  private _dashboard = signal<DashboardSettings>(DEFAULT_DASHBOARD_SETTINGS);
+  dashboard = this._dashboard.asReadonly();
 
   private _antMax = signal<number | undefined>(undefined);
   antMax = this._antMax.asReadonly();
@@ -57,6 +70,14 @@ export class SettingsService {
     this._suggestions.set({ ...NO_SUGGESTIONS, ...(saved.suggestions ?? {}) });
     this._budget.set({ ...DEFAULT_BUDGET_SETTINGS, ...(saved.budget ?? {}) });
     this._antMax.set(saved.antMax);
+    this._dashboard.set({ ...DEFAULT_DASHBOARD_SETTINGS, ...(saved.dashboard ?? {}) });
+  }
+
+  setDashboard(patch: Partial<DashboardSettings>): void {
+    const next = { ...this._dashboard(), ...patch };
+    if (!Number.isFinite(next.cushion) || next.cushion < 0 || !Number.isFinite(next.unusualMin) || next.unusualMin < 0) return;
+    this._dashboard.set(next);
+    this.persist();
   }
 
   setBudgetBase(base: BaseIncome): void {
@@ -111,6 +132,7 @@ export class SettingsService {
       suggestions: this._suggestions(),
       budget: this._budget(),
       antMax: this._antMax(),
+      dashboard: this._dashboard(),
     });
   }
 

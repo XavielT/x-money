@@ -124,6 +124,15 @@ export class IncomeService {
     return total;
   }
 
+  // Guaranteed income still expected between two dates (dated events, for the cash-flow projection)
+  guaranteedExpectedEvents(from: string, to: string): { date: string; amount: number }[] {
+    const ids = new Set(this.capacity().guaranteedSources);
+    return this.upcomingBetween(from, to)
+      .filter((e) => ids.has(e.sourceId))
+      .map((e) => ({ date: e.date, amount: this.incomeSources.byId(e.sourceId)?.expectedNet ?? 0 }))
+      .filter((e) => e.amount > 0);
+  }
+
   private upcomingBetween(from: string, to: string): Expectation[] {
     const out: Expectation[] = [];
     for (const s of this.incomeSources.active()) out.push(...expectations(s, this.transactions.transactions(), from, to, this.today()).filter((e) => e.status === 'upcoming'));
