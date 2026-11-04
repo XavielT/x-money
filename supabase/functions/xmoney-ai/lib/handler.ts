@@ -144,7 +144,15 @@ ${COMMON_RULES[locale as Locale]}`;
   return {
     async handle(req: AiRequest): Promise<AiResponse> {
       const principal = await deps.authenticate(req.authorization);
-      if (!principal || !principal.aiEnabled) return fail('unauthorized', principal ? 403 : 401);
+      if (!principal) return fail('unauthorized', 401);
+      // AI is the user's own choice: an authenticated account turns it on or off with its own switch in
+      // Settings (the account itself can still be disabled by the operator, which authenticate refuses)
+      if (req.action === 'enable' || req.action === 'disable') {
+        const on = req.action === 'enable';
+        await deps.store.setAiEnabled(principal.accountId, on);
+        return { status: 200, body: { ok: true, aiEnabled: on } };
+      }
+      if (!principal.aiEnabled) return fail('unauthorized', 403);
       if (req.action === 'usage') return usage(principal);
       if (req.action === 'run') return run(principal, req.body);
       return { status: 404, body: { ok: false, code: 'bad_request', message: MESSAGES.bad_request } };

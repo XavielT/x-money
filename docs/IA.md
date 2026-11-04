@@ -88,6 +88,14 @@ Treinta funciones en ocho módulos (`src/shared/ai/catalog.ts`, lista blanca del
 
 **Balance honesto:** donde la IA aporta valor real es en el texto libre (categorizar notas, normalizar nombres, agrupar artículos, juzgar duplicados dudosos). Las narraciones (la mayoría) solo redactan cifras que ya están en pantalla: su utilidad es de comodidad y se mide con el uso; si pasados dos meses casi no las abres, apágalas por módulo en Ajustes.
 
+## La IA se activa por cuenta, con el interruptor del usuario (2.18.2)
+
+El indicador `ai_enabled` de la cuenta ya no lo pone un operador en la base: al encender **Usar inteligencia
+artificial** o **Captura inteligente** en Ajustes, la app lo enciende en el servidor (acciones `enable`/`disable` de
+`xmoney-ai`, solo sobre la **propia** cuenta autenticada), y una llamada que encuentre la cuenta sin activar lo hace
+una vez y reintenta. El operador sigue pudiendo bloquear una cuenta entera (`enabled = false`) y los topes siguen
+iguales. Pruebas: `server-tests/ai-enable.spec.ts` y `shared/ai/ai-enable.spec.ts`.
+
 ## Captura inteligente (2.18.0): la excepción a «solo agregados»
 
 La directriz de 2.16.0 es que a la IA solo salen agregados. **La captura no puede cumplirla**: para leer una

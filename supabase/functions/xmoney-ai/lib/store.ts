@@ -23,6 +23,8 @@ export interface AiStore {
   usageSince(accountId: string, sinceMs: number): Promise<{ requests: number; tokens: number }>;
   record(row: Omit<UsageRow, 'createdAt'>, nowMs: number): Promise<void>;
   // calls of ONE feature since an instant (the daily capture cap) and the estimated cost since an instant
+  // The user's own switch: AI is turned on (or off) for the account by the account itself
+  setAiEnabled(accountId: string, on: boolean): Promise<void>;
   featureCountSince(accountId: string, feature: string, sinceMs: number): Promise<number>;
   costSince(accountId: string, sinceMs: number): Promise<number>;
   // fixed window counter per key (per minute rate limit)
@@ -40,6 +42,12 @@ export class MemoryAiStore implements AiStore {
 
   async record(row: Omit<UsageRow, 'createdAt'>, nowMs: number) {
     this.rows.push({ ...row, createdAt: nowMs });
+  }
+
+  enabled = new Map<string, boolean>();
+
+  async setAiEnabled(accountId: string, on: boolean) {
+    this.enabled.set(accountId, on);
   }
 
   async featureCountSince(accountId: string, feature: string, sinceMs: number) {
@@ -83,6 +91,10 @@ export class PgAiStore implements AiStore {
        values ($1::uuid, $2, $3, $4::int, $5::int, $6::numeric, $7, $8::int)`,
       [row.accountId, row.feature, row.model, row.inputTokens, row.outputTokens, row.estCostUsd, row.status, row.latencyMs]
     );
+  }
+
+  async setAiEnabled(accountId: string, on: boolean) {
+    await this.exec(`update xmoney.accounts set ai_enabled = $2::boolean where id = $1::uuid`, [accountId, on]);
   }
 
   async featureCountSince(accountId: string, feature: string, sinceMs: number) {

@@ -4,7 +4,7 @@ import { ApiService } from '../services/api.service';
 import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { TranslateService } from '../services/translate.service';
-import { AiGateway, XMoneyAiGateway } from './ai-gateway';
+import { AiGateway, GatewayResult, XMoneyAiGateway } from './ai-gateway';
 import {
   AI_MODULES,
   AiFailure,
@@ -158,6 +158,21 @@ export class AiService {
   setEnabled(on: boolean): void {
     this.savePrefs({ ...this._prefs(), enabled: on });
     if (!on) this._limitReached.set(false);
+    else void this.enableOnServer();
+  }
+
+  // The account's AI flag on the server is the user's own switch: turning it on here turns it on there,
+  // and if that could not be done now (offline, no session) the first call tries again by itself
+  private async enableOnServer(): Promise<boolean> {
+    if (!this.gateway.enable || this.auth.mode() !== 'signed-in' || !this._online()) return false;
+    return (await this.gateway.enable()).ok;
+  }
+
+  // A call that finds the account not enabled yet turns it on once (the user already switched AI on here)
+  private async call(request: AiWireRequest): Promise<GatewayResult> {
+    const result = await this.gateway.run(request);
+    if (!result.ok && result.code === 'unauthorized' && (await this.enableOnServer())) return this.gateway.run(request);
+    return result;
   }
 
   setModule(m: AiModule, on: boolean): void {
@@ -169,8 +184,10 @@ export class AiService {
   // never turns on without the consent being recorded; turning it off withdraws the consent.
   setDocuments(on: boolean): void {
     const p = this._prefs();
-    if (on) this.savePrefs({ ...p, documentsEnabled: true, documentsConsentAt: new Date().toISOString() });
-    else this.savePrefs({ ...p, documentsEnabled: false, documentsConsentAt: undefined });
+    if (on) {
+      this.savePrefs({ ...p, documentsEnabled: true, documentsConsentAt: new Date().toISOString() });
+      void this.enableOnServer();
+    } else this.savePrefs({ ...p, documentsEnabled: false, documentsConsentAt: undefined });
   }
 
   setSkipPreview(on: boolean): void {
@@ -278,7 +295,7 @@ export class AiService {
     if (!this._online()) return { ok: false, code: 'offline' };
     if (this.captureToday() >= CAPTURE_DAILY_LIMIT) return { ok: false, code: 'capture-limit' };
     if (this.usageLevel() === 'full') return { ok: false, code: 'limit' };
-    const result = await this.gateway.run({ feature: def.id, input, locale: this.locale(), requestId: crypto.randomUUID() });
+    const result = await this.call({ feature: def.id, input, locale: this.locale(), requestId: crypto.randomUUID() });
     if (!result.ok) {
       if (result.code === 'quota') this._limitReached.set(true);
       if (result.code === 'daily_limit') return { ok: false, code: 'capture-limit' };
@@ -303,7 +320,7 @@ export class AiService {
   }
 
   private async send(def: AiFeatureDef, key: string, locale: AiLocale, input: unknown, values?: Record<string, string>): Promise<AiRunResult> {
-    const result = await this.gateway.run({ feature: def.id, input: input ?? {}, locale, requestId: crypto.randomUUID() });
+    const result = await this.call({ feature: def.id, input: input ?? {}, locale, requestId: crypto.randomUUID() });
     if (!result.ok) {
       if (result.code === 'quota') this._limitReached.set(true);
       return { ok: false, code: result.code };
@@ -327,7 +344,8 @@ export class AiService {
 
   async refreshUsage(): Promise<boolean> {
     if (this.auth.mode() !== 'signed-in' || !this._online()) return false;
-    const r = await this.gateway.usage();
+    let r = await this.gateway.usage();
+    if (!r.ok && r.code === 'unauthorized' && (await this.enableOnServer())) r = await this.gateway.usage();
     if (!r.ok) return false;
     this._serverUsage.set(r.usage);
     this._limitReached.set(r.usage.requests >= r.usage.requestCap || r.usage.tokens >= r.usage.tokenCap);

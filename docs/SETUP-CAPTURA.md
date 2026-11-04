@@ -29,15 +29,20 @@ El código está completo y **apagado**. Para encenderlo:
    autorizado: `https://<ref de x-core>.supabase.co/functions/v1/xmoney-mail/callback`.
 5. Guarda el ID y el secreto del cliente (no los pegues en el chat ni en el repo).
 
-### 2.2 Qué dice Google (verificado en la documentación oficial el 04/11/2026)
-- Un proyecto con tipo de usuario **Externo** y estado de publicación **«Testing»** recibe un token de refresco
-  que **caduca a los 7 días** (documentación de OAuth 2.0 de Google): tendrás que **reconectar cada semana**. La app
-  avisa («La conexión venció… Conecta de nuevo») y reconectar es un toque.
-- `gmail.readonly` está clasificado como alcance **restringido**; publicar la app para otras personas exige la
-  verificación de OAuth y una evaluación de seguridad. **Para una sola cuenta personal no conviene**: lo práctico es
-  dejar la app en «Testing» (con tu correo como usuario de prueba) y aceptar reconectar cada 7 días.
-- No pude verificar con la documentación qué excepciones podría haber para cuentas de Workspace propias; si tu
-  correo es de una organización, el administrador puede restringir el acceso (`admin_policy_enforced`).
+### 2.2 Para no reconectar cada 7 días: publica la app («In production»)
+- Según la documentación de OAuth 2.0 de Google (verificada el 04/11/2026), un proyecto **Externo** en estado
+  **«Testing»** recibe un token de refresco que **caduca a los 7 días**. Esa es la causa: no es del código de X Money.
+- La salida práctica para **una sola cuenta personal**: en *Pantalla de consentimiento de OAuth* pulsa **«Publicar
+  la aplicación»** (estado «In production»). Sin pedir verificación, Google mostrará la pantalla «Google no ha
+  verificado esta aplicación» **una vez** (Avanzado → «Ir a X Money (no seguro)») y limita la app a 100 usuarios
+  nuevos (documentación de Google sobre apps no verificadas, verificada hoy): para ti solo no importa.
+- Lo que **no** pude verificar en la documentación: que en estado «In production» sin verificar el token deje de
+  caducar a los 7 días (la página de apps no verificadas no habla de la vida del token). La regla documentada de los 7 días
+  es la de «Testing», así que debería desaparecer, pero confírmalo en la práctica: si la conexión volviera a
+  caducar, la app lo avisa («La conexión venció… Conecta de nuevo») y reconectar es un toque.
+- `gmail.readonly` es un alcance **restringido**; la verificación completa (y su evaluación de seguridad) solo
+  hace falta para publicar la app a otras personas.
+- Si tu correo es de una organización (Workspace), el administrador puede restringir el acceso (`admin_policy_enforced`).
 
 ### 2.3 Supabase (x-core)
 1. Aplica `supabase/migrations/202611051200_xmoney_mail_connections.sql` (tabla `xmoney.mail_connections`, el

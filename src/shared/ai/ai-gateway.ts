@@ -16,6 +16,8 @@ export type GatewayUsage = { ok: true; usage: AiServerUsage } | { ok: false; cod
 export interface AiGateway {
   run(request: AiWireRequest): Promise<GatewayResult>;
   usage(): Promise<GatewayUsage>;
+  // Turns AI on for the account on the server (the user's own switch). Optional so simple fakes stay valid.
+  enable?(): Promise<{ ok: boolean }>;
 }
 
 // What the screens can say about each failure is decided by the code; the server text is never shown
@@ -47,6 +49,15 @@ export class XMoneyAiGateway implements AiGateway {
       return { ok: true, output: String(r.output ?? ''), usage: { inputTokens: Number(r.usage?.inputTokens ?? 0), outputTokens: Number(r.usage?.outputTokens ?? 0) }, model: String(r.model ?? ''), requestId: String(r.requestId ?? request.requestId) };
     } catch (error) {
       return { ok: false, code: failureOf(error) };
+    }
+  }
+
+  async enable(): Promise<{ ok: boolean }> {
+    try {
+      await this.client.call('enable', {}, { base: this.baseUrl });
+      return { ok: true };
+    } catch {
+      return { ok: false };
     }
   }
 

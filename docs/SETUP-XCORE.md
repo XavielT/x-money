@@ -156,3 +156,5 @@ solo cuando NO estás en modo standalone.
 ## Lo que esta ronda NO cubre
 Verificación de correo, recuperación por correo (no hay infraestructura de correo), autenticación de dos factores,
 tiempo real, uso por otras personas.
+
+> **2.18.2:** ya no hace falta activar `ai_enabled` a mano en la base: lo activa el propio usuario desde Ajustes (ver `docs/IA.md`).
