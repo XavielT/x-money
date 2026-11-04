@@ -13,10 +13,6 @@
       <input type="checkbox" [ngModel]="ai.moduleEnabled(m)" (ngModelChange)="ai.setModule(m, $event)" [name]="'ai-' + m" />
       <span>{{ moduleLabel(m) | t }}</span>
     </label>
-    <label class="ai-row ai-disabled">
-      <input type="checkbox" [checked]="false" disabled name="ai-documents" />
-      <span><b>{{ 'Smart capture of documents' | t }}</b><small>{{ 'Not available yet. It will have its own switch, off by default, because it needs to send the document itself.' | t }}</small></span>
-    </label>
 
     <h3>{{ 'Use this month' | t }}</h3>
     <div class="ai-bar"><div class="ai-bar-fill" [class.warn]="ai.usageLevel() === 'warn'" [class.full]="ai.usageLevel() === 'full'" [style.width.%]="ai.usagePercent() > 100 ? 100 : ai.usagePercent()"></div></div>

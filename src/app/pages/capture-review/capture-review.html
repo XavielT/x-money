@@ -1,0 +1,158 @@
+<div class="x-page review">
+  <header class="review-head">
+    <a routerLink="/capture" class="review-back" aria-label="Back">←</a>
+    <h1 class="x-page-title">{{ 'Review captures' | t }}</h1>
+  </header>
+  <p class="review-note">{{ 'Nothing is registered until you approve it. Check each field against the original; the ones in doubt are highlighted.' | t }}</p>
+
+  <p class="review-warn" *ngIf="stale() > 0">⏰ {{ stale() }} {{ 'capture(s) have been waiting for more than 7 days. Nothing is approved or deleted on its own.' | t }}</p>
+  <p class="review-message" *ngIf="message()">{{ message() }}</p>
+  <p class="review-ok" *ngIf="notice()">{{ notice() }}</p>
+  <p class="review-note" *ngIf="queued().length">⏳ {{ queued().length }} {{ 'waiting for the connection' | t }}</p>
+
+  <div class="x-card review-empty" *ngIf="!list().length">
+    <p>{{ 'No captures waiting.' | t }} <a routerLink="/capture">{{ 'Capture something' | t }}</a></p>
+  </div>
+
+  <div class="review-bulk" *ngIf="marked().size > 0">
+    <button class="x-btn" (click)="approveMarked()">{{ 'Approve the marked' | t }} ({{ marked().size }})</button>
+  </div>
+
+  <article class="x-card review-item" *ngFor="let d of list()" [class.dup]="d.status === 'duplicate'">
+    <div class="review-row" (click)="toggleOpen(d.id)">
+      <input type="checkbox" [checked]="marked().has(d.id)" (click)="$event.stopPropagation()" (change)="toggleMark(d.id)" [disabled]="d.status === 'duplicate'" [attr.aria-label]="'Mark' | t" />
+      <div class="review-main">
+        <b>{{ d.counterparty || d.description || (kindLabel(d.kind) | t) }}</b>
+        <small>{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
+      </div>
+      <strong class="review-amount" [class.doubt]="!d.amountMinor || d.doubts.includes('amount-unverified')">{{ amountLabel(d) }}</strong>
+    </div>
+
+    <ul class="review-doubts" *ngIf="d.doubts.length">
+      <li *ngFor="let x of d.doubts">⚠️ {{ doubtLabel(x) | t }}</li>
+    </ul>
+
+    <div class="review-detail" *ngIf="open() === d.id">
+      <div class="review-original" *ngIf="capture.originalOf(d.id) as o">
+        <img *ngIf="o.thumb" [src]="o.thumb" alt="" />
+        <pre *ngIf="o.text">{{ o.text }}</pre>
+        <span *ngIf="o.kind === 'pdf'">📄 {{ o.name }}</span>
+      </div>
+      <p class="review-note" *ngIf="d.notes">{{ 'The reader says:' | t }} {{ d.notes | t }}</p>
+
+      <div class="review-dup" *ngIf="d.status === 'duplicate'">
+        <p>{{ 'This looks the same as' | t }} {{ duplicateOfLabel(d) }}.</p>
+        <button class="x-btn" (click)="registerAnyway(d)">{{ 'Register anyway' | t }}</button>
+      </div>
+
+      <label>{{ 'Type' | t }}
+        <select class="x-input" [ngModel]="d.kind" (ngModelChange)="setField(d, { kind: $event })" [name]="'kind-' + d.id">
+          <option *ngFor="let k of kinds" [value]="k">{{ kindLabel(k) | t }}</option>
+        </select>
+      </label>
+
+      <div class="review-two">
+        <label>{{ 'Amount' | t }}
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="amountOf(d)" (ngModelChange)="setAmount(d, $event)" [name]="'amount-' + d.id" [class.hl]="!d.amountMinor || d.doubts.includes('amount-unverified')" />
+        </label>
+        <label>{{ 'Currency' | t }}
+          <select class="x-input" [ngModel]="d.currency || ''" (ngModelChange)="setCurrency(d, $event)" [name]="'cur-' + d.id" [class.hl]="!d.currency">
+            <option value="" disabled>{{ 'Choose' | t }}</option>
+            <option value="DOP">RD$</option>
+            <option value="USD">US$</option>
+          </select>
+        </label>
+      </div>
+
+      <label>{{ 'Date' | t }}
+        <input class="x-input" type="date" [ngModel]="d.occurredAt" (ngModelChange)="setField(d, { occurredAt: $event })" [name]="'date-' + d.id" [class.hl]="d.doubts.includes('date-future') || d.doubts.includes('date-assumed')" />
+      </label>
+
+      <label>{{ (d.kind === 'income' ? 'Paid by' : 'Merchant') | t }}
+        <input class="x-input" type="text" maxlength="80" [ngModel]="d.counterparty" (ngModelChange)="setField(d, { counterparty: $event })" [name]="'cp-' + d.id" />
+      </label>
+
+      <label *ngIf="d.kind !== 'goal_contribution' && d.kind !== 'unknown'">{{ (d.kind === 'income' ? 'Deposited in' : d.kind === 'card_payment' || d.kind === 'internal_transfer' ? 'From account' : 'Account or card') | t }}
+        <select class="x-input" [ngModel]="d.resolvedAccountId || ''" (ngModelChange)="setField(d, { resolvedAccountId: $event || undefined })" [name]="'acc-' + d.id" [class.hl]="!d.resolvedAccountId">
+          <option value="">{{ 'Choose' | t }}</option>
+          <option *ngFor="let a of accounts.activeAccounts()" [value]="a.id">{{ a.name }}{{ a.last4 ? ' ·' + a.last4 : '' }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'internal_transfer' || d.kind === 'card_payment'">{{ (d.kind === 'card_payment' ? 'Card paid' : 'To account') | t }}
+        <select class="x-input" [ngModel]="d.resolvedToAccountId || ''" (ngModelChange)="setField(d, { resolvedToAccountId: $event || undefined })" [name]="'to-' + d.id" [class.hl]="!d.resolvedToAccountId">
+          <option value="">{{ 'Choose' | t }}</option>
+          <option *ngFor="let a of accounts.activeAccounts()" [value]="a.id">{{ a.name }}{{ a.last4 ? ' ·' + a.last4 : '' }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'expense' || d.kind === 'invoice_purchase'">{{ 'Category' | t }}
+        <select class="x-input" [ngModel]="d.resolvedCategoryId || ''" (ngModelChange)="setField(d, { resolvedCategoryId: $event || undefined })" [name]="'cat-' + d.id" [class.hl]="!d.resolvedCategoryId && !d.asBusiness">
+          <option value="">{{ 'Choose' | t }}</option>
+          <option *ngFor="let c of categories.expenseCategories()" [value]="c.id">{{ c.icon }} {{ c.name | t }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'income'">{{ 'Income source' | t }}
+        <select class="x-input" [ngModel]="d.resolvedIncomeSourceId || ''" (ngModelChange)="setField(d, { resolvedIncomeSourceId: $event || undefined })" [name]="'src-' + d.id">
+          <option value="">{{ 'No source' | t }}</option>
+          <option *ngFor="let s of sources.active()" [value]="s.id">{{ s.icon }} {{ s.name }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'goal_contribution'">{{ 'Goal' | t }}
+        <select class="x-input" [ngModel]="d.resolvedGoalId || ''" (ngModelChange)="setField(d, { resolvedGoalId: $event || undefined })" [name]="'goal-' + d.id" [class.hl]="!d.resolvedGoalId">
+          <option value="">{{ 'Choose' | t }}</option>
+          <option *ngFor="let g of goals.goals()" [value]="g.id">{{ g.name }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'loan_payment'">{{ 'Loan' | t }}
+        <select class="x-input" [ngModel]="d.resolvedLoanId || ''" (ngModelChange)="setField(d, { resolvedLoanId: $event || undefined })" [name]="'loan-' + d.id" [class.hl]="!d.resolvedLoanId">
+          <option value="">{{ 'Choose' | t }}</option>
+          <option *ngFor="let l of loans.active()" [value]="l.id">{{ l.name }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="d.kind === 'invoice_purchase'" class="review-check">
+        <input type="checkbox" [ngModel]="d.asBusiness" (ngModelChange)="setField(d, { asBusiness: $event || undefined })" [name]="'biz-' + d.id" />
+        <span>{{ 'This purchase is for my business (goes to the inventory purchase, RD$ only)' | t }}</span>
+      </label>
+
+      <div class="review-invoice" *ngIf="d.kind === 'invoice_purchase' && (d.fiscalNumber || d.taxAmountMinor || d.lines?.length)">
+        <small>{{ 'Invoice data (kept as data, the tax is not another expense):' | t }}</small>
+        <small *ngIf="d.fiscalNumber">NCF {{ d.fiscalNumber }}</small>
+        <small *ngIf="d.taxId">RNC {{ d.taxId }}</small>
+        <small *ngIf="d.taxAmountMinor">ITBIS RD${{ d.taxAmountMinor / 100 | number: '1.2-2' }}</small>
+        <small *ngFor="let l of d.lines">· {{ l.description }}{{ l.quantity ? ' ×' + l.quantity : '' }}</small>
+      </div>
+
+      <label>{{ 'Reference' | t }}
+        <input class="x-input" type="text" maxlength="40" [ngModel]="d.reference" (ngModelChange)="setField(d, { reference: $event })" [name]="'ref-' + d.id" />
+      </label>
+
+      <label class="review-check" *ngIf="isLarge(d)">
+        <input type="checkbox" [ngModel]="confirmLarge().has(d.id)" (ngModelChange)="setLargeConfirmed(d.id, $event)" [name]="'large-' + d.id" />
+        <span>{{ 'I confirm this large amount is right' | t }}</span>
+      </label>
+
+      <ul class="review-missing" *ngIf="d.status === 'pending' && missing(d).length">
+        <li *ngFor="let m of missing(d)">{{ missingLabel(m) | t }}</li>
+      </ul>
+
+      <div class="review-actions">
+        <button class="x-btn" [disabled]="d.status !== 'pending' || missing(d).length > 0" (click)="approve(d)">{{ 'Approve' | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="reject(d)">{{ 'Reject' | t }}</button>
+      </div>
+    </div>
+  </article>
+
+  <button class="x-btn review-history-toggle" (click)="showHistory.set(!showHistory())">{{ (showHistory() ? 'Hide history' : 'Show history') | t }}</button>
+  <div class="x-card review-history" *ngIf="showHistory()">
+    <p *ngIf="!capture.drafts.history().length" class="review-note">{{ 'Nothing yet.' | t }}</p>
+    <div *ngFor="let h of capture.drafts.history()" class="review-hist-row">
+      <span>{{ h.status === 'approved' ? '✅' : h.status === 'failed' ? '⚠️' : '✖️' }} {{ h.counterparty || h.description || (kindLabel(h.kind) | t) }}</span>
+      <small>{{ h.createdAt | date: 'yyyy-MM-dd' }} · {{ h.source }}<ng-container *ngIf="h.status === 'approved'"> · {{ 'registered from capture' | t }}</ng-container></small>
+    </div>
+  </div>
+</div>

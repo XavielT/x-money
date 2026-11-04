@@ -1,0 +1,62 @@
+<section class="ai-settings x-card">
+  <h2>{{ 'Smart capture' | t }}</h2>
+  <p class="ai-note">{{ 'Register expenses and deposits from a screenshot of a bank notice, an invoice (image or PDF), your voice, pasted text or your email. Each capture becomes a draft that you approve: nothing is registered on its own.' | t }}</p>
+
+  <label class="ai-row">
+    <input type="checkbox" [ngModel]="ai.prefs().documentsEnabled" (ngModelChange)="toggle($event)" name="capture-enabled" />
+    <span><b>{{ 'Use smart capture' | t }}</b><small>{{ captureStatusKey() | t }} {{ 'Independent from the general AI switch.' | t }}</small></span>
+  </label>
+
+  <div class="ai-sent" *ngIf="consent()">
+    <h3>{{ 'What leaves your device' | t }}</h3>
+    <p class="ai-note">{{ 'Unlike the rest of the AI, capture must send the document itself: the image, the PDF, or the text of each capture you choose (a notice, your spoken sentence, an email), to your X Money server and from there to Anthropic to be read.' | t }}</p>
+    <p class="ai-note">{{ 'Before sending, images are reduced to 1600 px and their metadata is removed; you can draw black boxes over what you do not want to send. The server does not store the document or the text: it keeps only usage counts. Nothing else from your data is sent.' | t }}</p>
+    <p class="ai-note">{{ 'The original is deleted from this device after you approve or reject the draft. You can withdraw this consent at any time by turning the switch off.' | t }}</p>
+    <div class="ai-actions">
+      <button class="x-btn" (click)="accept()">{{ 'I understand, turn it on' | t }}</button>
+      <button class="x-btn x-btn-danger" (click)="cancel()">{{ 'Not now' | t }}</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="ai.prefs().documentsEnabled">
+    <p class="ai-note">{{ 'Consent given on' | t }} {{ ai.prefs().documentsConsentAt | date: 'yyyy-MM-dd HH:mm' }} · {{ ai.captureToday() }} / {{ limit }} {{ 'captures today' | t }}</p>
+    <label class="ai-row">
+      <input type="checkbox" [ngModel]="capture.prefs().saveReceipts" (ngModelChange)="capture.setPrefs({ saveReceipts: $event })" name="capture-receipts" />
+      <span><b>{{ 'Keep receipt' | t }}</b><small>{{ 'Keeps a small thumbnail with the movement, only on this device (receipts are not synced).' | t }}</small></span>
+    </label>
+    <label class="ai-row">
+      <input type="checkbox" [ngModel]="ai.prefs().skipPreview" (ngModelChange)="ai.setSkipPreview($event)" name="capture-skip" />
+      <span><b>{{ 'Do not show the preview before sending' | t }}</b><small>{{ 'Only hides the preview; the consent above stays.' | t }}</small></span>
+    </label>
+    <a routerLink="/capture" class="ai-link">📷 {{ 'Open capture' | t }}</a>
+
+    <h3>{{ 'Read my email (Gmail)' | t }}</h3>
+    <label class="ai-row">
+      <input type="checkbox" [ngModel]="capture.prefs().mailEnabled" (ngModelChange)="toggleMail($event)" name="mail-enabled" />
+      <span><b>{{ 'Look for bank notices in my email' | t }}</b><small>{{ 'Off by default. Read only: it can never send, change or delete anything. Only messages from the senders you list are read.' | t }}</small></span>
+    </label>
+
+    <ng-container *ngIf="capture.prefs().mailEnabled">
+      <p class="ai-note" *ngIf="mail.status() as s">
+        {{ s.connected ? ('Connected' | t) + (s.email ? ': ' + s.email : '') : ('Not connected' | t) }}
+        <ng-container *ngIf="s.lastReadAt"> · {{ 'last read' | t }} {{ s.lastReadAt | date: 'yyyy-MM-dd HH:mm' }}</ng-container>
+        <ng-container *ngIf="!s.configured"> · {{ 'not set up on the server yet' | t }}</ng-container>
+      </p>
+      <label class="ai-note" for="mail-senders">{{ 'Senders to read (addresses or domains, separated by commas)' | t }}</label>
+      <input id="mail-senders" class="x-input" type="text" [ngModel]="sendersText()" (ngModelChange)="sendersText.set($event)" name="mail-senders" [placeholder]="'e.g. notifications@yourbank.example' | t" />
+      <label class="ai-note" for="mail-subject">{{ 'Words in the subject (optional)' | t }}</label>
+      <input id="mail-subject" class="x-input" type="text" [ngModel]="subjectText()" (ngModelChange)="subjectText.set($event)" name="mail-subject" [placeholder]="'e.g. purchase, deposit' | t" />
+      <label class="ai-row">
+        <input type="checkbox" [ngModel]="capture.prefs().includePdf" (ngModelChange)="capture.setPrefs({ includePdf: $event })" name="mail-pdf" />
+        <span>{{ 'Include PDF attachments (off by default)' | t }}</span>
+      </label>
+      <div class="ai-actions">
+        <button class="x-btn" (click)="saveFilter()">{{ 'Save filter' | t }}</button>
+        <button class="x-btn" (click)="connect()" *ngIf="!mail.status()?.connected">{{ 'Connect Gmail' | t }}</button>
+        <button class="x-btn" (click)="search()" [disabled]="mail.scanning() || !mail.status()?.connected">{{ mail.scanning() ? ('Searching…' | t) : ('Search my email' | t) }}</button>
+        <button class="x-btn x-btn-danger" (click)="disconnect()" *ngIf="mail.status()?.connected">{{ 'Disconnect' | t }}</button>
+      </div>
+    </ng-container>
+    <p class="ai-note" *ngIf="message()">{{ message() }}</p>
+  </ng-container>
+</section>

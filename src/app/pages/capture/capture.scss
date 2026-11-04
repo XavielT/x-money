@@ -1,0 +1,142 @@
+.capture-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.capture-review {
+  color: var(--text);
+  font-size: 0.82rem;
+  text-decoration: underline;
+}
+
+.capture-badge {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--expense);
+  color: #fff;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.capture-note {
+  color: var(--main-ultra-light);
+  font-size: 0.78rem;
+  margin: 0 0 10px;
+}
+
+.capture-message {
+  color: var(--expense);
+  font-size: 0.82rem;
+}
+
+.capture-ok {
+  color: var(--income);
+  font-size: 0.82rem;
+}
+
+.capture-off {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.capture-drop {
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--main-ultra-light);
+
+  &.over {
+    border-color: var(--income);
+  }
+}
+
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.capture-label {
+  display: block;
+  font-size: 0.82rem;
+  margin: 8px 0 4px;
+}
+
+.capture-text {
+  width: 100%;
+  resize: vertical;
+}
+
+.capture-items {
+  padding: 14px;
+  margin: 12px 0;
+
+  h2 {
+    font-size: 0.95rem;
+    margin: 0 0 6px;
+  }
+}
+
+.capture-item {
+  margin-bottom: 12px;
+}
+
+.capture-thumb {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  touch-action: none; // dragging draws a box instead of scrolling the page
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 340px;
+    border-radius: 8px;
+    user-select: none;
+  }
+}
+
+.capture-box {
+  position: absolute;
+  background: #000;
+  pointer-events: none;
+}
+
+.capture-pdf {
+  font-size: 0.85rem;
+  padding: 8px 0;
+}
+
+.capture-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.capture-preview {
+  white-space: pre-wrap;
+  font-size: 0.78rem;
+  max-height: 160px;
+  overflow: auto;
+  margin: 0 0 6px;
+}
+
+.capture-send {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.capture-skip {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+  margin-top: 10px;
+}

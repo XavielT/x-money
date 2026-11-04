@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
       await injector.get(TranslateService).ensureLoaded();
     }),
     provideRouter(routes),
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('xmoney-sw.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),

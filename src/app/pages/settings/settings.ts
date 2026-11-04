@@ -18,6 +18,7 @@ import { SyncService } from '../../../shared/services/sync.service';
 import { StorageService } from '../../../shared/services/storage.service';
 import { BackupReminderService } from '../../../shared/services/backup-reminder.service';
 import { AiSettingsComponent } from '../../../shared/components/ai-settings/ai-settings';
+import { CaptureSettingsComponent } from '../../../shared/components/capture-settings/capture-settings';
 import { InsightSettingsComponent } from '../../../shared/components/insight-settings/insight-settings';
 import { CardNoticeService } from '../../../shared/services/card-notice.service';
 import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
@@ -27,7 +28,7 @@ import { CategoryManagerComponent } from '../../../shared/components/category-ma
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent, ChangeHistoryComponent, CategoryManagerComponent, InsightSettingsComponent, AiSettingsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent, ChangeHistoryComponent, CategoryManagerComponent, InsightSettingsComponent, AiSettingsComponent, CaptureSettingsComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

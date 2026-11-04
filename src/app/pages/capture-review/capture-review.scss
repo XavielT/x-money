@@ -1,0 +1,163 @@
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-back {
+  color: var(--text);
+  font-size: 1.2rem;
+  text-decoration: none;
+}
+
+.review-note {
+  color: var(--main-ultra-light);
+  font-size: 0.78rem;
+  margin: 0 0 10px;
+}
+
+.review-message {
+  color: var(--expense);
+  font-size: 0.82rem;
+}
+
+.review-ok {
+  color: var(--income);
+  font-size: 0.82rem;
+}
+
+.review-warn {
+  font-size: 0.82rem;
+}
+
+.review-empty {
+  padding: 12px 16px;
+  font-size: 0.85rem;
+}
+
+.review-bulk {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  margin-bottom: 8px;
+}
+
+.review-item {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+
+  &.dup {
+    border-left: 3px solid var(--expense);
+  }
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.review-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.74rem;
+  }
+}
+
+.review-amount.doubt {
+  color: var(--expense);
+}
+
+.review-doubts,
+.review-missing {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+}
+
+.review-missing {
+  color: var(--expense);
+}
+
+.review-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.78rem;
+  }
+}
+
+.review-original {
+  img {
+    max-width: 100%;
+    max-height: 280px;
+    border-radius: 8px;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    font-size: 0.74rem;
+    max-height: 160px;
+    overflow: auto;
+    margin: 0;
+  }
+}
+
+.review-two {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+
+.hl {
+  outline: 2px solid var(--expense);
+}
+
+.review-check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.review-invoice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.review-history-toggle {
+  margin: 8px 0;
+}
+
+.review-history {
+  padding: 10px 14px;
+}
+
+.review-hist-row {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  font-size: 0.82rem;
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.72rem;
+  }
+}
