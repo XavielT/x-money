@@ -16,6 +16,7 @@ export const routes: Routes = [
   { path: 'reconcile/:id', loadComponent: () => import('./pages/reconcile/reconcile').then((m) => m.ReconcileComponent) },
   // heavier pages load on demand to keep the first screen light
   { path: 'business', loadComponent: () => import('./pages/business/business').then((m) => m.BusinessComponent) },
+  { path: 'goals', loadComponent: () => import('./pages/goals/goals').then((m) => m.GoalsComponent) },
   { path: 'analysis', loadComponent: () => import('./pages/analysis/analysis').then((m) => m.AnalysisComponent) },
   { path: 'budgets/plan', loadComponent: () => import('./pages/budget-plan/budget-plan').then((m) => m.BudgetPlanComponent) },
   { path: 'fixed', loadComponent: () => import('./pages/fixed-expenses/fixed-expenses').then((m) => m.FixedExpensesComponent) },

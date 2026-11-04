@@ -15,6 +15,7 @@ import { TranslateService } from '../../../shared/services/translate.service';
 import { CreditCardService } from '../../../shared/services/credit-card.service';
 import { CardAlert } from '../../../shared/domain/cards';
 import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
+import { GoalService } from '../../../shared/services/goal.service';
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
@@ -101,6 +102,11 @@ export class HomeComponent {
   // Credit card cut / due alerts (nothing is shown for a paid statement) and cards to complete
   cardAlerts = computed(() => this.cardService.alerts().slice(0, 4));
   incompleteCards = computed(() => this.cardService.incompleteCards());
+  goalReminders = computed(() => this.goals.reminders());
+
+  goalName(id: string): string {
+    return this.goals.byId(id)?.name ?? '';
+  }
 
   constructor(
     private budgetService: BudgetService,
@@ -110,7 +116,8 @@ export class HomeComponent {
     public categoryService: CategoryService,
     public accountService: AccountService,
     public settings: SettingsService,
-    private cardService: CreditCardService
+    private cardService: CreditCardService,
+    private goals: GoalService
   ) {
     this.cardService.ensureStatements();
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });

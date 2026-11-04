@@ -1,0 +1,185 @@
+<div class="x-page goals">
+  <h1 class="x-page-title">{{ 'Goals' | t }}</h1>
+  <p class="goals-note">{{ 'Money set aside in a goal stays in your accounts: it moves nothing, it only stops counting as available.' | t }}</p>
+
+  <!-- Reminders: confirmed with one tap, never automatic -->
+  <div class="goals-reminder x-card" *ngFor="let r of goalService.reminders()">
+    <span>{{ 'Today it is time to contribute to' | t }} <b>{{ goalName(r.goalId) }}</b></span>
+    <span class="goals-reminder-actions">
+      <button class="x-btn" (click)="confirmReminder(r)">{{ 'I contributed' | t }}</button>
+      <button class="goals-link" (click)="skipReminder(r)">{{ 'Not this time' | t }}</button>
+    </span>
+  </div>
+
+  <p class="goals-message" *ngIf="message()">{{ message() }}</p>
+
+  <!-- Totals: personal and commercial are shown apart and never summed -->
+  <div class="goals-totals x-card" *ngIf="list().length">
+    <div><small>{{ 'Reserved in personal goals' | t }}</small><b>{{ money(goalService.totals().personal) }}</b></div>
+    <div><small>{{ 'Reserved commercial capital' | t }}</small><b>{{ money(goalService.totals().commercial) }}</b></div>
+  </div>
+
+  <!-- New goal: templates only prefill the form -->
+  <div class="goals-templates" *ngIf="!formOpen()">
+    <button class="x-card goals-template" *ngFor="let t of templates" (click)="newGoal(t.kind)">{{ t.icon }} {{ t.label | t }}</button>
+  </div>
+
+  <form class="goals-form x-card" *ngIf="formOpen()" (ngSubmit)="saveGoal()">
+    <h2>{{ editingId ? ('Edit goal' | t) : ('New goal' | t) }}</h2>
+    <input class="x-input" name="name" [(ngModel)]="fName" [placeholder]="'Name' | t" />
+    <input class="x-input" name="customKind" *ngIf="fKind === 'custom'" [(ngModel)]="fCustomKind" [placeholder]="'What is it for?' | t" />
+    <input class="x-input" name="target" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fTarget" [placeholder]="'Target amount' | t" [disabled]="fKind === 'emergency'" />
+    <ng-container *ngIf="fKind === 'emergency'">
+      <label class="goals-label">{{ 'Months of expenses to cover' | t }}</label>
+      <div class="goals-months">
+        <button type="button" class="goals-chip" [class.on]="fMonths === 3" (click)="fMonths = 3">3</button>
+        <button type="button" class="goals-chip" [class.on]="fMonths === 6" (click)="fMonths = 6">6</button>
+        <select class="x-input" name="months" [(ngModel)]="fMonths">
+          <option *ngFor="let m of monthChoices" [ngValue]="m">{{ m }}</option>
+        </select>
+      </div>
+      <small class="goals-note">{{ 'The target is recalculated from your essential spending; you are told when it changes.' | t }}</small>
+    </ng-container>
+    <label class="goals-label">{{ 'Target date (optional)' | t }}</label>
+    <input class="x-input" name="date" type="date" [(ngModel)]="fDate" />
+    <label class="goals-label">{{ 'Plan (optional)' | t }}</label>
+    <div class="goals-plan">
+      <input class="x-input" name="plan" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fPlanAmount" [placeholder]="'Amount' | t" />
+      <select class="x-input" name="cadence" [(ngModel)]="fCadence">
+        <option value="weekly">{{ 'Weekly' | t }}</option>
+        <option value="biweekly">{{ 'Every two weeks' | t }}</option>
+        <option value="monthly">{{ 'Monthly' | t }}</option>
+      </select>
+    </div>
+    <label class="goals-label">{{ 'Associated account (informational only)' | t }}</label>
+    <select class="x-input" name="account" [(ngModel)]="fAccountId">
+      <option value="">{{ 'None' | t }}</option>
+      <option *ngFor="let a of accountOptions()" [value]="a.id">{{ a.name }}</option>
+    </select>
+    <div class="goals-actions">
+      <button class="x-btn" type="submit">{{ 'Save' | t }}</button>
+      <button class="goals-link" type="button" (click)="formOpen.set(false)">{{ 'Cancel' | t }}</button>
+    </div>
+  </form>
+
+  <div class="goals-empty x-card" *ngIf="!list().length && !formOpen()">
+    <p>{{ 'No goals yet. Pick a template above to start.' | t }}</p>
+  </div>
+
+  <ng-template #goalCard let-row>
+    <div class="goals-row x-card" [class.achieved]="row.status === 'achieved'">
+      <button class="goals-row-head" (click)="toggle(row.goal.id)">
+        <span class="goals-row-name">{{ iconOf(row.goal.kind) }} {{ row.goal.name }}</span>
+        <span class="goals-row-percent">{{ row.progress.percent | number:'1.0-1' }}%</span>
+      </button>
+      <div class="goals-bar"><div class="goals-bar-fill" [class.achieved]="row.status === 'achieved'" [style.width.%]="row.progress.barPercent"></div></div>
+      <div class="goals-numbers">
+        <span>{{ money(row.progress.reserved) }} {{ 'reserved' | t }}</span>
+        <span>{{ 'target' | t }} {{ money(row.progress.target) }}</span>
+      </div>
+      <small class="goals-surplus" *ngIf="row.progress.surplus > 0">{{ 'Above the target by' | t }} {{ money(row.progress.surplus) }}</small>
+      <div class="goals-meta">
+        <span *ngIf="row.goal.targetDate">📅 {{ row.goal.targetDate }}</span>
+        <span *ngIf="row.goal.status !== 'active'" class="goals-status">{{ row.status | t }}</span>
+        <span class="goals-via goals-via-{{ row.viability.status }}" *ngIf="row.viability.status !== 'no-date' && row.viability.status !== 'achieved'">{{ viabilityLabel(row.viability.status) | t }}</span>
+      </div>
+
+      <!-- Detail -->
+      <div class="goals-detail" *ngIf="openId() === row.goal.id">
+        <section *ngIf="openEmergency() as em" class="goals-emergency">
+          <h3>{{ 'Emergency fund' | t }}</h3>
+          <p>{{ 'Covers' | t }} <b>{{ em.coverage | number:'1.1-1' }}</b> {{ 'of' | t }} {{ em.months }} {{ 'months' | t }}</p>
+          <p class="goals-note">{{ 'Where does it come from?' | t }}
+            {{ em.base.basis === 'history' ? ('Median of your essential spending over the last months, plus minimum debt payments.' | t) : ('Fewer than 3 months of history: your declared fixed expenses plus minimum debt payments.' | t) }}
+            {{ money(em.base.monthly) }}/{{ 'month' | t }} × {{ em.months }} = {{ money(em.target) }} ({{ 'Estimate' | t }})
+          </p>
+          <div class="goals-notice" *ngIf="em.targetChange as c">
+            {{ 'Your target rose from' | t }} {{ money(c.from) }} {{ 'to' | t }} {{ money(c.to) }}
+            <button class="x-btn" (click)="acceptTarget(row.goal)">{{ 'Accept new target' | t }}</button>
+          </div>
+        </section>
+
+        <section class="goals-projection">
+          <h3>{{ 'Projection' | t }} <small>({{ 'Estimate' | t }})</small></h3>
+          <ng-container *ngIf="!row.projection.achieved">
+            <p *ngIf="row.projection.plan">{{ 'According to your plan' | t }}: {{ row.projection.plan.date || ('never' | t) }} <small>({{ money(row.projection.plan.monthly) }}/{{ 'month' | t }})</small></p>
+            <p *ngIf="row.projection.insufficient">{{ 'Insufficient history' | t }}</p>
+            <p *ngIf="row.projection.actual && !row.projection.insufficient">{{ 'At your real pace' | t }}: {{ row.projection.actual.date || ('never' | t) }} <small>({{ money(row.projection.actual.monthly) }}/{{ 'month' | t }})</small></p>
+            <p class="goals-over" *ngIf="row.projection.overdue">⚠️ {{ 'The target date has passed.' | t }}</p>
+          </ng-container>
+          <p *ngIf="row.projection.achieved">🎉 {{ 'Goal achieved' | t }}</p>
+          <ul class="goals-assumptions"><li *ngFor="let a of row.projection.assumptions">{{ a | t }}</li></ul>
+        </section>
+
+        <section class="goals-viability" *ngIf="row.goal.targetDate && row.status !== 'achieved'">
+          <h3>{{ 'Viability' | t }}: <b>{{ viabilityLabel(row.viability.status) | t }}</b> <small>({{ 'Estimate' | t }})</small></h3>
+          <p>{{ 'Needed per month' | t }}: {{ money(row.viability.required) }} · {{ 'Monthly margin' | t }}: {{ money(row.viability.margin) }}</p>
+          <small class="goals-note">{{ 'Margin = guaranteed income' | t }} {{ money(row.viability.components.guaranteedIncome) }} − {{ 'fixed' | t }} {{ money(row.viability.components.fixed) }} − {{ 'variable (median)' | t }} {{ money(row.viability.components.variableMedian) }} − {{ 'debt payments' | t }} {{ money(row.viability.components.debtPayments) }}</small>
+        </section>
+
+        <!-- Quick contribution / withdrawal -->
+        <section class="goals-quick" *ngIf="row.goal.status !== 'archived'">
+          <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" name="amount-{{ row.goal.id }}" [(ngModel)]="eAmount" [placeholder]="'Amount' | t" />
+          <input class="x-input" type="text" name="note-{{ row.goal.id }}" [(ngModel)]="eNote" [placeholder]="'Note (optional)' | t" />
+          <div class="goals-actions">
+            <button class="x-btn" [disabled]="!eAmount" (click)="addEntry(row.goal, 'contribution')">{{ 'Contribute' | t }}</button>
+            <button class="x-btn-danger" [disabled]="!eAmount" (click)="addEntry(row.goal, 'withdrawal')">{{ 'Withdraw' | t }}</button>
+          </div>
+        </section>
+
+        <!-- Use for inventory (business capital): one purchase, the money leaves the goal -->
+        <section *ngIf="row.goal.kind === 'business-capital' && row.goal.status !== 'archived'" class="goals-inventory">
+          <button class="goals-link" *ngIf="!inventoryOpen()" (click)="openInventory(row.goal)">🧰 {{ 'Use for inventory' | t }}</button>
+          <form *ngIf="inventoryOpen()" (ngSubmit)="buyInventory(row.goal)" class="goals-inventory-form">
+            <input class="x-input" name="iname" [(ngModel)]="iName" [placeholder]="'Item' | t" />
+            <select class="x-input" name="icat" [(ngModel)]="iCategory">
+              <option value="part">{{ 'Part' | t }}</option>
+              <option value="accessory">{{ 'Accessory' | t }}</option>
+              <option value="vehicle">{{ 'Vehicle' | t }}</option>
+              <option value="other">{{ 'Other' | t }}</option>
+            </select>
+            <input class="x-input" name="icost" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="iCost" [placeholder]="'Total cost' | t" />
+            <select class="x-input" name="iaccount" [(ngModel)]="iAccountId">
+              <option *ngFor="let a of accountOptions()" [value]="a.id">{{ a.name }}</option>
+            </select>
+            <small class="goals-note">{{ 'The amount leaves the goal and is bought as inventory from the chosen account. It is never counted as savings and as invested capital at the same time.' | t }}</small>
+            <div class="goals-actions">
+              <button class="x-btn" type="submit">{{ 'Buy inventory' | t }}</button>
+              <button class="goals-link" type="button" (click)="inventoryOpen.set(false)">{{ 'Cancel' | t }}</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Entries -->
+        <section class="goals-entries">
+          <h3>{{ 'History' | t }}</h3>
+          <p class="goals-note" *ngIf="!row.goal.entries.length">{{ 'No entries yet.' | t }}</p>
+          <div class="goals-entry" *ngFor="let e of goalService.entriesOf(row.goal)" [class.reversed]="e.reversed">
+            <span>{{ e.date }} · {{ e.type === 'contribution' ? ('Contribution' | t) : ('Withdrawal' | t) }}<small *ngIf="e.note"> · {{ e.note }}</small><small *ngIf="e.reversed"> · {{ 'reversed' | t }}</small></span>
+            <b>{{ e.type === 'contribution' ? '+' : '−' }}{{ money(e.amount) }}</b>
+            <button class="goals-link" *ngIf="!e.reversed" (click)="reverse(row.goal, e.id)">{{ 'Reverse' | t }}</button>
+          </div>
+        </section>
+
+        <div class="goals-actions">
+          <button class="goals-link" (click)="editGoal(row.goal)">{{ 'Edit' | t }}</button>
+          <button class="goals-link" *ngIf="row.goal.status === 'active'" (click)="setStatus(row.goal, 'paused')">{{ 'Pause' | t }}</button>
+          <button class="goals-link" *ngIf="row.goal.status === 'paused' || row.goal.status === 'archived'" (click)="setStatus(row.goal, 'active')">{{ 'Resume' | t }}</button>
+          <button class="goals-link" *ngIf="row.goal.status !== 'archived'" (click)="setStatus(row.goal, 'archived')">{{ 'Archive' | t }}</button>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-container *ngFor="let row of personalList()"><ng-container *ngTemplateOutlet="goalCard; context: { $implicit: row }"></ng-container></ng-container>
+
+  <ng-container *ngIf="commercialList().length">
+    <h2 class="goals-section">{{ 'Reserved commercial capital' | t }}</h2>
+    <ng-container *ngFor="let row of commercialList()"><ng-container *ngTemplateOutlet="goalCard; context: { $implicit: row }"></ng-container></ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="archivedList().length">
+    <h2 class="goals-section">{{ 'Archived' | t }}</h2>
+    <ng-container *ngFor="let row of archivedList()"><ng-container *ngTemplateOutlet="goalCard; context: { $implicit: row }"></ng-container></ng-container>
+  </ng-container>
+</div>

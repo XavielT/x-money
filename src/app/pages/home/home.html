@@ -57,7 +57,11 @@
     <a routerLink="/income" class="x-card">💼 {{ 'Income' | t }}</a>
     <a routerLink="/benefits" class="x-card">🎁 {{ 'Benefits' | t }}</a>
     <a routerLink="/business" class="x-card">🧰 {{ 'Business' | t }}</a>
+    <a routerLink="/goals" class="x-card">🎯 {{ 'Goals' | t }}</a>
   </section>
+
+  <!-- Plan reminders: one tap on the Goals page confirms; nothing is contributed on its own -->
+  <a routerLink="/goals" class="home-goal-reminder x-card" *ngFor="let r of goalReminders()">🎯 {{ 'Today it is time to contribute to' | t }} <b>{{ goalName(r.goalId) }}</b></a>
 
   <!-- Accounts strip (capped; full list lives on the Accounts page) -->
   <section class="home-accounts">
