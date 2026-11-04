@@ -25,9 +25,12 @@ export function failureOf(error: unknown): GatewayFailure {
   if (error.code === 'session_expired' || error.status === 401) return 'no-session';
   if (error.status === 403) return 'unauthorized'; // the account has no AI enabled
   if (error.code === 'quota') return 'quota';
+  if (error.code === 'daily_limit') return 'daily_limit';
+  if (error.code === 'invalid_output') return 'invalid_output';
   if (error.code === 'rate_limited' || error.status === 429) return 'rate_limited';
   if (error.code === 'timeout' || error.status === 504) return 'timeout';
   if (error.status === 400 || error.status === 413) return 'bad_request';
+  if (error.status === 502 && error.code === 'invalid_output') return 'invalid_output';
   return 'provider_error';
 }
 

@@ -13,3 +13,6 @@ export const isSyncConfigured = (): boolean => /^https?:\/\//.test(APP_CONFIG.ap
 // The AI function lives next to xmoney-api in the same project: same host, other function name.
 // Still no key here: the provider key is a secret of that function (docs/SETUP-XCORE.md).
 export const aiUrl = (apiUrl: string = APP_CONFIG.apiUrl): string => apiUrl.replace(/\/+$/, '').replace(/\/xmoney-api$/, '/xmoney-ai');
+
+// The Gmail connector of smart capture (2.18.0): same host, other function. Secrets live in that function.
+export const mailUrl = (apiUrl: string = APP_CONFIG.apiUrl): string => apiUrl.replace(/\/+$/, '').replace(/\/xmoney-api$/, '/xmoney-mail');

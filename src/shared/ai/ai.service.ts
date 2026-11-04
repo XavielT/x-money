@@ -16,12 +16,14 @@ import {
   AiServerUsage,
   AiStatus,
   AiWireRequest,
+  CAPTURE_DAILY_LIMIT,
   CLIENT_DAILY_LIMIT,
   DEFAULT_AI_PREFS,
   DEFAULT_REQUEST_CAP,
   DEFAULT_TOKEN_CAP,
 } from './ai.types';
 import { AI_CATALOG } from './catalog';
+import { CAPTURE_FEATURE } from './capture-feature';
 import { finalizeText } from './output';
 
 export const AI_GATEWAY = new InjectionToken<AiGateway>('AI_GATEWAY', {
@@ -66,6 +68,7 @@ export class AiService {
     }
     // the connection test: no module, nothing from the user
     for (const def of AI_CATALOG) this.register(def); // the functions of the modules (2.17.0)
+    this.register(CAPTURE_FEATURE); // smart capture (2.18.0): its own switch, outside the module list
     this.register({ id: 'ping', module: null, sends: 'nothing', labelKey: 'Connection test', describeKey: 'Nothing from your data is sent: only a fixed test word.', ttlMs: 0, output: 'plain' });
   }
 
@@ -112,6 +115,17 @@ export class AiService {
     return 'ready';
   }
 
+  // The state of smart capture, independent of the general switch and of the module ones
+  captureStatus(): 'off' | 'no-session' | 'offline' | 'capture-limit' | 'limit' | 'ready' {
+    const p = this._prefs();
+    if (!p.documentsEnabled || !p.documentsConsentAt) return 'off';
+    if (this.auth.mode() !== 'signed-in') return 'no-session';
+    if (!this._online()) return 'offline';
+    if (this.captureToday() >= CAPTURE_DAILY_LIMIT) return 'capture-limit';
+    if (this.usageLevel() === 'full') return 'limit';
+    return 'ready';
+  }
+
   moduleEnabled(m: AiModule): boolean {
     return !!this._prefs().modules[m];
   }
@@ -133,7 +147,7 @@ export class AiService {
 
   private readPrefs(): AiPrefs {
     const saved = this.storage.get<Partial<AiPrefs>>('ai-prefs', {});
-    return { ...DEFAULT_AI_PREFS, ...saved, documentsEnabled: false, modules: { ...(saved.modules ?? {}) }, acknowledged: [...(saved.acknowledged ?? [])], usage: { ...DEFAULT_AI_PREFS.usage, ...(saved.usage ?? {}) } };
+    return { ...DEFAULT_AI_PREFS, ...saved, documentsEnabled: !!saved.documentsEnabled && !!saved.documentsConsentAt, modules: { ...(saved.modules ?? {}) }, acknowledged: [...(saved.acknowledged ?? [])], usage: { ...DEFAULT_AI_PREFS.usage, ...(saved.usage ?? {}) } };
   }
 
   private savePrefs(next: AiPrefs): void {
@@ -149,6 +163,18 @@ export class AiService {
   setModule(m: AiModule, on: boolean): void {
     if (!AI_MODULES.includes(m)) return;
     this.savePrefs({ ...this._prefs(), modules: { ...this._prefs().modules, [m]: on } });
+  }
+
+  // The switch of smart capture. It is independent of the general switch and of the module ones, and it
+  // never turns on without the consent being recorded; turning it off withdraws the consent.
+  setDocuments(on: boolean): void {
+    const p = this._prefs();
+    if (on) this.savePrefs({ ...p, documentsEnabled: true, documentsConsentAt: new Date().toISOString() });
+    else this.savePrefs({ ...p, documentsEnabled: false, documentsConsentAt: undefined });
+  }
+
+  setSkipPreview(on: boolean): void {
+    this.savePrefs({ ...this._prefs(), skipPreview: on });
   }
 
   acknowledge(featureId: string): void {
@@ -169,8 +195,20 @@ export class AiService {
         tokens: (u.month === month ? u.tokens : 0) + tokens,
         day,
         dayRequests: (u.day === day ? u.dayRequests : 0) + 1,
+        dayCaptures: u.day === day ? u.dayCaptures : 0,
       },
     });
+  }
+
+  private countCapture(): void {
+    const p = this._prefs();
+    const day = this.dayKey();
+    this.savePrefs({ ...p, usage: { ...p.usage, day, dayRequests: p.usage.day === day ? p.usage.dayRequests : 0, dayCaptures: (p.usage.day === day ? (p.usage.dayCaptures ?? 0) : 0) + 1 } });
+  }
+
+  captureToday(): number {
+    const u = this._prefs().usage;
+    return u.day === this.dayKey() ? (u.dayCaptures ?? 0) : 0;
   }
 
   dayRequests(): number {
@@ -213,6 +251,7 @@ export class AiService {
   async run(featureId: string, input: unknown, options: { values?: Record<string, string> } = {}): Promise<AiRunResult> {
     const def = this.features.get(featureId);
     if (!def) return { ok: false, code: 'unknown-feature' };
+    if (def.sends === 'document') return this.runDocument(def, input);
     const blocked = this.blockedBy(def);
     if (blocked) return { ok: false, code: blocked };
 
@@ -227,6 +266,28 @@ export class AiService {
     const call = this.send(def, key, locale, input, options.values).finally(() => this.inflight.delete(key));
     this.inflight.set(key, call);
     return call;
+  }
+
+  // A document capture (2.18.0): it needs ITS switch with the recorded consent, a session, a connection
+  // and room in the daily limit. Never cached (nothing of the document is kept) and never shared between
+  // calls: every capture is a separate, explicit send the user asked for.
+  private async runDocument(def: AiFeatureDef, input: unknown): Promise<AiRunResult> {
+    const p = this._prefs();
+    if (!p.documentsEnabled || !p.documentsConsentAt) return { ok: false, code: 'documents-off' };
+    if (this.auth.mode() !== 'signed-in') return { ok: false, code: 'no-session' };
+    if (!this._online()) return { ok: false, code: 'offline' };
+    if (this.captureToday() >= CAPTURE_DAILY_LIMIT) return { ok: false, code: 'capture-limit' };
+    if (this.usageLevel() === 'full') return { ok: false, code: 'limit' };
+    const result = await this.gateway.run({ feature: def.id, input, locale: this.locale(), requestId: crypto.randomUUID() });
+    if (!result.ok) {
+      if (result.code === 'quota') this._limitReached.set(true);
+      if (result.code === 'daily_limit') return { ok: false, code: 'capture-limit' };
+      if (result.code === 'invalid_output') return { ok: false, code: 'invalid-output' };
+      return { ok: false, code: result.code };
+    }
+    this.count(result.usage.inputTokens + result.usage.outputTokens);
+    this.countCapture();
+    return { ok: true, text: result.output, raw: result.output, fromCache: false };
   }
 
   // The reasons nothing may be sent, in order. Nothing here touches the network.
@@ -297,4 +358,8 @@ const MESSAGES: Record<AiFailure, string> = {
   unauthorized: 'AI is not enabled for this account.',
   'invalid-output': 'The AI text was discarded because it contained figures. The calculated summary is shown instead.',
   'unknown-feature': 'This AI function does not exist.',
+  'documents-off': 'Smart capture is off. Turn it on in Settings.',
+  'capture-limit': 'You reached the daily limit of captures. You can still enter the movement by hand.',
+  daily_limit: 'You reached the daily limit of captures. You can still enter the movement by hand.',
+  invalid_output: 'The document could not be read in the expected shape. Enter it by hand.',
 };

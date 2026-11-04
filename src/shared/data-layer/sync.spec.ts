@@ -587,3 +587,37 @@ describe('XMoneyApiClient', () => {
     expect(url).toBe('https://x.test/api/auth/login');
   });
 });
+
+describe('smart capture drafts (2.18.0)', () => {
+  const draft = (id: string, status: string) => ({ id, createdAt: '2026-11-04T10:00:00.000Z', source: 'image', status, kind: 'expense', amountMinor: 125050, currency: 'DOP', confidence: {}, doubts: [] });
+  const drafts = (d: { storage: StorageService }) => d.storage.get<{ id: string; status: string }[]>('capture_drafts', []);
+
+  it('a draft approved on one device is not pending on the other', async () => {
+    const token = await register();
+    const a = await device(token);
+    const b = await device(await login('device-bbbb'));
+    a.storage.set('capture_drafts', [draft('d1', 'pending'), draft('d2', 'pending')]);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect(drafts(b).map((d) => d.status)).toEqual(['pending', 'pending']);
+
+    clock += 1000;
+    b.storage.set('capture_drafts', [draft('d1', 'approved'), draft('d2', 'pending')]); // approved on the phone
+    await b.engine.sync();
+    await a.engine.sync();
+    expect(drafts(a).find((d) => d.id === 'd1')!.status).toBe('approved');
+    expect(drafts(a).filter((d) => d.status === 'pending').map((d) => d.id)).toEqual(['d2']);
+  });
+
+  it('the files, the queue and the thumbnails never leave the device', async () => {
+    const token = await register();
+    const a = await device(token);
+    a.storage.set('capture_drafts', [draft('d1', 'queued')]);
+    a.storage.set('capture-queue', [{ draftId: 'd1', payload: { mode: 'image', mediaType: 'image/jpeg', data: 'SECRET-IMAGE' } }]);
+    a.storage.set('capture-originals', { d1: { kind: 'image', thumb: 'data:image/jpeg;base64,SECRET' } });
+    a.storage.set('capture-prefs', { mailFilter: { senders: ['avisos@banco.example'] } });
+    await a.engine.sync();
+    expect(db.records.size).toBe(1); // only the draft
+    expect(JSON.stringify([...db.records.values()])).not.toMatch(/SECRET|avisos@banco/);
+  });
+});

@@ -210,7 +210,7 @@ export function parseChoice(raw: string, options: readonly string[]): { choice: 
 
 export interface TextRule {
   id: string; // `${scope}:${word}`
-  scope: 'expense' | 'income' | 'item';
+  scope: 'expense' | 'income' | 'item' | 'income-source'; // income-source: who pays -> a source of the user (2.18.0)
   word: string;
   target: string; // a category id, an income kind or the name of an item family
   createdAt: string;

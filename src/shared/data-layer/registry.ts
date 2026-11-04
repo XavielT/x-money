@@ -19,6 +19,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   audit: 'entities', // append-only change history (capped), each event names its device
   incomeSources: 'entities', // where income comes from (2.9.0)
   benefits: 'entities', // non-monetary work benefits with their usage notes (2.9.0): never money
+  capture_drafts: 'entities', // proposals read from a capture, waiting for the user to approve (2.18.0); the files never sync. snake_case on purpose: the server only accepts [a-z0-9_] collection names
   textRules: 'entities', // words learned from accepted AI suggestions: word -> category, income kind or item family (2.17.0)
   insightStates: 'entities', // dismissed and snoozed insights with their evidence fingerprint (2.15.0)
   insightSettings: 'doc', // which smart alerts are on and their thresholds (2.15.0)
@@ -37,7 +38,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
 };
 
 // Never leave this device: PIN hash and local preferences of this install
-export const DEVICE_ONLY_KEYS: readonly string[] = ['lock', 'device-prefs', 'ai-prefs', 'ai-cache']; // ai-*: consent and answers are per device (2.16.0)
+export const DEVICE_ONLY_KEYS: readonly string[] = ['lock', 'device-prefs', 'ai-prefs', 'ai-cache', 'capture-queue', 'capture-originals', 'capture-prefs']; // ai-*: consent and answers are per device (2.16.0); capture-*: files, thumbnails and mail filter never leave the device (2.18.0)
 
 export const DOC_ID = 'doc';
 

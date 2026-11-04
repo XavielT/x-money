@@ -9,7 +9,7 @@ export const AI_MODULES: readonly AiModule[] = ['income', 'expenses', 'budgets',
 export type AiSendKind = 'nothing' | 'aggregates' | 'note-text' | 'document';
 
 // How the answer of a function is used (2.17.0)
-export type AiKind = 'plain' | 'narrate' | 'classify' | 'normalize' | 'group' | 'judge' | 'rank' | 'choose';
+export type AiKind = 'plain' | 'capture' | 'narrate' | 'classify' | 'normalize' | 'group' | 'judge' | 'rank' | 'choose';
 
 export interface AiFeatureDef {
   kind?: AiKind; // absent = plain (the connection test)
@@ -32,7 +32,7 @@ export interface AiWireRequest {
   requestId: string;
 }
 
-export type AiServerCode = 'unauthorized' | 'quota' | 'rate_limited' | 'timeout' | 'provider_error' | 'bad_request';
+export type AiServerCode = 'unauthorized' | 'quota' | 'rate_limited' | 'timeout' | 'provider_error' | 'bad_request' | 'daily_limit' | 'invalid_output';
 
 // Everything that can stop a result; the caller shows its deterministic alternative in every case
 export type AiFailure =
@@ -45,7 +45,9 @@ export type AiFailure =
   | 'client-limit' // the daily limit of this device
   | 'limit' // the monthly limit was reached
   | 'invalid-output' // the text had figures or unknown markers: never shown
-  | 'unknown-feature';
+  | 'unknown-feature'
+  | 'documents-off' // the capture switch is off (smart capture, 2.18.0)
+  | 'capture-limit'; // the daily limit of captures of this device
 
 export type AiRunResult = { ok: true; text: string; raw: string; fromCache: boolean } | { ok: false; code: AiFailure };
 
@@ -63,9 +65,11 @@ export type AiStatus = 'off' | 'no-session' | 'offline' | 'limit' | 'ready';
 export interface AiPrefs {
   enabled: boolean;
   modules: Partial<Record<AiModule, boolean>>;
-  documentsEnabled: boolean; // the second, independent switch (prompt 12): always false for now
+  documentsEnabled: boolean; // the second, independent switch of smart capture (2.18.0); needs documentsConsentAt
+  documentsConsentAt?: string; // ISO time the user accepted what a capture sends; absent = no consent
+  skipPreview?: boolean; // 'do not ask again' hides the preview of each capture, never the consent
   acknowledged: string[]; // features whose first-use explanation the user confirmed
-  usage: { month: string; requests: number; tokens: number; day: string; dayRequests: number };
+  usage: { month: string; requests: number; tokens: number; day: string; dayRequests: number; dayCaptures?: number };
 }
 
 export const DEFAULT_AI_PREFS: AiPrefs = {
@@ -77,5 +81,6 @@ export const DEFAULT_AI_PREFS: AiPrefs = {
 };
 
 export const CLIENT_DAILY_LIMIT = 30;
+export const CAPTURE_DAILY_LIMIT = 40; // captures per day on this device (the server enforces the same per account)
 export const DEFAULT_REQUEST_CAP = 300;
 export const DEFAULT_TOKEN_CAP = 400_000;

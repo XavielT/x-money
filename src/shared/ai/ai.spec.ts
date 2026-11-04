@@ -441,18 +441,20 @@ describe('AiService', () => {
     expect(s.messageOf('invalid-output')).toContain('calculated summary');
   });
 
-  it('an unknown function is refused, and the second switch (documents) cannot be turned on by a saved value', async () => {
+  it('an unknown function is refused, and the second switch (documents) is only on with its recorded consent', async () => {
     const s = service();
     expect(await s.run('nothing', {})).toEqual({ ok: false, code: 'unknown-feature' });
     storage.set('ai-prefs', { ...DEFAULT_AI_PREFS, enabled: true, documentsEnabled: true });
-    expect(service().prefs().documentsEnabled).toBe(false);
+    expect(service().prefs().documentsEnabled).toBe(false); // a saved flag with no consent date does not count
+    storage.set('ai-prefs', { ...DEFAULT_AI_PREFS, enabled: true, documentsEnabled: true, documentsConsentAt: '2026-11-04T10:00:00.000Z' });
+    expect(service().prefs().documentsEnabled).toBe(true);
     expect(service().prefs().enabled).toBe(true);
   });
 
   it('every failure has a bilingual-ready message and the preferences are device-only (never synced, never in a backup)', () => {
     const s = service();
-    for (const code of ['off', 'module-off', 'consent-needed', 'no-session', 'offline', 'client-limit', 'limit', 'quota', 'rate_limited', 'timeout', 'provider_error', 'bad_request', 'unauthorized', 'invalid-output', 'unknown-feature'] as const) expect(s.messageOf(code).length).toBeGreaterThan(10);
-    for (const k of ['ai-prefs', 'ai-cache']) {
+    for (const code of ['off', 'module-off', 'consent-needed', 'no-session', 'offline', 'client-limit', 'limit', 'quota', 'rate_limited', 'timeout', 'provider_error', 'bad_request', 'unauthorized', 'invalid-output', 'unknown-feature', 'documents-off', 'capture-limit', 'daily_limit', 'invalid_output'] as const) expect(s.messageOf(code).length).toBeGreaterThan(10);
+    for (const k of ['ai-prefs', 'ai-cache', 'capture-queue', 'capture-originals', 'capture-prefs']) {
       expect(DEVICE_ONLY_KEYS).toContain(k);
       expect(isSyncedKey(k)).toBe(false);
       expect((BACKUP_KEYS as readonly string[]).includes(k)).toBe(false);
