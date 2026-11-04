@@ -29,7 +29,9 @@ export function isPristine(snapshot: Record<string, unknown>): boolean {
   const empty = (key: string) => !Array.isArray(snapshot[key]) || (snapshot[key] as unknown[]).length === 0;
   if (!empty('transactions') || !empty('budgets') || !empty('recurring')) return false;
   const accounts = snapshot['accounts'];
-  if (Array.isArray(accounts) && accounts.length && stableStringify(accounts) !== stableStringify(DEFAULT_ACCOUNTS_MOCK)) {
+  // flags added by data migrations (liquid, archived) do not make an account "user data"
+  const bare = (list: unknown[]) => list.map((a) => ({ ...(a as object), liquid: undefined, archived: undefined }));
+  if (Array.isArray(accounts) && accounts.length && stableStringify(bare(accounts)) !== stableStringify(bare(DEFAULT_ACCOUNTS_MOCK))) {
     return false;
   }
   const categories = snapshot['categories'];

@@ -81,7 +81,7 @@
 
   <!-- Change history: versions that lost a conflict -->
   <ng-container *ngIf="auth.mode() !== 'local'">
-    <h2>{{ 'Change history' | t }}</h2>
+    <h2>{{ 'Conflicting versions' | t }}</h2>
     <p class="acct-hint">{{ 'When the same record is edited on two devices, the newer edit wins and the other version is kept here. Nothing is deleted silently.' | t }}</p>
     <p class="acct-hint" *ngIf="!conflictService.conflicts().length">{{ 'No conflicts.' | t }}</p>
     <div class="acct-card x-card" *ngFor="let c of conflictService.conflicts()">

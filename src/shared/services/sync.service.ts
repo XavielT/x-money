@@ -69,6 +69,12 @@ export class SyncService {
 
   async start(accountId: string): Promise<void> {
     this.stop();
+    if (this.storage.syncBlocked()) {
+      // a data migration failed: the old data is intact and nothing may be uploaded
+      this.lastError.set('migration_failed');
+      this.status.set('error');
+      return;
+    }
     this.accountId = accountId;
     const engine = new SyncEngine(this.storage.localDb, this.api.transport, this.storage, () => Date.now() + this.api.client.skewMs);
     this.engine = engine;
@@ -82,6 +88,7 @@ export class SyncService {
     const linked = await this.storage.localDb.get<string>('device', 'linkedAccountId');
     if (linked === accountId) {
       this.activate();
+      await this.queueMigratedRecords();
       await this.finishInterruptedUpload();
       await this.syncNow();
     } else {
@@ -150,6 +157,7 @@ export class SyncService {
         return;
       }
       await engine.sync();
+      await this.raiseServerSchema(engine);
       this.lastSyncAt.set(Date.now());
       this.lastError.set(null);
       this.attempts = 0;
@@ -159,6 +167,25 @@ export class SyncService {
     } finally {
       this.pending.set(engine.pending);
     }
+  }
+
+  // After a data migration every record is queued once (unchanged ones are no-ops on the
+  // server); only when that upload is finished the server schema version is raised
+  private async queueMigratedRecords(): Promise<void> {
+    const db = this.storage.localDb;
+    if (!(await db.get<boolean>('device', 'uploadAfterMigration'))) return;
+    this.engine!.enqueueSnapshot(this.storage.snapshotSynced(), Date.now());
+    await db.delete('device', 'uploadAfterMigration');
+    await db.put('device', 'raiseServerSchema', CLIENT_SCHEMA_VERSION);
+    this.pending.set(this.engine!.pending);
+  }
+
+  private async raiseServerSchema(engine: SyncEngine): Promise<void> {
+    const db = this.storage.localDb;
+    const wanted = await db.get<number>('device', 'raiseServerSchema');
+    if (wanted === undefined || engine.pending > 0) return;
+    await this.api.transport.raiseSchema(wanted);
+    await db.delete('device', 'raiseServerSchema');
   }
 
   private handleError(error: unknown): void {

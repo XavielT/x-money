@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
 import { StorageService } from '../shared/services/storage.service';
 import { AuthService } from '../shared/services/auth.service';
+import { MigrationService } from '../shared/services/migration.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,6 +22,8 @@ export const appConfig: ApplicationConfig = {
       // inject() only works before the first await
       const injector = inject(Injector);
       await injector.get(StorageService).hydrate();
+      // data migrations run before any service reads the data
+      await injector.get(MigrationService).run();
       // resolved only now: AuthService pulls in the data services, which read the hydrated copy
       await injector.get(AuthService).init();
     }),

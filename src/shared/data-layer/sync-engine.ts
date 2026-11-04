@@ -38,7 +38,11 @@ export interface SyncTransport {
 }
 
 export interface RemoteApplier {
-  applyRemote(collection: string, upserts: { id: string; data: Record<string, unknown> }[], deletes: string[]): void;
+  applyRemote(
+    collection: string,
+    upserts: { id: string; data: Record<string, unknown>; schemaVersion?: number }[],
+    deletes: string[]
+  ): void;
 }
 
 export type SyncErrorKind = 'network' | 'auth' | 'outdated' | 'forbidden' | 'server' | 'bad_request';
@@ -225,7 +229,7 @@ export class SyncEngine {
     let applied = 0;
     for (;;) {
       const page = await this.transport.pull(this.cursorValue, 500);
-      const grouped = new Map<string, { upserts: { id: string; data: Record<string, unknown> }[]; deletes: string[] }>();
+      const grouped = new Map<string, { upserts: { id: string; data: Record<string, unknown>; schemaVersion?: number }[]; deletes: string[] }>();
       for (const record of page.records) {
         const key = opKey(record.collection, record.id);
         // a local edit waits in the outbox: keep it, the server resolves the conflict on push
@@ -234,7 +238,7 @@ export class SyncEngine {
         this.revs[key] = record.rev;
         const group = grouped.get(record.collection) ?? { upserts: [], deletes: [] };
         if (record.deleted || !record.data) group.deletes.push(record.id);
-        else group.upserts.push({ id: record.id, data: record.data });
+        else group.upserts.push({ id: record.id, data: record.data, schemaVersion: record.schemaVersion });
         grouped.set(record.collection, group);
       }
       for (const [collection, group] of grouped) {

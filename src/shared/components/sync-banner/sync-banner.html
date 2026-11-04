@@ -1,6 +1,9 @@
 <div class="banner bad" *ngIf="storage.readOnly()" role="alert">
   {{ 'Update X Money. This version is older than your data, so changes are not saved.' | t }}
 </div>
+<div class="banner" *ngIf="storage.syncBlocked()" role="alert">
+  {{ 'Your data could not be updated to the new version. It is safe and unchanged, but sync is paused.' | t }}
+</div>
 <div class="banner" *ngIf="sync.skewWarning && !skewDismissed()">
   <span>{{ 'Your clock is off by more than 5 minutes. Fix the date and time of this device.' | t }}</span>
   <button (click)="skewDismissed.set(true)" aria-label="Dismiss">✕</button>

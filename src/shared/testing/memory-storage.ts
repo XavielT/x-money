@@ -13,6 +13,8 @@ import { TransactionService } from '../services/transaction.service';
 export class MemoryStorage {
   data = new Map<string, string>();
   failOnSet = new Set<string>();
+  readOnly = () => false;
+  syncBlocked = () => false;
 
   get<T>(key: string, fallback: T): T {
     const raw = this.data.get(key);

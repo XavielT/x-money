@@ -232,6 +232,10 @@ export class ApiTransport implements SyncTransport {
     return this.run<{ records: PullRecord[]; hasMore: boolean; cursor: number }>('sync/pull', { since, limit });
   }
 
+  raiseSchema(version: number) {
+    return this.run<{ schemaVersion: number }>('sync/meta', { schemaVersion: version });
+  }
+
   meta() {
     return this.run<{ schemaVersion: number; counts: Record<string, number>; serverNow: number }>('sync/meta', {});
   }

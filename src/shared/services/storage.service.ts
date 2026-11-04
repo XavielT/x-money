@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { BrowserLegacy, LegacySource } from '../data-layer/legacy';
 import { IdbLocalDb, LocalDb, MemoryLocalDb } from '../data-layer/local-db';
-import { DOC_ID, SYNCED_COLLECTIONS, isKnownKey, isSyncedKey, stableStringify } from '../data-layer/registry';
+import { migrateRecord } from '../data-layer/migrations';
+import { CLIENT_SCHEMA_VERSION, DOC_ID, SYNCED_COLLECTIONS, isKnownKey, isSyncedKey, stableStringify } from '../data-layer/registry';
 
 type Watcher = (value: unknown) => void;
 type ChangeSink = (key: string, prev: unknown, next: unknown) => void;
@@ -27,6 +28,8 @@ export class StorageService {
 
   // An app older than the server schema must not write (it could corrupt migrated data)
   readOnly = signal(false);
+  // A failed data migration: the old data is intact but nothing may be uploaded
+  syncBlocked = signal(false);
 
   get localDb(): LocalDb {
     return this.local;
@@ -122,16 +125,25 @@ export class StorageService {
   }
 
   // Applies records downloaded from the server (no outbox operations are generated)
-  applyRemote(key: string, upserts: { id: string; data: Record<string, unknown> }[], deletes: string[]): void {
+  applyRemote(
+    key: string,
+    upserts: { id: string; data: Record<string, unknown>; schemaVersion?: number }[],
+    deletes: string[]
+  ): void {
     const kind = SYNCED_COLLECTIONS[key];
     if (!kind) return; // collection from a newer app version: ignore, the cursor still advances
+    // records written by an older app still have the old shape: bring them up to date
+    const shaped = (u: { data: Record<string, unknown>; schemaVersion?: number }) =>
+      (u.schemaVersion ?? 1) < CLIENT_SCHEMA_VERSION ? migrateRecord(key, u.data, u.schemaVersion ?? 1) : u.data;
     if (kind === 'doc') {
-      if (upserts.length) this.cache.set(key, (upserts[upserts.length - 1].data as { value: unknown }).value);
+      if (upserts.length) this.cache.set(key, (shaped(upserts[upserts.length - 1]) as { value: unknown }).value);
       else if (deletes.includes(DOC_ID)) this.cache.delete(key);
     } else {
       const list = ((this.cache.get(key) as Record<string, unknown>[] | undefined) ?? []).slice();
       const at = new Map(list.map((item, i) => [item['id'] as string, i]));
-      for (const { id, data } of upserts) {
+      for (const u of upserts) {
+        const { id } = u;
+        const data = shaped(u) as Record<string, unknown>;
         const item = data['id'] === id ? data : { ...data, id }; // server-made records carry the id only in the key
         const i = at.get(id);
         if (i === undefined) list.push(item);
@@ -151,6 +163,26 @@ export class StorageService {
       this.cache.delete(key);
       this.persistKey(key);
       this.notify(key);
+    }
+  }
+
+  // Every value of every key (synced and device-only), for the pre-migration snapshot
+  snapshotAll(): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of this.cache) out[key] = structuredClone(value);
+    return out;
+  }
+
+  hasSyncedData(): boolean {
+    return Object.keys(SYNCED_COLLECTIONS).some((key) => this.cache.has(key));
+  }
+
+  // Writes migrated values (or restores a snapshot) without producing outbox operations:
+  // the migration upload is queued explicitly once the whole migration succeeded
+  writeLocal(values: Record<string, unknown>): void {
+    for (const [key, value] of Object.entries(values)) {
+      this.cache.set(key, structuredClone(value));
+      this.persistKey(key);
     }
   }
 

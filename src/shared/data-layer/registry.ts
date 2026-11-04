@@ -6,8 +6,8 @@ export type CollectionKind =
   | 'entities' // array of objects with a string `id`: one server record per item
   | 'doc'; // a single JSON value: one server record with data = { value }
 
-// Bump together with a migration; see docs/ARQUITECTURA.md (schema versioning)
-export const CLIENT_SCHEMA_VERSION = 1;
+// Bump together with a migration in migrations.ts; see docs/ARQUITECTURA.md (schema versioning)
+export const CLIENT_SCHEMA_VERSION = 2;
 
 export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   accounts: 'entities',
@@ -16,6 +16,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   budgets: 'entities',
   recurring: 'entities',
   conflicts: 'entities', // losers of edit conflicts, written by the server
+  audit: 'entities', // append-only change history (capped), each event names its device
   settings: 'doc', // currency symbol, bank tax %
   lang: 'doc', // interface language
 };

@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { ApiService } from './api.service';
 import { StorageService } from './storage.service';
 import { SyncService } from './sync.service';
+import { AuditLogService } from './audit-log.service';
 import { ApiError, AuthResponse } from '../data-layer/api-client';
 
 // local      = backend not configured: no accounts, data stays on the device (as in 2.5.x)
@@ -38,10 +39,12 @@ export class AuthService {
   constructor(
     private api: ApiService,
     private storage: StorageService,
-    private sync: SyncService
+    private sync: SyncService,
+    private audit: AuditLogService
   ) {}
 
   async init(): Promise<void> {
+    this.audit.deviceId = await this.api.persistence.deviceId(); // names the device in every audit event
     if (!this.api.configured) return;
     this.api.client.onSessionLost = () => this.mode.set('expired');
     const db = this.storage.localDb;

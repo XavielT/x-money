@@ -21,7 +21,7 @@
       <button class="x-btn" (click)="sync.keepServerCopy()">{{ 'Keep the account copy' | t }}</button>
       <p class="auth-hint">{{ 'This device is replaced by the data in your account.' | t }}</p>
       <button class="x-btn" (click)="sync.mergeById()">{{ 'Merge by id' | t }}</button>
-      <p class="auth-hint">{{ 'Combines both. When the same record exists on both sides the account version stays and the other one goes to Change history.' | t }}</p>
+      <p class="auth-hint">{{ 'Combines both. When the same record exists on both sides the account version stays and the other one goes to Conflicting versions.' | t }}</p>
     </ng-container>
 
     <ng-container *ngSwitchCase="'backup-failed'">
