@@ -17,11 +17,12 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `budgets` | `BudgetModel` | `BudgetService` | **sincronizada** |
 | `recurring` | `RecurringModel` | `RecurringService` | **sincronizada** |
 | `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
+| `statements` | `CardStatementModel` (periodos cerrados de tarjeta; id `stmt-<tarjeta>-<moneda>-<corte>`, igual en todos los dispositivos) | `CreditCardService` | **sincronizada** |
 | `conflicts` | `ConflictModel` (versiones que perdieron un conflicto; las escribe el servidor) | `ConflictService` | **sincronizada** |
 | `settings` | `{currency, taxPercent}` | `SettingsService` | **sincronizada** (documento) |
 | `lang` | `'en' \| 'es'` | `TranslateService` | **sincronizada** (documento) |
 | `lock` | hash del PIN | `LockService` | **solo de este dispositivo** |
-| `device-prefs` | `{lastExportAt, reminderDays}` | `BackupReminderService` | **solo de este dispositivo** |
+| `device-prefs` | `{lastExportAt, reminderDays, cardAlerts}` | `BackupReminderService` | **solo de este dispositivo** |
 
 Solo del dispositivo además (en el almacén `device` de IndexedDB o en Preferences/localStorage, nunca suben):
 id del dispositivo, cursor de sincronización, cola de salida (outbox), revs conocidas, cuenta enlazada, estado de la

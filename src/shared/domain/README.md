@@ -9,6 +9,8 @@ or storage; it takes plain data in and returns plain data out.
 - Anything that adds or compares money: use `shared/utils/money.ts` (2 decimals,
   one currency at a time; RD$ and US$ are never mixed or converted).
 
+**Credit cards (2.8.0):** `cards.ts` (cortes, periodos, deuda, utilización, estados de cuenta, alertas), `card-payments.ts` (gasto que era pago de tarjeta) y `small-purchases.ts` (compras pequeñas, una sola regla para el mes y para una tarjeta).
+
 **Does not go here**
 - Signals, `StorageService`, HTTP/sync, `TranslateService`, components.
 - Formatting for display (pages and pipes do that).

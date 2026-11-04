@@ -20,6 +20,7 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 ## Estructura
 - `src/app/pages/*` páginas (solo orquestan y muestran) · `src/shared/services` estado con signals · `models` · `data`
   (catálogos) · `ui` y `components` · `pipes` (`t` = traducción).
+- Tarjetas de crédito (2.8.0): deuda = menos el saldo de la tarjeta (nunca se guarda); estados de cuenta en la colección `statements`; pagar una tarjeta es una transferencia `card-payment` (`CreditCardService.pay`); lo pagado de un estado se deriva de los pagos.
 - `src/shared/domain/` cálculos financieros **puros** (ver su README) · `src/shared/utils/money.ts` redondeo a 2 decimales.
 - `src/shared/data-layer/` registro de colecciones, copia local, motor de sincronización y cliente de la API; `supabase/` migración, función `xmoney-api` y pruebas SQL (`docs/SETUP-XCORE.md`).
 - Esquema versionado: nueva forma de datos = una `Migration` en `data-layer/migrations.ts` + subir `CLIENT_SCHEMA_VERSION` + prueba con fixtures de la forma anterior. Los saldos solo salen de `domain/ledger.ts`; todo movimiento se escribe con `TransactionService` (valida, traza y audita).

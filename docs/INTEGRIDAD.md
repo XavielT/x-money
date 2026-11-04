@@ -15,13 +15,13 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
 
 ### 2. Una compra con tarjeta de crédito se registra como gasto una sola vez.
 - Dónde se aplica (archivo): `domain/stats.ts`; la compra es un gasto en la cuenta tarjeta y `domain/networth.ts` la muestra como deuda.
-- Prueba que la protege: `integrity-2-7.spec.ts` «rules 2 and 3: credit cards»; C1.
-- Estado: **cumple.**
+- Prueba que la protege: `integrity-2-7.spec.ts` «rules 2 and 3: credit cards»; C1; `credit-card.spec.ts` «rules 2 and 3» (compra 5.000 + pago 5.000: un gasto, banco −5.000, deuda 0; parcial, de más, dual US$, reversada, intereses) y `domain/cards.spec.ts` (consumo vs pagado).
+- Estado: **cumple.** El consumo cuenta el día de la compra; los intereses y cargos que cobra el banco son un gasto real aparte (categoría «Card interest and charges»), registrado una sola vez y enlazado al estado de cuenta.
 
 ### 3. El pago de una tarjeta de crédito no vuelve a contabilizar las compras.
 - Dónde se aplica (archivo): `services/transaction.service.ts` (`defaultOrigin`: una transferencia a una tarjeta de crédito es `card-payment`); el formulario avisa «¿Pagas una tarjeta? Usa Transferencia» cuando hay una tarjeta de crédito.
-- Prueba que la protege: `integrity-2-7.spec.ts` (compra + pago + pago parcial: gasto una vez, deuda correcta, patrimonio neto igual) y `KNOWN GAP: paying the card as an expense counts the purchases twice` (C1).
-- Estado: **parcial.** El pago como transferencia es correcto y está trazado; registrar el pago como *gasto* sigue duplicando (no hay forma de saber que un gasto en el banco es un pago). Lo cierra el módulo de tarjetas del prompt 02 (pago ligado al estado de cuenta).
+- Prueba que la protege: `integrity-2-7.spec.ts`; `credit-card.spec.ts` («rule 3 for payments that were typed as a plain expense», pago como liquidación, reverso de un pago); `domain/cards.spec.ts` (estados, pagado derivado) y la prueba de caracterización C1.
+- Estado: **cumple, con una salvedad.** La pantalla «Pagar tarjeta» registra el pago como transferencia `card-payment` (baja la deuda y la cuenta pagadora, nunca es gasto) y lo aplica al estado de cuenta abierto más antiguo; qué se pagó se **deriva** de los pagos (revertir un pago devuelve el estado). Si el usuario lo registra igual como gasto, la app lo detecta (gasto en una cuenta que no es tarjeta, igual al balance, al mínimo o a lo pendiente de un estado de cuenta, después del corte y hasta 10 días tras el vencimiento) y **sugiere** convertirlo; nunca lo convierte sola, así que hasta que se confirme sigue duplicando.
 
 ### 4. Los beneficios laborales no monetarios no se consideran efectivo disponible.
 - Dónde se aplica (archivo): —
