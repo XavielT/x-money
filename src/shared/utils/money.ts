@@ -27,3 +27,25 @@ export function sumMoney(values: readonly number[]): number {
 export function moneyEquals(a: number, b: number): boolean {
   return round2(a) === round2(b);
 }
+
+export const sum = sumMoney;
+export const subtract = subMoney;
+
+// amount * pct / 100, rounded to cents (percent(1000, 0.2) = 2)
+export function percent(amount: number, pct: number): number {
+  return round2((round2(amount) * pct) / 100);
+}
+
+// Same amount within half a cent
+export function equalsMoney(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.005;
+}
+
+// Fixed 2 decimals, thousands separators, minus sign in front; NaN/Infinity become "—"
+// instead of leaking "NaN" into the UI
+export function formatMoney(value: number, symbol = ''): string {
+  if (!Number.isFinite(value)) return '—';
+  const rounded = round2(value);
+  const [whole, cents] = Math.abs(rounded).toFixed(2).split('.');
+  return `${rounded < 0 ? '-' : ''}${symbol}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${cents}`;
+}

@@ -40,3 +40,28 @@ describe('money', () => {
     expect(round2(Infinity)).toBe(Infinity);
   });
 });
+
+import { equalsMoney as eq, formatMoney, percent } from './money';
+
+describe('money (2.7.0 additions)', () => {
+  it('percent rounds to cents', () => {
+    expect(percent(1000, 0.2)).toBe(2);
+    expect(percent(333.33, 0.15)).toBe(0.5);
+    expect(percent(0, 5)).toBe(0);
+    expect(percent(-100, 10)).toBe(-10);
+  });
+
+  it('equalsMoney tolerates half a cent', () => {
+    expect(eq(10, 10.004)).toBe(true);
+    expect(eq(10, 10.01)).toBe(false);
+    expect(eq(0.1 + 0.2, 0.3)).toBe(true);
+  });
+
+  it('formatMoney formats safely', () => {
+    expect(formatMoney(1234567.891, 'RD$')).toBe('RD$1,234,567.89');
+    expect(formatMoney(-5, '$')).toBe('-$5.00');
+    expect(formatMoney(0)).toBe('0.00');
+    expect(formatMoney(NaN, '$')).toBe('—');
+    expect(formatMoney(Infinity)).toBe('—');
+  });
+});
