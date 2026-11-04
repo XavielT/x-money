@@ -31,6 +31,10 @@ export class MemoryDb implements Db {
   async findAccountById(id: string) {
     return this.accounts.get(id) ?? null;
   }
+  async countAccounts() {
+    return this.accounts.size;
+  }
+
   async insertAccount(row: AccountRow) {
     if ([...this.accounts.values()].some((a) => a.email === row.email)) return false;
     this.accounts.set(row.id, { ...row });

@@ -62,19 +62,27 @@ describe('passwords', () => {
 });
 
 describe('signup', () => {
-  it('requires the invite code and gives the same generic error for everything else', async () => {
+  it('the very first account needs no invite code: there is nobody to protect yet', async () => {
+    const first = await call('auth/signup', { email: 'owner@example.com', password: PW, deviceId: 'device-aaaa' });
+    expect(first.status).toBe(200);
+    expect(db.accounts.size).toBe(1);
+  });
+
+  it('after the first account the invite code is required, with the same generic error for everything else', async () => {
+    await newUser();
     const noCode = await call('auth/signup', { email: 'a@example.com', password: PW, deviceId: 'device-aaaa' });
     const badCode = await signup('a@example.com', 'device-aaaa', { inviteCode: 'wrong' });
     expect(noCode.body['error']).toBe('signup_failed');
     expect(badCode).toEqual(noCode);
-    await newUser();
     const duplicate = await signup('XAVIER@example.com ');
     expect(duplicate).toEqual(noCode); // an existing email is indistinguishable
+    expect((await signup('b@example.com', 'device-bbbb')).status).toBe(200); // the right code still works
   });
 
-  it('is disabled when no invite code is configured', async () => {
+  it('with no invite code configured only the first account can be created', async () => {
     api = createApi({ db, tokenSecret: SECRET, signupCode: null, now: () => t, kdf: KDF });
-    expect((await signup()).body['error']).toBe('signup_failed');
+    expect((await call('auth/signup', { email: 'owner@example.com', password: PW, deviceId: 'device-aaaa' })).status).toBe(200);
+    expect((await signup('other@example.com')).body['error']).toBe('signup_failed');
   });
 
   it('normalizes the email (case, spaces, NFKC)', async () => {

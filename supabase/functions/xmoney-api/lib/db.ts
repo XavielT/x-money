@@ -56,6 +56,8 @@ export interface Db {
   findAccountById(id: string): Promise<AccountRow | null>;
   // false when the email is already taken
   insertAccount(row: AccountRow): Promise<boolean>;
+  // how many accounts exist (the very first one needs no invite code)
+  countAccounts(): Promise<number>;
   updateAccount(id: string, patch: Partial<Omit<AccountRow, 'id'>>): Promise<void>;
 
   insertSession(row: SessionRow): Promise<void>;

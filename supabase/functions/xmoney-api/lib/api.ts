@@ -156,8 +156,10 @@ export function createApi(deps: ApiDeps) {
     if (!isStrongEnough(b['password'])) return fail(400, 'weak_password');
     // from here on every failure looks the same, so signup cannot probe for emails
     const generic = fail(400, 'signup_failed');
-    if (!deps.signupCode || typeof b['inviteCode'] !== 'string') return generic;
-    if (!timingSafeEqualText(b['inviteCode'], deps.signupCode)) return generic;
+    // The invite code keeps strangers out of a personal backend. The very FIRST account (the owner's)
+    // needs none: while no account exists there is nobody to protect and no code to have shared yet.
+    const codeOk = !!deps.signupCode && typeof b['inviteCode'] === 'string' && timingSafeEqualText(b['inviteCode'], deps.signupCode);
+    if (!codeOk && (await db.countAccounts()) > 0) return generic;
 
     const pw = await hashPassword(b['password'], kdf);
     const recovery = newRecoveryCode(randomBytes(32));

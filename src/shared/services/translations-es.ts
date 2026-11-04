@@ -1794,4 +1794,5 @@ export const ES: Record<string, string> = {
   'You reached the daily limit of captures. You can still enter the movement by hand.': 'Llegaste al límite diario de capturas. Todavía puedes anotar el movimiento a mano.',
   'The document could not be read in the expected shape. Enter it by hand.': 'No se pudo leer el documento en la forma esperada. Anótalo a mano.',
   'Read on this device, without AI: check every field.': 'Leído en este dispositivo, sin IA: revisa cada campo.',
+  'Invite code (not needed for the first account)': 'Código de invitación (no hace falta para la primera cuenta)',
 };

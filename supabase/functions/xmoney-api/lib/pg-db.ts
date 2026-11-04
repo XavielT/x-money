@@ -133,6 +133,11 @@ export class PgDb implements Db {
     return rows[0] ? toAccount(rows[0]) : null;
   }
 
+  async countAccounts() {
+    const rows = await this.exec(`select count(*)::int as n from xmoney.accounts`, []);
+    return Number(rows[0]?.['n'] ?? 0);
+  }
+
   async insertAccount(a: AccountRow) {
     const rows = await this.exec(
       `insert into xmoney.accounts (id, email, password_hash, password_salt, kdf_params, recovery_hash, enabled,

@@ -37,7 +37,7 @@
           [placeholder]="(view() === 'signup' ? 'Password (10+ characters)' : 'Password') | t"
           [(ngModel)]="password"
         />
-        <input class="x-input" *ngIf="view() === 'signup'" type="password" name="invite" autocomplete="off" [placeholder]="'Invite code' | t" [(ngModel)]="inviteCode" />
+        <input class="x-input" *ngIf="view() === 'signup'" type="password" name="invite" autocomplete="off" [placeholder]="'Invite code (not needed for the first account)' | t" [(ngModel)]="inviteCode" />
       </ng-container>
 
       <ng-container *ngIf="view() === 'recover'">
