@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { SYNCED_COLLECTIONS } from '../data-layer/registry';
+import { SYNCED_COLLECTIONS, toClientKey } from '../data-layer/registry';
 import { StorageService } from './storage.service';
 
 // A version that lost an edit conflict. The server writes these; nothing is ever
@@ -32,17 +32,18 @@ export class ConflictService {
   // Puts the saved version back (as a normal edit, so it syncs) and clears the entry
   restore(conflict: ConflictModel): void {
     if (!conflict.deleted && conflict.data) {
-      const kind = SYNCED_COLLECTIONS[conflict.collection];
+      const key = toClientKey(conflict.collection); // the server names the collection in snake_case
+      const kind = SYNCED_COLLECTIONS[key];
       if (kind === 'entities') {
-        const list = this.storage.get<Record<string, unknown>[]>(conflict.collection, []);
+        const list = this.storage.get<Record<string, unknown>[]>(key, []);
         const at = list.findIndex((item) => item['id'] === conflict.recordId);
         if (at >= 0) list[at] = conflict.data;
         else list.push(conflict.data);
-        this.storage.set(conflict.collection, list);
-        this.storage.refresh(conflict.collection);
+        this.storage.set(key, list);
+        this.storage.refresh(key);
       } else if (kind === 'doc') {
-        this.storage.set(conflict.collection, (conflict.data as { value: unknown }).value);
-        this.storage.refresh(conflict.collection);
+        this.storage.set(key, (conflict.data as { value: unknown }).value);
+        this.storage.refresh(key);
       }
     }
     this.dismiss(conflict.id);

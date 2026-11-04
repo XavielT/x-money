@@ -621,3 +621,52 @@ describe('smart capture drafts (2.18.0)', () => {
     expect(JSON.stringify([...db.records.values()])).not.toMatch(/SECRET|avisos@banco/);
   });
 });
+
+describe('collections with camelCase keys (2.18.0)', () => {
+  const source = (id: string, name: string) => ({ id, name, kind: 'payroll', active: true });
+  const sources = (d: { storage: StorageService }) => d.storage.get<{ id: string; name: string }[]>('incomeSources', []);
+
+  it('they travel with a snake_case name and arrive under their own key on the other device', async () => {
+    const token = await register();
+    const a = await device(token);
+    const b = await device(await login('device-bbbb'));
+    a.storage.set('incomeSources', [source('s1', 'Payroll'), source('s2', 'Sales')]);
+    a.storage.set('textRules', [{ id: 'expense:uber', scope: 'expense', word: 'uber', target: 'cat-transport', createdAt: 'x' }]);
+    const sent = await a.engine.sync();
+    expect(sent.push.rejected).toBe(0); // before the fix the server rejected these records
+    expect([...db.records.keys()].join('|')).toMatch(/income_sources/);
+    expect([...db.records.keys()].join('|')).not.toMatch(/incomeSources|textRules/);
+    await b.engine.sync();
+    expect(sources(b).map((s) => s.name)).toEqual(['Payroll', 'Sales']);
+    expect(b.storage.get<{ id: string }[]>('textRules', []).map((r) => r.id)).toEqual(['expense:uber']);
+  });
+
+  it('an edit and a delete reach the other device too, and nothing is queued back', async () => {
+    const token = await register();
+    const a = await device(token);
+    const b = await device(await login('device-bbbb'));
+    a.storage.set('incomeSources', [source('s1', 'Payroll'), source('s2', 'Sales')]);
+    await a.engine.sync();
+    await b.engine.sync();
+    clock += 1000;
+    a.storage.set('incomeSources', [source('s1', 'Payroll v2')]);
+    await a.engine.sync();
+    await b.engine.sync();
+    expect(sources(b)).toEqual([expect.objectContaining({ id: 's1', name: 'Payroll v2' })]);
+    expect(b.engine.pending).toBe(0);
+  });
+
+  it('the local data that never left the device is uploaded once from the snapshot, like a first link would', async () => {
+    const token = await register();
+    const a = await device(token, new MemoryLocalDb(), { incomeSources: [source('s1', 'Old local source')], businessOperations: [{ id: 'o1', name: 'Screen' }] });
+    const { RENAMED_COLLECTIONS } = await import('./registry');
+    const snapshot = a.storage.snapshotSynced();
+    const only = Object.fromEntries(RENAMED_COLLECTIONS.filter((k) => k in snapshot).map((k) => [k, snapshot[k]]));
+    expect(a.engine.enqueueSnapshot(only, 0)).toBe(2);
+    await a.engine.push();
+    const b = await device(await login('device-bbbb'));
+    await b.engine.sync();
+    expect(sources(b).map((s) => s.name)).toEqual(['Old local source']);
+    expect(b.storage.get<{ id: string }[]>('businessOperations', []).map((o) => o.id)).toEqual(['o1']);
+  });
+});

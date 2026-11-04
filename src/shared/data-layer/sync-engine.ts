@@ -2,7 +2,7 @@
 // (upserts by primary key, so retries are idempotent), a server cursor (rev) for
 // downloads, and the revs this device already knows. Network and storage are injected.
 import { ChangeOp, diffCollection } from './diff';
-import { CLIENT_SCHEMA_VERSION, SYNCED_COLLECTIONS } from './registry';
+import { CLIENT_SCHEMA_VERSION, SYNCED_COLLECTIONS, toClientKey, toServerName } from './registry';
 import { LocalDb } from './local-db';
 
 export interface WireOp {
@@ -192,7 +192,7 @@ export class SyncEngine {
       batch.forEach((op) => this.inflight.add(opKey(op.collection, op.id)));
       let response: { results: PushResult[] };
       try {
-        response = await this.transport.push(batch.map(({ seq: _seq, ...wire }) => wire));
+        response = await this.transport.push(batch.map(({ seq: _seq, ...wire }) => ({ ...wire, collection: toServerName(wire.collection) })));
       } finally {
         this.inflight.clear();
       }
@@ -230,7 +230,8 @@ export class SyncEngine {
     for (;;) {
       const page = await this.transport.pull(this.cursorValue, 500);
       const grouped = new Map<string, { upserts: { id: string; data: Record<string, unknown>; schemaVersion?: number }[]; deletes: string[] }>();
-      for (const record of page.records) {
+      for (const wire of page.records) {
+        const record = { ...wire, collection: toClientKey(wire.collection) };
         const key = opKey(record.collection, record.id);
         // a local edit waits in the outbox: keep it, the server resolves the conflict on push
         if (this.queue.has(key)) continue;

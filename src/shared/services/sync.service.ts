@@ -4,7 +4,7 @@ import { BackupReminderService } from './backup-reminder.service';
 import { ExportService } from './export.service';
 import { SettingsService } from './settings.service';
 import { StorageService } from './storage.service';
-import { CLIENT_SCHEMA_VERSION } from '../data-layer/registry';
+import { CLIENT_SCHEMA_VERSION, RENAMED_COLLECTIONS } from '../data-layer/registry';
 import { Counts, countLocal, countServer, countsMatch, decideLink } from '../data-layer/link';
 import { SyncEngine, SyncError } from '../data-layer/sync-engine';
 
@@ -89,6 +89,7 @@ export class SyncService {
     if (linked === accountId) {
       this.activate();
       await this.queueMigratedRecords();
+      await this.queueRenamedCollections();
       await this.finishInterruptedUpload();
       await this.syncNow();
     } else {
@@ -177,6 +178,20 @@ export class SyncService {
     this.engine!.enqueueSnapshot(this.storage.snapshotSynced(), Date.now());
     await db.delete('device', 'uploadAfterMigration');
     await db.put('device', 'raiseServerSchema', CLIENT_SCHEMA_VERSION);
+    this.pending.set(this.engine!.pending);
+  }
+
+  // Before 2.18.0 the collections with camelCase names (income sources, business operations, loan
+  // simulations, text rules...) could not be uploaded: the server rejected their names. Once per device,
+  // what they hold locally is queued now. clientUpdatedAt 0: if another device already uploaded some,
+  // the server copy wins and the local one is kept in conflicts, never dropped.
+  private async queueRenamedCollections(): Promise<void> {
+    const db = this.storage.localDb;
+    if (await db.get<boolean>('device', 'renamedCollectionsQueued')) return;
+    const snapshot = this.storage.snapshotSynced();
+    const only = Object.fromEntries(RENAMED_COLLECTIONS.filter((k) => k in snapshot).map((k) => [k, snapshot[k]]));
+    this.engine!.enqueueSnapshot(only, 0);
+    await db.put('device', 'renamedCollectionsQueued', true);
     this.pending.set(this.engine!.pending);
   }
 

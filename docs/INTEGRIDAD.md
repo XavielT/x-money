@@ -106,14 +106,17 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
   `server-tests/capture.spec.ts`.
 - Estado: **cumple**.
 
-> **KNOWN GAP (hallado en 2.18.0, sin corregir):** el servidor (`xmoney-api/lib/validate.ts` y la restricción
-> `records_collection_format` del esquema) solo acepta nombres de colección con `[a-z0-9_]`. Las colecciones que se
-> registraron en camelCase (`incomeSources`, `businessOperations`, `businessWithdrawals`, `budgetMoves`,
-> `loanSimulations`, `loanSettings`, `insightStates`, `insightSettings`, `textRules`) **no se pueden subir**: sus
-> registros se rechazan, así que esos datos viven solo en cada dispositivo. Fijado en
-> `characterization/sync-collection-names.spec.ts`. La colección nueva se llama `capture_drafts` para evitarlo.
-> Corregirlo implica decidir (traducir nombres en la capa de sync, o ampliar la restricción y volver a desplegar) y
-> subir lo que quedó sin sincronizar.
+> **Hallazgo corregido en 2.18.0 (sincronización de colecciones camelCase):** el servidor
+> (`xmoney-api/lib/validate.ts` y la restricción `records_collection_format` del esquema) solo acepta nombres de
+> colección con `[a-z0-9_]`, y nueve colecciones se habían registrado en camelCase (`incomeSources`,
+> `businessOperations`, `businessWithdrawals`, `budgetMoves`, `loanSimulations`, `loanSettings`,
+> `insightStates`, `insightSettings`, `textRules`): el servidor rechazaba sus registros, así que esos datos
+> vivían solo en cada dispositivo. Ahora la capa de sync traduce los nombres en la frontera con el servidor
+> (`toServerName`/`toClientKey` en `data-layer/registry.ts`; las claves de la app, la cola y los respaldos no
+> cambian) y, una sola vez por dispositivo, sube lo que esas colecciones tenían guardado
+> (`SyncService.queueRenamedCollections`; si otro dispositivo ya subió algo, gana la copia del servidor y la local
+> queda en conflictos, nunca se pierde). Pruebas: `characterization/sync-collection-names.spec.ts` y
+> `data-layer/sync.spec.ts` («collections with camelCase keys»). Para colecciones nuevas, usar nombres `[a-z0-9_]`.
 
 ## Criterios antes de desarrollar cada función
 

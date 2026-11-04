@@ -2,7 +2,7 @@
 // server contents. Pure, so every scenario is tested without a server.
 import { DEFAULT_ACCOUNTS_MOCK } from '../data/default-accounts';
 import { DEFAULT_CATEGORIES_MOCK } from '../data/default-categories';
-import { SYNCED_COLLECTIONS, stableStringify } from './registry';
+import { SYNCED_COLLECTIONS, stableStringify, toServerName } from './registry';
 
 export type Counts = Record<string, number>;
 
@@ -19,7 +19,7 @@ export function countLocal(snapshot: Record<string, unknown>): Counts {
 }
 
 export function countServer(counts: Counts): Counts {
-  return Object.fromEntries(COUNTED.map((key) => [key, counts[key] ?? 0]));
+  return Object.fromEntries(COUNTED.map((key) => [key, counts[toServerName(key)] ?? counts[key] ?? 0])); // the server counts by its own (snake_case) names
 }
 
 export const total = (counts: Counts): number => Object.values(counts).reduce((a, b) => a + b, 0);

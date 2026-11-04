@@ -42,6 +42,20 @@ export const DEVICE_ONLY_KEYS: readonly string[] = ['lock', 'device-prefs', 'ai-
 
 export const DOC_ID = 'doc';
 
+// The server only accepts collection names made of [a-z0-9_] (xmoney-api and the CHECK constraint of
+// the schema). Some keys were registered in camelCase, so on the wire they travel in snake_case and come
+// back to their own key. The app, the outbox and the backups keep the original keys.
+export const toServerName = (key: string): string => key.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+
+const KEY_OF_SERVER_NAME = new Map(Object.keys(SYNCED_COLLECTIONS).map((k) => [toServerName(k), k]));
+
+// Unknown names pass through unchanged (for example "conflicts", or a collection of a newer app)
+export const toClientKey = (name: string): string => KEY_OF_SERVER_NAME.get(name) ?? name;
+
+// Keys whose records could NOT be uploaded before 2.18.0 (the server rejected their names): their local
+// data is uploaded once, see SyncService.queueRenamedCollections
+export const RENAMED_COLLECTIONS: readonly string[] = Object.keys(SYNCED_COLLECTIONS).filter((k) => toServerName(k) !== k);
+
 export const isSyncedKey = (key: string): boolean => key in SYNCED_COLLECTIONS;
 export const isKnownKey = (key: string): boolean => isSyncedKey(key) || DEVICE_ONLY_KEYS.includes(key);
 
