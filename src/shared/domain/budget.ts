@@ -172,9 +172,39 @@ export interface VariableRemaining {
   estimate: true;
 }
 
-// What the variable categories are still expected to spend this month. Uses each variable
-// category's own spending: the weekly rate of its last 4 weeks (min / max give the range); a
-// category with a declared irregular pattern uses that pattern's projection instead.
+// Daily spending rate of the variable categories (RD$ per day): the weekly rate of the last 4
+// weeks (the lowest and highest week give the range), or this month's own pace when there are
+// fewer than 2 weeks of history.
+export interface VariableRates {
+  mid: number;
+  low: number;
+  high: number;
+  basis: 'weekly-history' | 'pace';
+}
+
+export function variableRates(txs: readonly TransactionModel[], categories: readonly CategoryModel[], today: string): VariableRates {
+  const variable = new Set(categories.filter((c) => c.type === 'expense' && !c.parentId && natureOfCategory(c) === 'variable').map((c) => c.id));
+  const counts = (t: TransactionModel) => t.type === 'expense' && !!t.categoryId && variable.has(t.categoryId) && t.status !== 'reversed' && t.origin !== 'adjustment' && (t.currency ?? 'DOP') === 'DOP';
+  const weekly = [0, 0, 0, 0];
+  const spans = Math.min(4, Math.floor((daysBetween(txs.map((t) => t.date).sort()[0] ?? today, today) + 1) / 7));
+  for (const t of txs) {
+    if (!counts(t)) continue;
+    const back = daysBetween(t.date, today);
+    if (back < 0 || back >= 28) continue;
+    const idx = Math.floor(back / 7);
+    weekly[idx] = addMoney(weekly[idx], t.amount);
+  }
+  const used = spans >= 2 ? weekly.slice(0, spans) : [];
+  if (used.length) return { mid: sumMoney(used) / used.length / 7, low: Math.min(...used) / 7, high: Math.max(...used) / 7, basis: 'weekly-history' };
+  const elapsed = Number(today.slice(8, 10));
+  let spent = 0;
+  for (const t of txs) if (t.date.startsWith(today.slice(0, 7)) && t.date <= today && counts(t)) spent = addMoney(spent, t.amount);
+  const pace = spent / Math.max(1, elapsed);
+  return { mid: pace, low: pace, high: pace, basis: 'pace' };
+}
+
+// What the variable categories are still expected to spend this month; a category with a
+// declared irregular pattern uses that pattern's projection instead.
 export function variableRemaining(
   txs: readonly TransactionModel[],
   categories: readonly CategoryModel[],
@@ -182,37 +212,13 @@ export function variableRemaining(
   patterns: ReadonlyMap<string, IrregularProjection> = new Map()
 ): VariableRemaining {
   const monthEnd = `${today.slice(0, 7)}-${String(lastDayOfMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)))).padStart(2, '0')}`;
-  const remainingWeeks = Math.max(0, daysBetween(today, monthEnd)) / 7;
+  const remainingDays = Math.max(0, daysBetween(today, monthEnd));
   const variable = new Set(categories.filter((c) => c.type === 'expense' && !c.parentId && natureOfCategory(c) === 'variable').map((c) => c.id));
-  // weekly totals of the last 4 weeks ending today
-  const weekly = [0, 0, 0, 0];
-  const spans = Math.min(4, Math.floor((daysBetween(txs.map((t) => t.date).sort()[0] ?? today, today) + 1) / 7));
-  for (const t of txs) {
-    if (t.type !== 'expense' || !t.categoryId || !variable.has(t.categoryId) || t.status === 'reversed' || t.origin === 'adjustment' || (t.currency ?? 'DOP') !== 'DOP') continue;
-    const back = daysBetween(t.date, today);
-    if (back < 0 || back >= 28) continue;
-    const idx = Math.floor(back / 7);
-    weekly[idx] = addMoney(weekly[idx], t.amount);
-  }
-  const used = spans >= 2 ? weekly.slice(0, spans) : [];
-  let projected = 0;
-  let low = 0;
-  let high = 0;
-  let basis: VariableRemaining['basis'] = 'weekly-history';
-  if (used.length) {
-    projected = (sumMoney(used) / used.length) * remainingWeeks;
-    low = Math.min(...used) * remainingWeeks;
-    high = Math.max(...used) * remainingWeeks;
-  } else {
-    // not enough history: this month's own pace
-    basis = 'pace';
-    const elapsed = Number(today.slice(8, 10));
-    let spent = 0;
-    for (const t of txs) {
-      if (t.date.startsWith(today.slice(0, 7)) && t.date <= today && t.type === 'expense' && t.categoryId && variable.has(t.categoryId) && t.status !== 'reversed' && t.origin !== 'adjustment' && (t.currency ?? 'DOP') === 'DOP') spent = addMoney(spent, t.amount);
-    }
-    projected = low = high = (spent / Math.max(1, elapsed)) * Math.max(0, daysBetween(today, monthEnd));
-  }
+  const rates = variableRates(txs, categories, today);
+  const projected = rates.mid * remainingDays;
+  const low = rates.low * remainingDays;
+  const high = rates.high * remainingDays;
+  const basis = rates.basis;
   // declared patterns replace the part of the estimate that belongs to their category
   let patternExtra = 0;
   for (const [categoryId, p] of patterns) {
