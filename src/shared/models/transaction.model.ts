@@ -1,3 +1,4 @@
+import { Nature } from './category.model';
 import { Deduction } from './income-source.model';
 
 export type TransactionType = 'income' | 'expense';
@@ -31,6 +32,8 @@ export interface TransactionModel {
   type: TransactionKind;
   amount: number;
   categoryId?: string; // absent on transfers
+  subcategoryId?: string; // optional child of categoryId: the category still holds the movement, so older totals add up
+  nature?: Nature; // overrides the category's nature for this one movement
   accountId: string; // source account
   toAccountId?: string; // destination account, transfers only
   currency?: TransactionCurrency; // default DOP (the primary currency)

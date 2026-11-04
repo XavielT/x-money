@@ -7,7 +7,7 @@ export type CollectionKind =
   | 'doc'; // a single JSON value: one server record with data = { value }
 
 // Bump together with a migration in migrations.ts; see docs/ARQUITECTURA.md (schema versioning)
-export const CLIENT_SCHEMA_VERSION = 2;
+export const CLIENT_SCHEMA_VERSION = 3;
 
 export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   accounts: 'entities',
@@ -19,6 +19,8 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   audit: 'entities', // append-only change history (capped), each event names its device
   incomeSources: 'entities', // where income comes from (2.9.0)
   benefits: 'entities', // non-monetary work benefits with their usage notes (2.9.0): never money
+  buckets: 'entities', // distribution blocks (2.10.0)
+  budgetMoves: 'entities', // money moved between blocks inside a month (2.10.0), undoable
   statements: 'entities', // closed credit-card billing periods (ids are the same on every device)
   settings: 'doc', // currency symbol, bank tax %
   lang: 'doc', // interface language

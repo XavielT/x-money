@@ -1,6 +1,7 @@
 // Versioned data migrations. Each one is a pure, idempotent function over ONE record, so
 // the same code migrates the local copy at start-up, queued operations, records downloaded
 // from another device that still holds an older shape, and imported backups.
+import { DEFAULT_NATURE } from '../domain/categories';
 import { defaultLiquid } from '../domain/networth';
 import { CLIENT_SCHEMA_VERSION, SYNCED_COLLECTIONS } from './registry';
 
@@ -37,6 +38,18 @@ export const MIGRATIONS: Migration[] = [
         return out;
       }
       return item;
+    },
+  },
+  {
+    // 2.10.0: expense categories get an explicit nature (fixed / variable). The built-in fixed ones
+    // by id, everything else variable (the conservative default). Movements keep their categoryId
+    // untouched, so every total still adds up; nothing is inferred from repetition (rule 8).
+    version: 3,
+    name: 'category-nature',
+    record(collection, item) {
+      if (!isObj(item) || collection !== 'categories') return item;
+      if (item['type'] !== 'expense' || item['nature'] !== undefined) return item;
+      return { ...item, nature: DEFAULT_NATURE[String(item['id'])] ?? 'variable' };
     },
   },
 ];

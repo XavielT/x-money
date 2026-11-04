@@ -7,6 +7,8 @@ export interface RecurringModel {
   type: TransactionKind;
   amount: number;
   categoryId?: string; // absent on transfers
+  subcategoryId?: string;
+  nature?: 'fixed' | 'variable'; // a recurring expense suggests fixed; the user decides
   accountId: string;
   toAccountId?: string; // transfers only
   currency?: TransactionCurrency; // default: the account's own currency

@@ -1,7 +1,8 @@
 import { CategoryModel } from '../models/category.model';
+import { DEFAULT_NATURE } from '../domain/categories';
 
 // Default set based on the common categories of Monefy / Spendee / Money Manager
-export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = [
+const BASE_CATEGORIES: CategoryModel[] = [
   // Expense categories
   { id: 'cat-food', name: 'Food', icon: '🍔', color: '#ff7043', type: 'expense' },
   { id: 'cat-groceries', name: 'Groceries', icon: '🛒', color: '#66bb6a', type: 'expense' },
@@ -24,6 +25,17 @@ export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = [
   { id: 'cat-card-interest', name: 'Card interest and charges', icon: '💳', color: '#c62828', type: 'expense' },
   { id: 'cat-bank-fees', name: 'Bank fees', icon: '🏛️', color: '#90a4ae', type: 'expense' },
   { id: 'cat-recon-adjustment', name: 'Reconciliation adjustment', icon: '⚖️', color: '#9e9e9e', type: 'expense', system: true },
+  // Added in 2.10.0 (fixed and variable ones the list was missing)
+  { id: 'cat-electricity', name: 'Electricity', icon: '💡', color: '#fdd835', type: 'expense' },
+  { id: 'cat-internet', name: 'Internet', icon: '🌐', color: '#29b6f6', type: 'expense' },
+  { id: 'cat-utilities', name: 'Services', icon: '🚰', color: '#4db6ac', type: 'expense' },
+  { id: 'cat-rent', name: 'Rent', icon: '🔑', color: '#8e24aa', type: 'expense' },
+  { id: 'cat-obligations', name: 'Recurring obligations', icon: '📆', color: '#5c6bc0', type: 'expense' },
+  { id: 'cat-delivery', name: 'Delivery', icon: '🛵', color: '#ff8f00', type: 'expense' },
+  { id: 'cat-going-out', name: 'Going out', icon: '🍻', color: '#ab47bc', type: 'expense' },
+  { id: 'cat-family', name: 'Family expenses', icon: '👨‍👩‍👧', color: '#ec407a', type: 'expense' },
+  { id: 'cat-vehicle-maintenance', name: 'Vehicle maintenance', icon: '🔧', color: '#6d4c41', type: 'expense' },
+  { id: 'cat-occasional', name: 'Occasional purchases', icon: '🛒', color: '#26c6da', type: 'expense' },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },
@@ -34,3 +46,6 @@ export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = [
   { id: 'cat-gifts', name: 'Gifts', icon: '🎁', color: '#f06292', type: 'income' },
   { id: 'cat-other-income', name: 'Other', icon: '💰', color: '#9ccc65', type: 'income' },
 ];
+
+// Every built-in expense category carries its default nature (fixed ones are listed in domain/categories.ts)
+export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = BASE_CATEGORIES.map((c) => (c.type === 'expense' ? { ...c, nature: DEFAULT_NATURE[c.id] ?? 'variable' } : c));
