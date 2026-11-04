@@ -94,3 +94,29 @@
   font-size: 0.75rem;
   color: var(--expense);
 }
+
+.budgets-links {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  a {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+}
+
+.budgets-row-risk {
+  font-size: 0.8rem;
+  color: #f9a825;
+}
+
+.budgets-row-hint,
+.budgets-row-parent {
+  font-size: 0.72rem;
+  color: var(--main-ultra-light);
+}

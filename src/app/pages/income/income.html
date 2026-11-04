@@ -107,7 +107,7 @@
 
       <h3>{{ 'Last months' | t }}</h3>
       <svg class="income-bars" viewBox="0 0 140 70" role="img" [attr.aria-label]="'Income by month' | t">
-        <g *ngFor="let b of bars(s); let i = index">
+        <g *ngFor="let b of chart(); let i = index">
           <rect [attr.x]="i * 20 + 3" [attr.y]="60 - b.height * 0.55" width="14" [attr.height]="b.height * 0.55" rx="2" [attr.fill]="s.color" [attr.opacity]="b.current ? 0.45 : 1"></rect>
           <text [attr.x]="i * 20 + 10" y="68" text-anchor="middle" font-size="6" fill="currentColor">{{ b.label }}</text>
         </g>

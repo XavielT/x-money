@@ -74,7 +74,7 @@
   </section>
 
   <!-- Budget & insight alerts -->
-  <section class="home-alerts" *ngIf="budgetAlerts().length || antAlert()">
+  <section class="home-alerts" *ngIf="budgetAlerts().length || bucketAlerts().length || antAlert()">
     <a
       routerLink="/budgets"
       class="home-alert x-card"
@@ -82,6 +82,10 @@
       [class.over]="alert.over"
     >
       ⚠️ {{ alert.category?.icon }} {{ alert.category?.name }} · {{ alert.percent }}% {{ 'of budget used' | t }}
+      <small class="home-alert-risk" *ngIf="alert.risk as r">{{ riskText(r) }}</small>
+    </a>
+    <a routerLink="/budgets/plan" class="home-alert x-card" *ngFor="let b of bucketAlerts()">
+      ⚠️ {{ bucketName(b.id) }} · <small class="home-alert-risk">{{ riskText(b.risk) }}</small>
     </a>
     <a routerLink="/stats" class="home-alert x-card" *ngIf="antAlert() as ant">
       🐜 {{ 'Ant expenses' | t }}: {{ settings.currency() }}{{ ant.total | number:'1.0-0' }} ({{ ant.percent }}% {{ 'of your expenses this month' | t }})

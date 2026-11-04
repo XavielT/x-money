@@ -14,6 +14,8 @@ import { InsightsService } from '../../../shared/services/insights.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { CreditCardService } from '../../../shared/services/credit-card.service';
 import { CardAlert } from '../../../shared/domain/cards';
+import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
+import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 
 @Component({
@@ -45,20 +47,37 @@ export class HomeComponent {
   });
 
   // Budgets at 90%+ of their monthly limit
-  budgetAlerts = computed(() =>
-    this.budgetService
+  budgetAlerts = computed(() => {
+    const rows = this.budgetService.categoryRows(this.year, this.month);
+    return this.budgetService
       .budgets()
       .map((budget) => {
-        const spent = spentInCategory(this.transactionService.forMonth(this.year, this.month), budget.categoryId);
-        const percent = budget.monthlyLimit > 0 ? Math.round((spent / budget.monthlyLimit) * 100) : 0;
+        const row = rows.find((r) => r.budget.id === budget.id)!;
+        const percent = row.limit > 0 ? Math.round((row.spent / row.limit) * 100) : 0;
         return {
           category: this.categoryService.byId(budget.categoryId),
           percent,
           over: percent >= 100,
+          risk: row.risk.status === 'risk' ? row.risk : null,
         };
       })
-      .filter((alert) => alert.percent >= 90)
-  );
+      .filter((alert) => alert.percent >= 90 || alert.risk);
+  });
+
+  // Blocks that, at this pace, will exceed their limit (an estimate)
+  bucketAlerts = computed(() => this.budgetService.risks().filter((r) => r.kind === 'bucket'));
+
+  // "At this pace you reach RD$X on day Y" (an estimate)
+  riskText(r: { projected: number; hitDate: string | null }): string {
+    const amount = `${this.settings.currency()}${Math.round(r.projected).toLocaleString('en-US')}`;
+    return r.hitDate
+      ? this.translate.instant('At this pace you reach the limit on {date} and end the month at {amount} (estimate)', { date: r.hitDate, amount })
+      : this.translate.instant('At this pace you end the month at {amount} (estimate)', { amount });
+  }
+
+  bucketName(kind: string): string {
+    return this.translate.instant(BUCKET_LABELS[kind as BucketKind] ?? kind);
+  }
 
   hasTransactions = computed(() => this.transactionService.transactions().length > 0);
 

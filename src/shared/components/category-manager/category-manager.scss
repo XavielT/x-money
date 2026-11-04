@@ -1,0 +1,141 @@
+.catman h2 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.catman-hint {
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+  margin-bottom: 8px;
+}
+
+.catman-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 0.85rem;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.catman-list {
+  padding: 6px 10px;
+  margin-bottom: 12px;
+}
+
+.catman-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.9rem;
+
+  &.catman-sub {
+    padding-left: 28px;
+    font-size: 0.85rem;
+  }
+}
+
+.catman-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.catman-name {
+  flex: 1;
+}
+
+.catman-tag {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--secondary);
+  color: var(--main-ultra-light);
+}
+
+.catman-pattern {
+  display: block;
+  padding-left: 36px;
+  font-size: 0.72rem;
+  color: var(--main-ultra-light);
+}
+
+.catman-btn {
+  background: none;
+  border: none;
+  color: var(--main-ultra-light);
+  font-size: 1rem;
+  padding: 2px 6px;
+}
+
+.catman-newsub {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0 8px 28px;
+}
+
+.catman-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+
+  h3 {
+    font-size: 0.95rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: var(--main-ultra-light);
+  }
+}
+
+.catman-colors {
+  display: flex;
+  gap: 8px;
+
+  button {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+
+    &.active {
+      border-color: var(--text);
+    }
+  }
+}
+
+.catman-pair {
+  display: flex;
+  gap: 8px;
+}
+
+.catman-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.catman-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.catman-ghost {
+  background: var(--secondary);
+  color: var(--text);
+}

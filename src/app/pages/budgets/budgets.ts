@@ -8,13 +8,16 @@ import { BudgetService } from '../../../shared/services/budget.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { SettingsService } from '../../../shared/services/settings.service';
-import { spentInCategory } from '../../../shared/domain/stats';
+import { BudgetRisk } from '../../../shared/domain/budget';
+import { RouterLink } from '@angular/router';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 interface BudgetRow {
   budget: BudgetModel;
   category: CategoryModel | undefined;
   spent: number;
+  limit: number; // the monthly limit with what moved in or out this month
+  risk: BudgetRisk;
   percent: number; // capped at 100 for the bar width
   status: 'ok' | 'warn' | 'over';
 }
@@ -22,7 +25,7 @@ interface BudgetRow {
 @Component({
   selector: 'app-budgets',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
   templateUrl: './budgets.html',
   styleUrl: './budgets.scss',
 })
@@ -37,18 +40,32 @@ export class BudgetsComponent {
   limit: number | null = null;
 
   rows = computed<BudgetRow[]>(() =>
-    this.budgetService.budgets().map((budget) => {
-      const spent = spentInCategory(this.transactionService.forMonth(this.year, this.month), budget.categoryId);
-      const ratio = budget.monthlyLimit > 0 ? spent / budget.monthlyLimit : 0;
+    this.budgetService.categoryRows(this.year, this.month).map(({ budget, limit, spent, risk }) => {
+      const ratio = limit > 0 ? spent / limit : 0;
       return {
         budget,
         category: this.categoryService.byId(budget.categoryId),
         spent,
+        limit,
+        risk,
         percent: Math.min(100, Math.round(ratio * 100)),
         status: ratio >= 1 ? 'over' : ratio >= 0.7 ? 'warn' : 'ok',
       };
     })
   );
+
+  // Categories and their subcategories, to set a limit on either
+  categoryOptions = computed(() =>
+    this.categoryService.expenseCategories().flatMap((c) => [{ id: c.id, label: `${c.icon} ${c.name}` }, ...this.categoryService.children(c.id).map((s) => ({ id: s.id, label: `   ↳ ${s.icon} ${s.name}` }))])
+  );
+
+  // "At this pace you reach RD$X on day Y" (an estimate)
+  riskText(row: BudgetRow): string {
+    const r = row.risk;
+    const amount = `${this.settings.currency()}${Math.round(r.projected).toLocaleString('en-US')}`;
+    if (r.hitDate) return this.translate.instant('At this pace you reach the limit on {date} and end the month at {amount} (estimate)', { date: r.hitDate, amount });
+    return this.translate.instant('At this pace you end the month at {amount} (estimate)', { amount });
+  }
 
   constructor(
     private translate: TranslateService,

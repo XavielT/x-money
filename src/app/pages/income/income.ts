@@ -168,7 +168,10 @@ export class IncomeComponent {
   }
 
   // Last 6 complete months plus the running one, bars scaled to the biggest
-  bars(s: IncomeSourceModel): { label: string; value: number; height: number; current: boolean }[] {
+  // computed for the selected source: the chart must not be rebuilt on every change detection
+  chart = computed(() => (this.selected() ? this.bars(this.selected()!) : []));
+
+  private bars(s: IncomeSourceModel): { label: string; value: number; height: number; current: boolean }[] {
     const totals = monthlyTotals(this.income.incomeOf(s.id));
     const today = localIso(this.now);
     const keys: string[] = [];

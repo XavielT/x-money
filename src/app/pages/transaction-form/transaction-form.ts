@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TransactionCurrency, TransactionKind } from '../../../shared/models/transaction.model';
 import { AccountModel } from '../../../shared/models/account.model';
+import { CategoryModel } from '../../../shared/models/category.model';
 import { RecurringFrequency } from '../../../shared/models/recurring.model';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { NewTransaction, TransactionService } from '../../../shared/services/transaction.service';
@@ -40,6 +41,11 @@ export class TransactionFormComponent {
   date = '';
   note = '';
   repeat: RecurringFrequency | 'none' = 'none';
+
+  // subcategory and nature (2.10.0)
+  subcategoryId = '';
+  natureOverride: '' | 'fixed' | 'variable' = '';
+  ruleNature: 'fixed' | 'variable' = 'fixed'; // a recurring expense suggests fixed; the user decides
 
   // income details (2.9.0)
   sourceId = '';
@@ -117,6 +123,8 @@ export class TransactionFormComponent {
         this.fee = existing.fee ?? null;
         this.date = existing.date;
         this.note = existing.note ?? '';
+        this.subcategoryId = existing.subcategoryId ?? '';
+        this.natureOverride = existing.nature ?? '';
         this.sourceId = existing.incomeSourceId ?? '';
         this.grossAmount = existing.grossAmount ?? null;
         this.deductions = (existing.deductions ?? []).map((d) => ({ ...d }));
@@ -237,6 +245,18 @@ export class TransactionFormComponent {
 
   selectCategory(id: string): void {
     this.categoryId.set(id);
+    this.subcategoryId = ''; // a subcategory belongs to one category
+  }
+
+  // Subcategories of the chosen category (at most two levels)
+  subcategories(): CategoryModel[] {
+    const id = this.categoryId();
+    return id ? this.categoryService.children(id) : [];
+  }
+
+  // What the category says about its own nature, shown next to the override
+  categoryNature(): 'fixed' | 'variable' {
+    return this.categoryService.natureOf(this.categoryId());
   }
 
   toggleNewCategory(): void {
@@ -327,6 +347,15 @@ export class TransactionFormComponent {
       date: this.date,
       note: this.note.trim() || undefined,
       ...this.incomeFields(),
+      ...this.expenseFields(),
+    };
+  }
+
+  private expenseFields(): Partial<NewTransaction> {
+    if (this.kind() !== 'expense') return {};
+    return {
+      subcategoryId: this.subcategoryId || undefined,
+      nature: this.repeat !== 'none' && !this.editId ? this.ruleNature : this.natureOverride || undefined,
     };
   }
 

@@ -1,0 +1,79 @@
+.fixed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fixed-back {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.fixed-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+
+  h2 {
+    font-size: 1rem;
+  }
+}
+
+.fixed-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.fixed-hint {
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+}
+
+.fixed-tag {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--secondary);
+  color: var(--main-ultra-light);
+}
+
+.fixed-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.fixed-icon {
+  font-size: 1.4rem;
+}
+
+.fixed-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.75rem;
+  }
+}
+
+.fixed-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 600;
+
+  small {
+    color: var(--main-ultra-light);
+    font-weight: 400;
+    font-size: 0.72rem;
+  }
+}

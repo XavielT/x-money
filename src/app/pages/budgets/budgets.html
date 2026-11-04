@@ -1,14 +1,16 @@
 <div class="x-page budgets">
   <h1 class="x-page-title">{{ 'Budgets' | t }}</h1>
   <p class="budgets-subtitle">{{ monthLabel }}</p>
+  <div class="budgets-links">
+    <a routerLink="/budgets/plan" class="x-card">🧮 {{ 'Plan, blocks and projection' | t }}</a>
+    <a routerLink="/fixed" class="x-card">📆 {{ 'Fixed expenses' | t }}</a>
+  </div>
 
   <!-- Add / update budget -->
   <div class="budgets-form x-card">
     <select class="x-input" [(ngModel)]="selectedCategoryId" name="category">
       <option value="" disabled>{{ 'Choose category…' | t }}</option>
-      <option *ngFor="let cat of categoryService.expenseCategories()" [value]="cat.id">
-        {{ cat.icon }} {{ cat.name }}
-      </option>
+      <option *ngFor="let opt of categoryOptions()" [value]="opt.id">{{ opt.label }}</option>
     </select>
     <input
       class="x-input"
@@ -34,7 +36,7 @@
   <div class="budgets-row x-card" *ngFor="let row of rows()">
     <div class="budgets-row-head">
       <span class="budgets-row-icon">{{ row.category?.icon }}</span>
-      <span class="budgets-row-name">{{ row.category?.name || ('Unknown' | t) }}</span>
+      <span class="budgets-row-name">{{ row.category?.name || ('Unknown' | t) }}<small class="budgets-row-parent" *ngIf="row.category?.parentId"> · {{ categoryService.byId(row.category!.parentId!)?.name }}</small></span>
       <button class="budgets-row-delete" (click)="removeBudget(row.budget.id)" aria-label="Remove budget">✕</button>
     </div>
 
@@ -51,11 +53,13 @@
       <span [class.over-text]="row.status === 'over'">
         {{ settings.currency() }}{{ row.spent | number:'1.2-2' }} {{ 'spent' | t }}
       </span>
-      <span>{{ 'limit' | t }} {{ settings.currency() }}{{ row.budget.monthlyLimit | number:'1.2-2' }}</span>
+      <span>{{ 'limit' | t }} {{ settings.currency() }}{{ row.limit | number:'1.2-2' }}</span>
     </div>
 
     <p class="budgets-row-over" *ngIf="row.status === 'over'">
-      {{ 'Over budget by' | t }} {{ settings.currency() }}{{ row.spent - row.budget.monthlyLimit | number:'1.2-2' }}
+      {{ 'Over budget by' | t }} {{ settings.currency() }}{{ row.spent - row.limit | number:'1.2-2' }}
     </p>
+    <p class="budgets-row-risk" *ngIf="row.risk.status === 'risk'">⚠️ {{ riskText(row) }}</p>
+    <small class="budgets-row-hint" *ngIf="row.limit !== row.budget.monthlyLimit">{{ 'Adjusted this month: moved money.' | t }}</small>
   </div>
 </div>

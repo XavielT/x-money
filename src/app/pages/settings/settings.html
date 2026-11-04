@@ -100,31 +100,22 @@
     </div>
   </section>
 
-  <!-- Categories -->
+  <!-- Categories: tree, nature, frequency and irregular patterns -->
+  @defer {
+    <app-category-manager></app-category-manager>
+  }
+
+  <!-- Budget alerts and small purchases -->
   <section class="settings-section">
-    <h2>{{ 'Categories' | t }}</h2>
-    <p class="settings-hint">{{ 'Create new categories from the "New" tile when adding a transaction. Custom ones can be deleted here.' | t }}</p>
-
-    <div class="settings-cat-toggle">
-      <button [class.active]="catType === 'expense'" (click)="catType = 'expense'">{{ 'Expense' | t }}</button>
-      <button [class.active]="catType === 'income'" (click)="catType = 'income'">{{ 'Income' | t }}</button>
-    </div>
-
-    <div class="settings-cat-list x-card">
-      <div class="settings-cat-row" *ngFor="let cat of categoryService.ofType(catType)">
-        <span class="settings-cat-dot" [style.background]="cat.color"></span>
-        <span class="settings-cat-icon">{{ cat.icon }}</span>
-        <span class="settings-cat-name">{{ cat.name }}</span>
-        <small class="settings-cat-tag" *ngIf="categoryService.isCustom(cat.id)">{{ 'custom' | t }}</small>
-        <button
-          class="settings-account-delete"
-          *ngIf="categoryService.isCustom(cat.id)"
-          (click)="removeCategory(cat.id)"
-          aria-label="Delete category"
-        >
-          ✕
-        </button>
-      </div>
+    <h2>{{ 'Budget alerts' | t }}</h2>
+    <p class="settings-hint">{{ 'A budget shows "risk" when, at the current pace, the month will end above this share of its limit. It is an estimate.' | t }}</p>
+    <div class="settings-lock x-card">
+      <label>{{ 'Risk threshold (% of the limit)' | t }}
+        <input class="x-input" type="number" inputmode="numeric" min="10" max="200" [ngModel]="settingsService.budget().riskAt" (ngModelChange)="settingsService.setRiskAt(+$event)" name="riskAt" />
+      </label>
+      <label>{{ 'Small purchase: up to (empty = automatic)' | t }}
+        <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="settingsService.antMax() ?? null" (ngModelChange)="setAntMax($event)" name="antMax" />
+      </label>
     </div>
   </section>
 
@@ -198,5 +189,5 @@
     </div>
   </section>
 
-  <p class="settings-version">X Money · v2.9.0</p>
+  <p class="settings-version">X Money · v2.10.0</p>
 </div>

@@ -1,0 +1,97 @@
+<section class="catman">
+  <h2>{{ 'Categories' | t }}</h2>
+  <p class="catman-hint">{{ 'Fixed = the same obligation every period (rent, internet). Variable = it moves with your choices. You choose the nature: an expense that repeats is not fixed because of that.' | t }}</p>
+
+  <div class="catman-toggle">
+    <button [class.active]="type() === 'expense'" (click)="type.set('expense')">{{ 'Expense' | t }}</button>
+    <button [class.active]="type() === 'income'" (click)="type.set('income')">{{ 'Income' | t }}</button>
+  </div>
+
+  <p class="catman-hint" *ngIf="message()">{{ message() }}</p>
+
+  <div class="catman-list x-card">
+    <ng-container *ngFor="let node of tree()">
+      <div class="catman-row">
+        <span class="catman-dot" [style.background]="node.category.color"></span>
+        <span class="catman-icon">{{ node.category.icon }}</span>
+        <span class="catman-name">{{ node.category.name }}</span>
+        <small class="catman-tag" *ngIf="type() === 'expense'">{{ natureLabel(node.category) | t }}</small>
+        <small class="catman-tag" *ngIf="node.category.frequency">{{ frequencyLabel(node.category.frequency) | t }}</small>
+        <button class="catman-btn" (click)="edit(node.category)" [attr.aria-label]="'Edit' | t">✎</button>
+        <button class="catman-btn" *ngIf="!node.category.parentId" (click)="startSub(node.category)" [attr.aria-label]="'Add subcategory' | t">＋</button>
+        <button class="catman-btn" *ngIf="isCustom(node.category.id)" (click)="remove(node.category)" [attr.aria-label]="'Delete' | t">✕</button>
+      </div>
+      <small class="catman-pattern" *ngIf="node.category.irregular">{{ patternText(node.category) }}</small>
+
+      <div class="catman-row catman-sub" *ngFor="let sub of node.children">
+        <span class="catman-icon">{{ sub.icon }}</span>
+        <span class="catman-name">{{ sub.name }}</span>
+        <small class="catman-tag" *ngIf="type() === 'expense'">{{ natureLabel(sub) | t }}</small>
+        <button class="catman-btn" (click)="edit(sub)" [attr.aria-label]="'Edit' | t">✎</button>
+        <button class="catman-btn" *ngIf="isCustom(sub.id)" (click)="remove(sub)" [attr.aria-label]="'Delete' | t">✕</button>
+      </div>
+
+      <div class="catman-newsub" *ngIf="newSubFor() === node.category.id">
+        <input class="x-input" type="text" maxlength="24" [(ngModel)]="newSubName" name="newSub" [placeholder]="'Subcategory name' | t" />
+        <button class="x-btn" [disabled]="!newSubName.trim()" (click)="addSub(node.category)">{{ 'Add' | t }}</button>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Edit -->
+  <div class="catman-edit x-card" *ngIf="editingId()">
+    <h3>{{ 'Edit category' | t }}</h3>
+    <label>{{ 'Name' | t }}</label>
+    <input class="x-input" type="text" maxlength="24" [(ngModel)]="fName" name="fName" />
+    <label>{{ 'Icon (emoji)' | t }}</label>
+    <input class="x-input" type="text" maxlength="4" [(ngModel)]="fIcon" name="fIcon" />
+    <div class="catman-colors">
+      <button *ngFor="let c of colors" [style.background]="c" [class.active]="fColor === c" (click)="fColor = c" [attr.aria-label]="c"></button>
+    </div>
+
+    <ng-container *ngIf="type() === 'expense'">
+      <label>{{ 'Nature' | t }}</label>
+      <div class="catman-toggle">
+        <button [class.active]="fNature === 'fixed'" (click)="fNature = 'fixed'">{{ 'Fixed' | t }}</button>
+        <button [class.active]="fNature === 'variable'" (click)="fNature = 'variable'">{{ 'Variable' | t }}</button>
+      </div>
+      <label>{{ 'Estimated frequency' | t }}</label>
+      <select class="x-input" [(ngModel)]="fFrequency" name="fFrequency">
+        <option value="">{{ 'Not set' | t }}</option>
+        <option value="monthly">{{ 'Monthly' | t }}</option>
+        <option value="weekly">{{ 'Weekly' | t }}</option>
+        <option value="irregular">{{ 'Irregular' | t }}</option>
+      </select>
+
+      <label class="catman-check"><input type="checkbox" [(ngModel)]="fIrregular" name="fIrregular" /> {{ 'It happens a variable number of times' | t }}</label>
+      <ng-container *ngIf="fIrregular">
+        <small class="catman-hint">{{ 'Example: work lunches, RD$250 to 400 each time, 0 to 4 times a week. Used for estimates only.' | t }}</small>
+        <div class="catman-pair">
+          <input class="x-input" type="number" inputmode="decimal" min="0" [(ngModel)]="fAmountMin" name="fAmountMin" [placeholder]="'Amount from' | t" />
+          <input class="x-input" type="number" inputmode="decimal" min="0" [(ngModel)]="fAmountMax" name="fAmountMax" [placeholder]="'Amount to' | t" />
+        </div>
+        <div class="catman-pair">
+          <input class="x-input" type="number" inputmode="numeric" min="0" [(ngModel)]="fTimesMin" name="fTimesMin" [placeholder]="'Times from' | t" />
+          <input class="x-input" type="number" inputmode="numeric" min="0" [(ngModel)]="fTimesMax" name="fTimesMax" [placeholder]="'Times to' | t" />
+        </div>
+        <div class="catman-toggle">
+          <button [class.active]="fPer === 'week'" (click)="fPer = 'week'">{{ 'per week' | t }}</button>
+          <button [class.active]="fPer === 'month'" (click)="fPer = 'month'">{{ 'per month' | t }}</button>
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="editingId() && isCustom(editingId()!)">
+      <label>{{ 'Parent category (optional)' | t }}</label>
+      <select class="x-input" [(ngModel)]="fParent" name="fParent">
+        <option value="">{{ 'None (top level)' | t }}</option>
+        <option *ngFor="let p of parentOptions(categories.byId(editingId()!)!)" [value]="p.id">{{ p.icon }} {{ p.name }}</option>
+      </select>
+    </ng-container>
+
+    <div class="catman-actions">
+      <button class="x-btn" (click)="save()">{{ 'Save' | t }}</button>
+      <button class="x-btn catman-ghost" (click)="cancel()">{{ 'Cancel' | t }}</button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,180 @@
+<div class="x-page plan">
+  <header class="plan-header">
+    <button class="plan-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Budget plan' | t }}</h1>
+  </header>
+
+  <div class="plan-tabs">
+    <button *ngFor="let t of tabs" [class.active]="tab() === t.key" (click)="tab.set(t.key)">{{ t.label | t }}</button>
+  </div>
+
+  <p class="plan-msg" *ngIf="message()">{{ message() }}</p>
+
+  <!-- ================= BLOCKS ================= -->
+  <ng-container *ngIf="tab() === 'blocks'">
+    <section class="x-card plan-card">
+      <h2>{{ 'Base income' | t }}</h2>
+      <div class="plan-toggle">
+        <button *ngFor="let b of bases" [class.active]="settings.budget().base === b.key" (click)="setBase(b.key)">{{ b.label | t }}</button>
+      </div>
+      <div class="plan-row"><span>{{ 'Active base' | t }}: {{ baseLabel() | t }}</span><strong>{{ settings.currency() }}{{ base().amount | number:'1.2-2' }}</strong></div>
+      <small class="plan-hint" *ngIf="base().estimate">{{ 'Estimate' | t }}: {{ settings.budget().base === 'guaranteed' ? ('only recurring, documented income' | t) : ('average of the last 3 months of available income (personal net + commercial net benefit); non-monetary benefits are never included' | t) }}.</small>
+      <small class="plan-hint warn" *ngIf="base().note === 'no-data'">{{ 'There is no income data for this base yet, so percentages give zero. Use amounts, or record your income sources.' | t }}</small>
+    </section>
+
+    <section class="x-card plan-card">
+      <h2>{{ 'Distribution of the month' | t }}</h2>
+      <small class="plan-hint">{{ 'Each block takes a percentage of the base income or an amount, as you choose. Savings, emergencies, business capital and debts are fed by hand for now.' | t }}</small>
+      <div class="plan-block" *ngFor="let r of rows()">
+        <div class="plan-row">
+          <strong>{{ label(r.bucket.kind) | t }}</strong>
+          <span class="plan-small">{{ settings.currency() }}{{ r.spent | number:'1.0-0' }} / {{ settings.currency() }}{{ r.limit | number:'1.0-0' }}</span>
+        </div>
+        <div class="plan-bar" *ngIf="r.limit > 0"><div class="plan-bar-fill" [class.over]="r.spent > r.limit" [class.risk]="r.risk.status === 'risk'" [style.width.%]="r.limit ? (r.spent / r.limit * 100 > 100 ? 100 : r.spent / r.limit * 100) : 0"></div></div>
+        <div class="plan-controls">
+          <div class="plan-toggle small">
+            <button [class.active]="r.bucket.mode === 'percent'" (click)="setMode(r.bucket.kind, 'percent')">%</button>
+            <button [class.active]="r.bucket.mode === 'amount'" (click)="setMode(r.bucket.kind, 'amount')">{{ settings.currency() }}</button>
+          </div>
+          <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="r.bucket.value" (ngModelChange)="setValue(r.bucket.kind, $event)" [name]="'v' + r.bucket.kind" />
+        </div>
+        <div class="plan-controls" *ngIf="manual(r.bucket.kind)">
+          <label class="plan-small">{{ 'Put in this month (by hand)' | t }}</label>
+          <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="r.spent" (ngModelChange)="setManual(r.bucket.kind, $event)" [name]="'m' + r.bucket.kind" />
+        </div>
+        <small class="plan-hint warn" *ngIf="r.risk.status === 'risk'">⚠️ {{ 'At this pace this block will exceed its limit (estimate).' | t }}</small>
+      </div>
+      <small class="plan-hint" *ngIf="budget.percentTotal() > 100">⚠️ {{ 'The percentages add up to more than 100%.' | t }}</small>
+    </section>
+
+    <section class="x-card plan-card">
+      <h2>{{ 'Move money inside the month' | t }}</h2>
+      <div class="plan-toggle">
+        <button [class.active]="moveType() === 'bucket'" (click)="setMoveType('bucket')">{{ 'Between blocks' | t }}</button>
+        <button [class.active]="moveType() === 'category'" (click)="setMoveType('category')">{{ 'Between categories' | t }}</button>
+      </div>
+      <select class="x-input" [(ngModel)]="moveFrom" name="moveFrom">
+        <option value="">{{ 'From…' | t }}</option>
+        <option *ngFor="let o of moveOptions()" [value]="o.id">{{ o.label | t }}</option>
+      </select>
+      <select class="x-input" [(ngModel)]="moveTo" name="moveTo">
+        <option value="">{{ 'To…' | t }}</option>
+        <option *ngFor="let o of moveOptions()" [value]="o.id">{{ o.label | t }}</option>
+      </select>
+      <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="moveAmount" name="moveAmount" [placeholder]="'Amount' | t" />
+      <button class="x-btn" [disabled]="!moveFrom || !moveTo || !moveAmount" (click)="move()">{{ 'Move' | t }}</button>
+      <div class="plan-row" *ngFor="let m of moves()">
+        <span class="plan-small">{{ refName(m.from) }} → {{ refName(m.to) }}: {{ settings.currency() }}{{ m.amount | number:'1.2-2' }}</span>
+        <button class="plan-link" (click)="undo(m.id)">{{ 'Undo' | t }}</button>
+      </div>
+      <small class="plan-hint">{{ 'Moves only change this month, are recorded in Change history and can be undone.' | t }}</small>
+    </section>
+  </ng-container>
+
+  <!-- ================= PROJECTION ================= -->
+  <ng-container *ngIf="tab() === 'projection'">
+    <section class="x-card plan-card" *ngIf="projection() as p">
+      <h2>{{ 'Balance at the end of the month' | t }} <span class="plan-tag">{{ 'Estimate' | t }}</span></h2>
+      <div class="plan-row"><span>{{ 'Liquid balance now' | t }}</span><strong>{{ settings.currency() }}{{ p.liquid | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>− {{ 'Fixed obligations still to pay' | t }}</span><strong>{{ settings.currency() }}{{ p.fixedPending | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>− {{ 'Variable spending still expected' | t }}</span><strong>{{ settings.currency() }}{{ p.variable.projected | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>+ {{ 'Guaranteed income still expected' | t }}</span><strong>{{ settings.currency() }}{{ p.guaranteedExpected | number:'1.2-2' }}</strong></div>
+      <div class="plan-row total"><span>{{ 'Projected balance' | t }}</span><strong>{{ settings.currency() }}{{ p.projected | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>{{ 'Range' | t }}</span><span>{{ settings.currency() }}{{ p.low | number:'1.0-0' }} – {{ settings.currency() }}{{ p.high | number:'1.0-0' }}</span></div>
+      <small class="plan-hint">{{ 'Assumptions: variable spending follows' | t }} {{ (p.variable.basis === 'weekly-history' ? 'the weekly rate of the last weeks (the range is the lowest and highest week)' : 'this month pace, because there is not enough history yet') | t }}. {{ 'It never includes variable income or non-monetary benefits: only guaranteed income that has not arrived yet.' | t }}</small>
+    </section>
+
+    <section class="x-card plan-card">
+      <h2>{{ 'Budget left this month' | t }}</h2>
+      <div class="plan-row"><span>{{ 'Limits' | t }}</span><strong>{{ settings.currency() }}{{ remaining().limit | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>{{ 'Spent' | t }}</span><strong>{{ settings.currency() }}{{ remaining().spent | number:'1.2-2' }}</strong></div>
+      <div class="plan-row total"><span>{{ 'Remaining' | t }}</span><strong>{{ settings.currency() }}{{ remaining().remaining | number:'1.2-2' }}</strong></div>
+    </section>
+  </ng-container>
+
+  <!-- ================= RECOMMENDATIONS ================= -->
+  <ng-container *ngIf="tab() === 'recommend' && recommendation() as rec">
+    <section class="x-card plan-card">
+      <h2>{{ 'Recommendation based on your history' | t }} <span class="plan-tag">{{ 'Estimate' | t }}</span></h2>
+      <small class="plan-hint">{{ 'The median of what you really spent in each block over the last months. It is a suggestion, not a rule: no fixed percentages are imposed.' | t }}</small>
+      <p class="plan-hint warn" *ngIf="!rec.sufficient">{{ 'Not enough history' | t }} ({{ rec.monthsUsed }} {{ 'months, at least 3 needed' | t }}). {{ 'Your declared distribution is used.' | t }}</p>
+      <p class="plan-hint warn" *ngIf="rec.sufficient && rec.shortfall">{{ 'Your base income does not cover your obligations. No savings are suggested.' | t }}</p>
+      <p class="plan-hint warn" *ngIf="rec.sufficient && rec.base <= 0">{{ 'There is no base income yet, so the suggestions are your usual spending and no savings.' | t }}</p>
+
+      <ng-container *ngIf="rec.sufficient">
+        <div class="plan-block" *ngFor="let b of rec.buckets">
+          <div class="plan-row">
+            <strong>{{ label(b.kind) | t }}</strong>
+            <span *ngIf="b.suggested !== null">{{ settings.currency() }}{{ b.suggested | number:'1.0-0' }}</span>
+            <span class="plan-small" *ngIf="b.suggested === null">{{ 'by hand' | t }}</span>
+          </div>
+          <div class="plan-actions" *ngIf="b.suggested !== null">
+            <button class="plan-link" (click)="apply(b.kind, b.suggested)">{{ 'Use this' | t }}</button>
+            <button class="plan-link" (click)="toggleFormula(b.kind)">{{ 'Where does it come from?' | t }}</button>
+          </div>
+          <small class="plan-hint" *ngIf="openFormula() === b.kind">
+            {{ 'Your spending in' | t }} {{ label(b.kind) | t }}: {{ b.months.join(' / ') }} → {{ 'median' | t }} {{ b.median | number:'1.0-0' }}.
+            <ng-container *ngIf="b.kind === 'savings'">{{ 'Savings = base income − suggested spending of every block − debt minimums, never below zero.' | t }}</ng-container>
+            <ng-container *ngIf="b.kind !== 'savings'">{{ 'Suggested = the median, scaled down only if all blocks together would exceed the base income.' | t }}</ng-container>
+          </small>
+        </div>
+        <small class="plan-hint">{{ 'Obligations (median of your fixed spending)' | t }}: {{ settings.currency() }}{{ rec.obligations | number:'1.0-0' }} · {{ 'Base' | t }}: {{ settings.currency() }}{{ rec.base | number:'1.0-0' }}</small>
+      </ng-container>
+    </section>
+  </ng-container>
+
+  <!-- ================= COMPARE ================= -->
+  <ng-container *ngIf="tab() === 'compare'">
+    <section class="x-card plan-card">
+      <h2>{{ 'Budget vs real by block' | t }}</h2>
+      <div class="plan-pair">
+        <select class="x-input" [ngModel]="monthA()" (ngModelChange)="monthA.set($event)" name="monthA"><option *ngFor="let m of months()" [value]="m">{{ m }}</option></select>
+        <select class="x-input" [ngModel]="monthB()" (ngModelChange)="monthB.set($event)" name="monthB"><option *ngFor="let m of months()" [value]="m">{{ m }}</option></select>
+      </div>
+      <table class="plan-table" *ngIf="pick(monthA()) as a">
+        <tr><th></th><th>{{ monthA() }}</th><th>{{ monthB() }}</th></tr>
+        <tr *ngFor="let row of a.rows; let i = index" [hidden]="!row.limit && !row.spent && !(pick(monthB())?.rows?.[i]?.spent)">
+          <td>{{ label(row.kind) | t }}</td>
+          <td>{{ row.spent | number:'1.0-0' }} / {{ row.limit | number:'1.0-0' }}</td>
+          <td>{{ pick(monthB())?.rows?.[i]?.spent | number:'1.0-0' }} / {{ pick(monthB())?.rows?.[i]?.limit | number:'1.0-0' }}</td>
+        </tr>
+      </table>
+      <small class="plan-hint">{{ 'Real spending / limit. Past months use the distribution you have now.' | t }}</small>
+    </section>
+
+    <section class="x-card plan-card">
+      <h2>{{ 'Last 6 months' | t }}</h2>
+      <table class="plan-table">
+        <tr><th></th><th *ngFor="let m of months()">{{ m.slice(5) }}</th></tr>
+        <tr *ngFor="let kind of kinds" [hidden]="manual(kind)">
+          <td>{{ label(kind) | t }}</td>
+          <td *ngFor="let c of comparison()">{{ pickSpent(c, kind) | number:'1.0-0' }}</td>
+        </tr>
+      </table>
+    </section>
+  </ng-container>
+
+  <!-- ================= TRENDS ================= -->
+  <ng-container *ngIf="tab() === 'trends'">
+    <section class="x-card plan-card">
+      <h2>{{ 'Spending trends' | t }} <span class="plan-tag">{{ 'Estimate' | t }}</span></h2>
+      <small class="plan-hint">{{ 'Straight-line trend of each category over up to 12 months (RD$ per month) and the change against the previous month.' | t }}</small>
+      <p class="plan-hint" *ngIf="!trendRows().length">{{ 'Not enough history' | t }}.</p>
+      <div class="plan-trend" *ngFor="let r of trendRows()">
+        <span class="plan-trend-name">{{ r.category.icon }} {{ r.category.name }}</span>
+        <svg viewBox="0 0 100 30" class="plan-spark" role="img" [attr.aria-label]="r.category.name"><polyline [attr.points]="spark(r.series)" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+        <span class="plan-trend-num" [class.up]="r.trend.slope > 0" [class.down]="r.trend.slope < 0">{{ r.trend.slope > 0 ? '+' : '' }}{{ r.trend.slope | number:'1.0-0' }}/{{ 'month' | t }}<small *ngIf="r.trend.monthOverMonth !== null"> · {{ r.trend.monthOverMonth }}%</small></span>
+      </div>
+    </section>
+
+    <section class="x-card plan-card">
+      <h2>{{ 'Where you could spend less' | t }} <span class="plan-tag">{{ 'Estimate' | t }}</span></h2>
+      <small class="plan-hint">{{ 'Variable categories where this month is above 120% of their 6-month median, or that went over their budget in 3 of the last 6 months. The saving is the difference against the median.' | t }}</small>
+      <p class="plan-hint" *ngIf="!reduce().length">{{ 'Nothing stands out right now.' | t }}</p>
+      <div class="plan-row" *ngFor="let c of reduce()">
+        <span>{{ categoryName(c.categoryId) }}<small class="plan-hint"> · {{ (c.reason === 'above-median' ? 'above its usual' : 'over budget often') | t }}</small></span>
+        <strong>{{ settings.currency() }}{{ c.potentialSaving | number:'1.0-0' }}</strong>
+      </div>
+    </section>
+  </ng-container>
+</div>

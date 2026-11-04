@@ -75,6 +75,34 @@
     </div>
   </ng-container>
 
+  <!-- Subcategory and nature (expenses) -->
+  <ng-container *ngIf="kind() === 'expense' && categoryId()">
+    <ng-container *ngIf="subcategories().length">
+      <label class="transaction-form-label">{{ 'Subcategory (optional)' | t }}</label>
+      <select class="x-input" [(ngModel)]="subcategoryId" name="subcategoryId">
+        <option value="">{{ 'None' | t }}</option>
+        <option *ngFor="let sub of subcategories()" [value]="sub.id">{{ sub.icon }} {{ sub.name }}</option>
+      </select>
+    </ng-container>
+    <ng-container *ngIf="!editId && repeat !== 'none'; else natureOverrideBlock">
+      <label class="transaction-form-label">{{ 'This recurring expense is' | t }}</label>
+      <select class="x-input" [(ngModel)]="ruleNature" name="ruleNature">
+        <option value="fixed">{{ 'Fixed (suggested)' | t }}</option>
+        <option value="variable">{{ 'Variable' | t }}</option>
+      </select>
+      <p class="transaction-form-fee-hint">{{ 'A recurring expense is usually a fixed obligation, but you decide.' | t }}</p>
+    </ng-container>
+    <ng-template #natureOverrideBlock>
+      <label class="transaction-form-label">{{ 'Nature of this expense' | t }}</label>
+      <select class="x-input" [(ngModel)]="natureOverride" name="natureOverride">
+        <option value="">{{ (categoryNature() === 'fixed' ? 'Like its category (fixed)' : 'Like its category (variable)') | t }}</option>
+        <option value="fixed">{{ 'Fixed' | t }}</option>
+        <option value="variable">{{ 'Variable' | t }}</option>
+      </select>
+      <p class="transaction-form-fee-hint">{{ 'An expense that repeats is not fixed because of that: you choose.' | t }}</p>
+    </ng-template>
+  </ng-container>
+
   <!-- Income: source, gross / net and, for sales, cost (all optional) -->
   <ng-container *ngIf="kind() === 'income'">
     <label class="transaction-form-label">{{ 'Income source (optional)' | t }}</label>

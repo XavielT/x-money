@@ -1,0 +1,33 @@
+<div class="x-page fixed">
+  <header class="fixed-header">
+    <button class="fixed-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Fixed expenses' | t }}</h1>
+  </header>
+
+  <section class="x-card fixed-card" *ngIf="fixed.summary() as s">
+    <div class="fixed-row"><span>{{ 'Per month' | t }}</span><strong>{{ settings.currency() }}{{ s.monthly | number:'1.2-2' }}</strong></div>
+    <div class="fixed-row"><span>{{ 'Per year' | t }} <span class="fixed-tag">{{ 'Estimate' | t }}</span></span><strong>{{ settings.currency() }}{{ s.yearly | number:'1.2-2' }}</strong></div>
+    <div class="fixed-row"><span>{{ 'Still to pay this month' | t }}</span><strong>{{ settings.currency() }}{{ s.pendingThisMonth | number:'1.2-2' }}</strong></div>
+    <small class="fixed-hint">{{ 'Weekly and daily obligations are averaged to a month (4.35 weeks, 30.44 days). The yearly figure is the monthly one times 12.' | t }}</small>
+  </section>
+
+  <p class="fixed-hint" *ngIf="!fixed.obligations().length">{{ 'No fixed obligations yet. Add a recurring expense and keep it as fixed, or set a category as fixed.' | t }}</p>
+
+  <div class="x-card fixed-item" *ngFor="let o of fixed.obligations()">
+    <span class="fixed-icon">{{ icon(o) }}</span>
+    <span class="fixed-info">
+      <strong>{{ name(o) }}</strong>
+      <small>{{ frequency(o) | t }} · {{ 'next due' | t }} {{ o.next }}</small>
+    </span>
+    <span class="fixed-amount">
+      {{ settings.currency() }}{{ o.rule.amount | number:'1.2-2' }}
+      <small>{{ settings.currency() }}{{ o.monthly | number:'1.0-0' }} / {{ 'month' | t }}</small>
+    </span>
+  </div>
+
+  <section class="x-card fixed-card" *ngIf="subscriptions() as sub">
+    <h2>{{ 'All recurring expenses' | t }}</h2>
+    <div class="fixed-row"><span>{{ sub.count }} {{ 'active rules' | t }}</span><strong>{{ settings.currency() }}{{ sub.monthly | number:'1.0-0' }} / {{ 'month' | t }}</strong></div>
+    <small class="fixed-hint">{{ 'Includes the ones you marked as variable. Edit or delete rules in Settings.' | t }} <a routerLink="/settings">{{ 'Settings' | t }}</a></small>
+  </section>
+</div>
