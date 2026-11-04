@@ -10,7 +10,8 @@ export const BANK_FEES_CATEGORY = 'cat-bank-fees';
 // Does this movement take part in income/expense statistics and budgets?
 export function isCounted(t: Pick<TransactionModel, 'status' | 'origin' | 'scope'>): boolean {
   // business movements are not personal income or expense (working capital, sales and their costs live in the business module)
-  return t.status !== 'reversed' && t.origin !== 'adjustment' && t.scope !== 'business';
+  // a loan disbursement is not income and the principal repaid is not an expense (the debt is a liability)
+  return t.status !== 'reversed' && t.origin !== 'adjustment' && t.scope !== 'business' && t.origin !== 'loan-disbursement' && t.origin !== 'loan-principal';
 }
 
 // A reversal gives the amount back but not the fee the bank already charged: the fee of

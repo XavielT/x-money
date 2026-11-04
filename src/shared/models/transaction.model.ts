@@ -19,7 +19,9 @@ export type TransactionOrigin =
   | 'adjustment'
   | 'reversal'
   | 'import'
-  | 'loan-disbursement'
+  | 'loan-disbursement' // money the lender handed over: not income
+  | 'loan-principal' // the part of a loan payment that repays the debt: not an expense
+  | 'loan-payment' // interest, insurance and charges of a loan payment (and the charges paid at the start): a real expense
   | 'business-sale'
   | 'business-purchase'
   | 'business-expense'

@@ -21,7 +21,8 @@ export interface NetWorthRow {
 export interface NetWorth {
   liquid: PerCurrency; // sum of liquid accounts
   cardDebt: PerCurrency; // positive number: what is owed on credit cards
-  net: PerCurrency; // liquid - card debt (loans join in prompt 08)
+  loanDebt: PerCurrency; // positive number: what is owed on registered loans (RD$ only)
+  net: PerCurrency; // liquid - card debt - loan debt
   rows: NetWorthRow[]; // what adds and what does not
 }
 
@@ -33,7 +34,7 @@ export function defaultLiquid(type: AccountType): boolean {
 export const isLiquid = (a: NetWorthAccount): boolean => a.liquid ?? defaultLiquid(a.type);
 export const isCreditCard = (a: NetWorthAccount): boolean => a.type === 'card' && a.cardKind === 'credit';
 
-export function netWorth(accounts: readonly NetWorthAccount[], txs: readonly LedgerTx[]): NetWorth {
+export function netWorth(accounts: readonly NetWorthAccount[], txs: readonly LedgerTx[], loanDebt: PerCurrency = { DOP: 0, USD: 0 }): NetWorth {
   const active = accounts.filter((a) => !a.archived);
   const per: Record<TransactionCurrency, Balances> = {
     DOP: balances(accounts, txs, 'DOP'),
@@ -56,7 +57,8 @@ export function netWorth(accounts: readonly NetWorthAccount[], txs: readonly Led
   return {
     liquid,
     cardDebt,
-    net: { DOP: subMoney(liquid.DOP, cardDebt.DOP), USD: subMoney(liquid.USD, cardDebt.USD) },
+    loanDebt,
+    net: { DOP: subMoney(subMoney(liquid.DOP, cardDebt.DOP), loanDebt.DOP), USD: subMoney(subMoney(liquid.USD, cardDebt.USD), loanDebt.USD) },
     rows,
   };
 }

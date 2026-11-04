@@ -79,6 +79,7 @@ export function detectRecurringIncomes(
       t.origin !== 'adjustment' &&
       t.scope !== 'business' &&
       t.origin !== 'reversal' &&
+      t.origin !== 'loan-disbursement' &&
       txCurrency(t) === 'DOP' &&
       bankIds.has(t.accountId)
   );

@@ -28,6 +28,7 @@ import { AccountService } from './account.service';
 import { BudgetService } from './budget.service';
 import { BusinessService } from './business.service';
 import { GoalService } from './goal.service';
+import { LoanService } from './loan.service';
 import { CategoryService } from './category.service';
 import { CreditCardService } from './credit-card.service';
 import { FixedExpenseService } from './fixed-expense.service';
@@ -50,7 +51,7 @@ export class DashboardService {
   external = this._external.asReadonly();
 
   // what the modules hand over (provide) plus what the business module knows by itself
-  private figures = computed<ExternalFigures>(() => ({ ...this._external(), ...this.business.dashboardFigures(), ...this.goals.dashboardFigures() }));
+  private figures = computed<ExternalFigures>(() => ({ ...this._external(), ...this.business.dashboardFigures(), ...this.goals.dashboardFigures(), ...this.loans.dashboardFigures() }));
 
   constructor(
     private transactions: TransactionService,
@@ -64,7 +65,8 @@ export class DashboardService {
     private fixed: FixedExpenseService,
     private settings: SettingsService,
     private business: BusinessService,
-    private goals: GoalService
+    private goals: GoalService,
+    private loans: LoanService
   ) {}
 
   // The contract for prompts 06 (business), 07 (savings goals) and 08 (loans): they hand over
@@ -212,9 +214,10 @@ export class DashboardService {
       if (s.currency !== 'DOP' || s.dueDate > horizon) continue;
       cardDue = addMoney(cardDue, this.cards.remainingOf(s));
     }
+    const loanDue = sumMoney(this.loans.dueBetween(today, horizon).map((d) => d.amount));
     const fixedPending = this.fixed.summary().pendingThisMonth;
     const reserved = this.figures().goalsReserved?.value ?? 0;
-    const value = availableMoney(liquid, [cardDue, fixedPending], reserved);
+    const value = availableMoney(liquid, [cardDue, loanDue, fixedPending], reserved);
     return {
       id: 'available',
       label: 'Available money',
@@ -224,11 +227,12 @@ export class DashboardService {
       components: [
         money('Liquid net worth', liquid, 'data', 'Cash, bank and savings accounts.'),
         money('Card payments due in 30 days', -cardDue, 'data'),
+        ...(loanDue > 0 ? [money('Loan installments due in 30 days', -loanDue, 'data')] : []),
         money('Fixed obligations still to pay this month', -fixedPending, 'data', 'From your recurring expenses.'),
         this.figures().goalsReserved ? money('Set aside in goals', -reserved, 'data') : money('Set aside in goals', null, 'excluded', 'Not part of the formula until the savings goals exist.'),
         money('Non-monetary benefits', null, 'excluded', 'Never cash (rule 4).'),
       ],
-      formula: 'Liquid net worth − card payments due in the next 30 days − fixed obligations still to pay this month − money set aside in goals.',
+      formula: 'Liquid net worth − card payments and loan installments due in the next 30 days − fixed obligations still to pay this month − money set aside in goals.',
       sources: ['NetWorthService', 'CreditCardService', 'FixedExpenseService'],
       estimate: false,
       available: true,
@@ -269,7 +273,7 @@ export class DashboardService {
       currency: 'DOP',
       components: [...parts, ...(loans ? [money('Loans', loans.value)] : []), ...(owed.USD > 0 ? [money('Owed in US$ (not added)', owed.USD, 'excluded', 'RD$ and US$ are never added.')] : [])],
       formula: 'Used balance of credit cards + balance of loans.',
-      sources: ['CreditCardService.totalOwed', 'Loans module'],
+      sources: ['CreditCardService.totalOwed', 'LoanService.totalOwed'],
       estimate: false,
       available: cards.length > 0 || !!loans,
     };
@@ -324,9 +328,10 @@ export class DashboardService {
       components: [
         money('Liquid net worth', nw.liquid.DOP),
         money('Credit card debt', -nw.cardDebt.DOP),
+        ...(nw.loanDebt.DOP > 0 ? [money('Loans', -nw.loanDebt.DOP)] : []),
         ...(capital ? [money('Commercial capital (apart, not added)', capital.value, 'excluded', 'Business inventory is never mixed with personal assets (rule 6).')] : []),
       ],
-      formula: 'Liquid net worth − credit card debt (loans join later). Commercial capital is shown apart.',
+      formula: 'Liquid net worth − credit card debt − what is owed on loans. Commercial capital is shown apart.',
       sources: ['NetWorthService'],
       estimate: false,
       available: true,
@@ -389,7 +394,10 @@ export class DashboardService {
     const today = this.today();
     const end = addDays(today, 90);
     const d = this.settings.dashboard();
-    const fixed = this.fixed.rules().flatMap((r) => occurrencesUntil(r, end).map((date) => ({ date, amount: r.amount })));
+    const fixed = [
+      ...this.fixed.rules().flatMap((r) => occurrencesUntil(r, end).map((date) => ({ date, amount: r.amount }))),
+      ...this.loans.dueBetween(today, end).map((d) => ({ date: d.date, amount: d.amount })), // loan installments (an estimate: the schedule)
+    ];
     const cards = this.cards
       .statements()
       .filter((s) => s.currency === 'DOP' && s.dueDate <= end)

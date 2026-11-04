@@ -34,9 +34,11 @@ export type AuditType =
   | 'business-sale'
   | 'business-withdrawal'
   | 'goal'
-  | 'goal-entry';
+  | 'goal-entry'
+  | 'loan'
+  | 'loan-payment';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget' | 'business' | 'goal';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget' | 'business' | 'goal' | 'loan';
 
 export interface AuditEvent {
   id: string;

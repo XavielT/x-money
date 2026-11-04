@@ -26,7 +26,7 @@ import {
 import { minimumPayment } from '../domain/cards';
 import { ExternalFigures } from '../domain/dashboard';
 import { localIso } from '../domain/dates';
-import { round2, sumMoney } from '../utils/money';
+import { addMoney, round2, sumMoney } from '../utils/money';
 import { AccountService } from './account.service';
 import { AuditLogService } from './audit-log.service';
 import { BudgetService } from './budget.service';
@@ -34,6 +34,7 @@ import { BusinessService, NewOperation } from './business.service';
 import { CreditCardService } from './credit-card.service';
 import { FixedExpenseService } from './fixed-expense.service';
 import { IncomeService } from './income.service';
+import { LoanService } from './loan.service';
 import { StorageService } from './storage.service';
 import { TransactionService } from './transaction.service';
 
@@ -70,7 +71,8 @@ export class GoalService {
     private budget: BudgetService,
     private income: IncomeService,
     private fixed: FixedExpenseService,
-    private cards: CreditCardService
+    private cards: CreditCardService,
+    private loans: LoanService
   ) {
     this._goals.set(this.storage.get<GoalModel[]>('goals', []));
     this.storage.watch('goals', (v) => this._goals.set((v as GoalModel[] | undefined) ?? []));
@@ -104,7 +106,7 @@ export class GoalService {
 
   // Minimum payments of the credit cards (RD$) for the month: an estimate from each card's rule
   debtPayments(): number {
-    return sumMoney(this.cards.cards().map((c) => minimumPayment(this.cards.debtOf(c, 'DOP').owed, c.card, 'DOP')));
+    return addMoney(sumMoney(this.cards.cards().map((c) => minimumPayment(this.cards.debtOf(c, 'DOP').owed, c.card, 'DOP'))), this.loans.monthlyPayments());
   }
 
   // Monthly margin: guaranteed income - fixed obligations - median of variable spending - debt payments

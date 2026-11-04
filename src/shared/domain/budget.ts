@@ -31,7 +31,7 @@ export function median(values: readonly number[]): number {
 
 // Where each built-in category goes by default (editable). Anything unmapped falls in "free".
 export const DEFAULT_BUCKET_CATEGORIES: Readonly<Record<BucketKind, readonly string[]>> = {
-  essential: ['cat-bills', 'cat-subscriptions', 'cat-electricity', 'cat-internet', 'cat-utilities', 'cat-rent', 'cat-obligations', 'cat-health', 'cat-education', 'cat-bank-fees', 'cat-card-interest'],
+  essential: ['cat-bills', 'cat-subscriptions', 'cat-electricity', 'cat-internet', 'cat-utilities', 'cat-rent', 'cat-obligations', 'cat-health', 'cat-education', 'cat-bank-fees', 'cat-card-interest', 'cat-loan-interest'],
   food: ['cat-food', 'cat-groceries', 'cat-restaurants', 'cat-delivery'],
   transport: ['cat-transport', 'cat-vehicle-maintenance', 'cat-car-project'],
   entertainment: ['cat-entertainment', 'cat-going-out', 'cat-hobby', 'cat-sports', 'cat-travel'],
@@ -50,6 +50,8 @@ export const isManualBucket = (kind: BucketKind): boolean => MANUAL_BUCKETS.incl
 // The block a category belongs to: the mapped one, else "free"
 export function bucketKindOf(categoryId: string | undefined, buckets: readonly BudgetBucketModel[]): BucketKind {
   const hit = buckets.find((b) => !isManualBucket(b.kind) && !!categoryId && b.categoryIds.includes(categoryId));
+  // loan interest follows card interest even in blocks saved before the category existed
+  if (!hit && categoryId === 'cat-loan-interest') return 'essential';
   return hit?.kind ?? 'free';
 }
 

@@ -35,6 +35,7 @@ import { addMoney, round2, sumMoney } from '../utils/money';
 import { AuditLogService } from './audit-log.service';
 import { BusinessService } from './business.service';
 import { GoalService } from './goal.service';
+import { LoanService } from './loan.service';
 import { CategoryService } from './category.service';
 import { FixedExpenseService } from './fixed-expense.service';
 import { IncomeService } from './income.service';
@@ -223,7 +224,8 @@ export class BudgetService {
         bucketSpent(bucket, all, totals, key) +
         (bucket.kind === 'business-capital' ? this.business.purchasesInMonth(year, month) : 0) +
         (bucket.kind === 'savings' ? goalsMonth.savings : 0) +
-        (bucket.kind === 'emergency' ? goalsMonth.emergency : 0);
+        (bucket.kind === 'emergency' ? goalsMonth.emergency : 0) +
+        (bucket.kind === 'debt-payments' ? addMoney(this.cardPaymentsIn(year, month), this.injector.get(LoanService).paymentsInMonth(year, month)) : 0);
       return { bucket, limit, spent, remaining: round2(limit - spent), risk: budgetRisk(limit, spent, this.today(), year, month, this.settings.budget().riskAt) };
     });
   }
@@ -350,9 +352,25 @@ export class BudgetService {
     return median(values);
   }
 
+  // Months of expense history behind the variable median (fewer than 3 means "use what the user declared")
+  variableHistoryMonths(): number {
+    const txs = this.transactions.transactions();
+    const firstMonth = txs.map((t) => t.date.slice(0, 7)).sort()[0];
+    return lastCompleteMonths(this.today(), this.monthsOfHistory).filter((m) => !!firstMonth && m >= firstMonth).length;
+  }
+
+  // Card payments (transfers to a credit card) made in a month: cash that repays debt
+  private cardPaymentsIn(year: number, month: number): number {
+    const prefix = `${year}-${String(month).padStart(2, '0')}`;
+    return this.transactions
+      .transactions()
+      .filter((t) => t.origin === 'card-payment' && t.status !== 'reversed' && t.date.startsWith(prefix) && (t.currency ?? 'DOP') === 'DOP')
+      .reduce((s, t) => addMoney(s, t.amount), 0);
+  }
+
   recommendation(): Recommendation {
     const { byBucket, fixedHistory } = this.history(this.monthsOfHistory);
-    return recommend(this.baseIncome().amount, byBucket, fixedHistory);
+    return recommend(this.baseIncome().amount, byBucket, fixedHistory, this.injector.get(LoanService).monthlyPayments());
   }
 
   // Budget vs real per block over the last months; past months use the same distribution settings

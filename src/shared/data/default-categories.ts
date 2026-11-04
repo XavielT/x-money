@@ -23,6 +23,7 @@ const BASE_CATEGORIES: CategoryModel[] = [
   { id: 'cat-education', name: 'Education', icon: '📚', color: '#bcaaa4', type: 'expense' },
   { id: 'cat-gifts-expense', name: 'Gifts', icon: '🎁', color: '#ef5350', type: 'expense' },
   { id: 'cat-card-interest', name: 'Card interest and charges', icon: '💳', color: '#c62828', type: 'expense' },
+  { id: 'cat-loan-interest', name: 'Loan interest and charges', icon: '🏦', color: '#b71c1c', type: 'expense' },
   { id: 'cat-bank-fees', name: 'Bank fees', icon: '🏛️', color: '#90a4ae', type: 'expense' },
   { id: 'cat-recon-adjustment', name: 'Reconciliation adjustment', icon: '⚖️', color: '#9e9e9e', type: 'expense', system: true },
   // Added in 2.10.0 (fixed and variable ones the list was missing)
@@ -39,6 +40,9 @@ const BASE_CATEGORIES: CategoryModel[] = [
   // Business module (2.12.0): app-managed, hidden from the pickers; business movements are not personal spending
   { id: 'cat-working-capital', name: 'Working capital (inventory)', icon: '📦', color: '#8d6e63', type: 'expense', system: true },
   { id: 'cat-business-expense', name: 'Business operation expense', icon: '🧰', color: '#8d6e63', type: 'expense', system: true },
+  // Loans (2.14.0): the repaid principal and the money received are not spending or income; app-managed
+  { id: 'cat-loan-principal', name: 'Loan principal repaid', icon: '🏦', color: '#8d6e63', type: 'expense', system: true },
+  { id: 'cat-loan-disbursement', name: 'Loan received', icon: '🏦', color: '#8d6e63', type: 'income', system: true },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },
