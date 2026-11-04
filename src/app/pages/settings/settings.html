@@ -128,6 +128,18 @@
     </div>
   </section>
 
+  <!-- Card alerts -->
+  <section class="settings-section">
+    <h2>{{ 'Card alerts' | t }}</h2>
+    <p class="settings-hint">{{ 'Cut and due date alerts always show on Home. On the phone you can also get a reminder; it never shows amounts on the lock screen.' | t }}</p>
+    <label class="settings-lock x-card" *ngIf="cardNotices.supported">
+      <span><input type="checkbox" [checked]="cardNotices.enabled()" (change)="toggleCardAlerts($event)" /> {{ 'Remind me of card cut and due dates' | t }}</span>
+    </label>
+    <p class="settings-hint" *ngIf="!cardNotices.supported">{{ 'Phone reminders are available in the Android app. Here the alerts show inside the app.' | t }}</p>
+    <p class="settings-hint" *ngIf="cardNotices.status() === 'denied'">{{ 'Notifications are blocked for X Money. Allow them in the phone settings and try again.' | t }}</p>
+    <p class="settings-hint" *ngIf="cardNotices.status() === 'error'">{{ 'The reminders could not be scheduled. The alerts still show inside the app.' | t }}</p>
+  </section>
+
   <!-- App lock -->
   <section class="settings-section">
     <h2>{{ 'App lock' | t }}</h2>
@@ -186,5 +198,5 @@
     </div>
   </section>
 
-  <p class="settings-version">X Money · v2.7.0</p>
+  <p class="settings-version">X Money · v2.8.0</p>
 </div>

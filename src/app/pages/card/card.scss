@@ -1,0 +1,216 @@
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-back {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+
+  small {
+    display: block;
+    color: var(--main-ultra-light);
+  }
+}
+
+.card-summary,
+.card-form,
+.card-statement {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  h3 {
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+
+  label {
+    font-size: 0.85rem;
+    color: var(--main-ultra-light);
+  }
+}
+
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+
+  &.small {
+    font-size: 0.8rem;
+    color: var(--main-ultra-light);
+  }
+
+  .ok {
+    color: var(--income);
+  }
+
+  .bad {
+    color: var(--expense);
+  }
+}
+
+.card-hint {
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+}
+
+.card-message {
+  font-size: 0.85rem;
+  color: var(--Hub);
+  margin-bottom: 8px;
+}
+
+.card-error {
+  font-size: 0.82rem;
+  color: var(--expense);
+}
+
+.card-warn {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+}
+
+.card-gap {
+  font-size: 0.85rem;
+  color: var(--expense);
+}
+
+.card-bar {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--secondary);
+  overflow: hidden;
+}
+
+.card-bar-fill {
+  height: 100%;
+  background: var(--income);
+
+  &.warn {
+    background: #f9a825;
+  }
+
+  &.danger {
+    background: var(--expense);
+  }
+}
+
+.card-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  button {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 0.82rem;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+  }
+}
+
+.card-pair {
+  display: flex;
+  gap: 8px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-ghost {
+  background: var(--secondary);
+  color: var(--text);
+}
+
+.card-small {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  background: var(--secondary);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.card-statements h2 {
+  font-size: 1rem;
+  margin: 12px 0 8px;
+}
+
+.card-statement-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  padding: 0;
+
+  small {
+    display: block;
+    color: var(--main-ultra-light);
+  }
+}
+
+.card-badge {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--secondary);
+
+  &.paid {
+    color: var(--income);
+  }
+
+  &.partial {
+    color: #f9a825;
+  }
+
+  &.overdue {
+    color: var(--expense);
+  }
+}
+
+.card-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--card-border);
+  padding-top: 8px;
+}
+
+.card-small-purchases {
+  font-size: 0.85rem;
+}

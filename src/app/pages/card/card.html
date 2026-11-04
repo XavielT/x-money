@@ -1,0 +1,186 @@
+<div class="x-page card">
+  <header class="card-header">
+    <button class="card-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Credit card' | t }}</h1>
+  </header>
+
+  <p *ngIf="!card">{{ 'Card not found.' | t }}</p>
+
+  <ng-container *ngIf="card">
+    <div class="card-title x-card">
+      <app-bank-badge [account]="current"></app-bank-badge>
+      <div>
+        <strong>{{ current.name }}</strong>
+        <small><ng-container *ngIf="bankName()">{{ bankName() }}<ng-container *ngIf="current.last4"> · </ng-container></ng-container><ng-container *ngIf="current.last4">•••• {{ current.last4 }}</ng-container></small>
+      </div>
+    </div>
+
+    <div class="card-toggle" *ngIf="currencies().length > 1">
+      <button [class.active]="currency() === 'DOP'" (click)="currency.set('DOP')">{{ settings.currency() }}</button>
+      <button [class.active]="currency() === 'USD'" (click)="currency.set('USD')">US$</button>
+    </div>
+
+    <p class="card-message" *ngIf="message()">{{ message() }}</p>
+
+    <!-- Complete your card data -->
+    <p class="card-warn x-card" *ngIf="missing().length && !editing()">
+      ⚠️ {{ 'Complete your card data' | t }}: {{ 'limit, cut day and payment deadline.' | t }}
+      <button class="card-small" (click)="editing.set(true)">{{ 'Complete' | t }}</button>
+    </p>
+
+    <!-- Limit, debt, available credit, utilization -->
+    <section class="x-card card-summary" *ngIf="debt() as d">
+      <div class="card-row"><span>{{ 'Owed now' | t }}</span><strong>{{ symbol() }}{{ d.owed | number:'1.2-2' }}</strong></div>
+      <div class="card-row" *ngIf="d.inFavor > 0"><span>{{ 'Balance in your favor' | t }}</span><strong class="ok">{{ symbol() }}{{ d.inFavor | number:'1.2-2' }}</strong></div>
+      <div class="card-row" *ngIf="d.limit !== undefined"><span>{{ 'Credit limit' | t }}</span><strong>{{ symbol() }}{{ d.limit | number:'1.2-2' }}</strong></div>
+      <div class="card-row" *ngIf="d.available !== undefined"><span>{{ 'Available credit' | t }}</span><strong [class.bad]="d.available < 0">{{ d.available < 0 ? '-' : '' }}{{ symbol() }}{{ abs(d.available) | number:'1.2-2' }}</strong></div>
+
+      <ng-container *ngIf="utilization() as u">
+        <div class="card-bar" *ngIf="u.percent !== null" role="progressbar" [attr.aria-valuenow]="u.percent">
+          <div class="card-bar-fill" [class.warn]="u.level === 'warn'" [class.danger]="u.level === 'danger'" [style.width.%]="u.percent > 100 ? 100 : u.percent"></div>
+        </div>
+        <small class="card-hint" *ngIf="u.percent !== null">
+          {{ 'Utilization' | t }}: {{ u.percent | number:'1.0-1' }}% ·
+          {{ 'levels' | t }} {{ current.card?.warnAt ?? defaults.warn }}% / {{ current.card?.dangerAt ?? defaults.danger }}%
+          <ng-container *ngIf="current.card?.warnAt === undefined || current.card?.dangerAt === undefined">({{ 'usual reference, you can change it' | t }})</ng-container>
+        </small>
+        <small class="card-hint" *ngIf="u.percent === null">{{ 'Set the credit limit to see the utilization.' | t }}</small>
+      </ng-container>
+
+      <div class="card-actions">
+        <button class="x-btn" (click)="pay()">{{ 'Pay card' | t }}</button>
+        <button class="x-btn card-ghost" (click)="editing.set(!editing())">{{ 'Card data' | t }}</button>
+      </div>
+    </section>
+
+    <!-- Card data form -->
+    <section class="x-card card-form" *ngIf="editing()">
+      <h2>{{ 'Card data' | t }}</h2>
+      <label *ngIf="hasDop()">{{ 'Credit limit' | t }} ({{ settings.currency() }})</label>
+      <input *ngIf="hasDop()" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fLimit" name="fLimit" />
+      <label *ngIf="hasUsd()">{{ 'Credit limit' | t }} (US$)</label>
+      <input *ngIf="hasUsd()" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fLimitUsd" name="fLimitUsd" />
+
+      <label>{{ 'Cut day of the month (1-31)' | t }}</label>
+      <input class="x-input" type="number" inputmode="numeric" min="1" max="31" [(ngModel)]="fCutDay" name="fCutDay" />
+      <small class="card-hint">{{ 'In short months the cut falls on the last day.' | t }}</small>
+
+      <label>{{ 'Payment deadline' | t }}</label>
+      <div class="card-toggle">
+        <button [class.active]="fDueMode === 'days-after'" (click)="fDueMode = 'days-after'">{{ 'Days after the cut' | t }}</button>
+        <button [class.active]="fDueMode === 'fixed-day'" (click)="fDueMode = 'fixed-day'">{{ 'Fixed day of the month' | t }}</button>
+      </div>
+      <input *ngIf="fDueMode === 'days-after'" class="x-input" type="number" inputmode="numeric" min="0" max="60" [(ngModel)]="fDueDays" name="fDueDays" [placeholder]="'Days after the cut' | t" />
+      <input *ngIf="fDueMode === 'fixed-day'" class="x-input" type="number" inputmode="numeric" min="1" max="31" [(ngModel)]="fDueDay" name="fDueDay" [placeholder]="'Day of the month' | t" />
+
+      <label>{{ 'A purchase on the cut day goes to' | t }}</label>
+      <div class="card-toggle">
+        <button [class.active]="fCutRule === 'closing'" (click)="fCutRule = 'closing'">{{ 'The statement that closes' | t }}</button>
+        <button [class.active]="fCutRule === 'next'" (click)="fCutRule = 'next'">{{ 'The next statement' | t }}</button>
+      </div>
+
+      <label>{{ 'Minimum payment: % of the balance' | t }}</label>
+      <input class="x-input" type="number" inputmode="decimal" min="0" step="0.1" [(ngModel)]="fMinPercent" name="fMinPercent" [placeholder]="defaults.minPercent + '%'" />
+      <label *ngIf="hasDop()">{{ 'Minimum payment: never below' | t }} ({{ settings.currency() }})</label>
+      <input *ngIf="hasDop()" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fMinFloor" name="fMinFloor" />
+      <label *ngIf="hasUsd()">{{ 'Minimum payment: never below' | t }} (US$)</label>
+      <input *ngIf="hasUsd()" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fMinFloorUsd" name="fMinFloorUsd" />
+      <small class="card-hint">{{ 'The minimum is an estimate from this rule until you type the real one from your statement.' | t }}</small>
+
+      <label>{{ 'Utilization levels (%)' | t }}</label>
+      <div class="card-pair">
+        <input class="x-input" type="number" inputmode="numeric" min="1" max="100" [(ngModel)]="fWarn" name="fWarn" [placeholder]="defaults.warn + ''" />
+        <input class="x-input" type="number" inputmode="numeric" min="1" max="100" [(ngModel)]="fDanger" name="fDanger" [placeholder]="defaults.danger + ''" />
+      </div>
+      <small class="card-hint">{{ '30% and 90% are a usual reference, not a rule for everyone.' | t }}</small>
+
+      <label>{{ 'Small purchase: up to' | t }} ({{ settings.currency() }})</label>
+      <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fSmallMax" name="fSmallMax" [placeholder]="'Automatic' | t" />
+
+      <p class="card-error" *ngIf="formError()">{{ formError() | t }}</p>
+      <div class="card-actions">
+        <button class="x-btn" [disabled]="!!formError()" (click)="saveConfig()">{{ 'Save' | t }}</button>
+        <button class="x-btn card-ghost" (click)="editing.set(false)">{{ 'Cancel' | t }}</button>
+      </div>
+    </section>
+
+    <!-- Consumption of the open period vs what was paid -->
+    <section class="x-card card-summary" *ngIf="unbilled() as view">
+      <h2>{{ 'Not yet billed' | t }}</h2>
+      <small class="card-hint">{{ view.period.start }} → {{ view.period.end }} · {{ 'next cut' | t }} {{ view.period.cut }}</small>
+      <div class="card-row"><span>{{ 'Period consumption' | t }}</span><strong>{{ symbol() }}{{ view.consumption.consumption | number:'1.2-2' }}</strong></div>
+      <div class="card-row"><span>{{ 'Paid' | t }}</span><strong class="ok">{{ symbol() }}{{ view.consumption.paid | number:'1.2-2' }}</strong></div>
+      <small class="card-hint">{{ 'Purchases count as expenses on the day you made them. Payments are settlements, never expenses.' | t }}</small>
+
+      <div class="card-small-purchases" *ngIf="small() as s">
+        <ng-container *ngIf="s.count > 0">
+          🐜 {{ 'Small purchases of the period' | t }}: {{ s.count }} {{ 'purchases' | t }}, {{ symbol() }}{{ s.total | number:'1.2-2' }}, {{ s.percent }}% {{ 'of the consumption' | t }}
+          <small class="card-hint">({{ 'up to' | t }} {{ symbol() }}{{ s.threshold | number:'1.0-0' }})</small>
+        </ng-container>
+      </div>
+
+      <button class="card-small" (click)="showUnbilled.set(!showUnbilled())">{{ (showUnbilled() ? 'Hide movements' : 'Show movements') | t }} ({{ unbilledMovements().length }})</button>
+      <ng-container *ngIf="showUnbilled()">
+        <app-transaction-item *ngFor="let t of unbilledMovements()" [transaction]="t"></app-transaction-item>
+      </ng-container>
+    </section>
+
+    <!-- Statements -->
+    <section class="card-statements">
+      <h2>{{ 'Statements' | t }}</h2>
+      <p class="card-hint" *ngIf="!statements().length">{{ 'No closed statements yet. They are created on each cut day from your movements.' | t }}</p>
+
+      <div class="x-card card-statement" *ngFor="let s of statements()">
+        <button class="card-statement-head" (click)="toggleStatement(s)">
+          <span>
+            <strong>{{ s.periodEnd }}</strong>
+            <small>{{ 'Due' | t }} {{ s.dueDate }}</small>
+          </span>
+          <span class="card-badge" [ngClass]="status(s)">{{ statusLabel(s) | t }}</span>
+        </button>
+        <div class="card-row"><span>{{ 'Statement balance' | t }}<small *ngIf="s.bankBalance === undefined"> ({{ 'calculated' | t }})</small><small *ngIf="s.bankBalance !== undefined"> ({{ 'from your bank' | t }})</small></span><strong>{{ symbol() }}{{ balanceOf(s) | number:'1.2-2' }}</strong></div>
+        <div class="card-row"><span>{{ 'Minimum payment' | t }}<small *ngIf="s.bankMinimum === undefined"> ({{ 'estimate' | t }})</small></span><strong>{{ symbol() }}{{ minimumOf(s) | number:'1.2-2' }}</strong></div>
+        <div class="card-row"><span>{{ 'Still to pay' | t }}</span><strong>{{ symbol() }}{{ cards.remainingOf(s) | number:'1.2-2' }}</strong></div>
+
+        <p class="card-gap" *ngIf="cards.gapOf(s) > 0 && !cards.interestRegistered(s)">
+          {{ 'Your bank charged' | t }} {{ symbol() }}{{ cards.gapOf(s) | number:'1.2-2' }} {{ 'more than you recorded.' | t }}
+          <button class="card-small" (click)="registerInterest(s)">{{ 'Record it once as card interest and charges' | t }}</button>
+        </p>
+        <p class="card-hint" *ngIf="cards.interestRegistered(s)">✓ {{ 'Interest and charges already recorded for this statement.' | t }}</p>
+
+        <div class="card-actions" *ngIf="cards.remainingOf(s) > 0">
+          <button class="x-btn" (click)="pay(s)">{{ 'Pay' | t }}</button>
+        </div>
+
+        <div class="card-detail" *ngIf="openStatement() === s.id">
+          <ng-container *ngIf="viewOf(s) as v">
+            <div class="card-row small"><span>{{ 'Previous balance' | t }}</span><span>{{ symbol() }}{{ s.previousBalance | number:'1.2-2' }}</span></div>
+            <div class="card-row small"><span>{{ 'Purchases' | t }}</span><span>{{ symbol() }}{{ v.breakdown.purchases | number:'1.2-2' }}</span></div>
+            <div class="card-row small"><span>{{ 'Interest, fees and advances' | t }}</span><span>{{ symbol() }}{{ v.breakdown.charges + v.breakdown.advances | number:'1.2-2' }}</span></div>
+            <div class="card-row small"><span>{{ 'Payments' | t }}</span><span>-{{ symbol() }}{{ v.breakdown.payments | number:'1.2-2' }}</span></div>
+            <div class="card-row small"><span>{{ 'Refunds' | t }}</span><span>-{{ symbol() }}{{ v.breakdown.credits | number:'1.2-2' }}</span></div>
+            <div class="card-row small"><span>{{ 'Calculated balance' | t }}</span><span>{{ symbol() }}{{ s.calculatedBalance | number:'1.2-2' }}</span></div>
+          </ng-container>
+
+          <h3>{{ 'What your bank says' | t }}</h3>
+          <small class="card-hint">{{ 'Type the real figures from your statement. They replace the calculated ones; nothing is adjusted on its own.' | t }}</small>
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="inputFor(s).balance" [name]="'bb' + s.id" [placeholder]="'Statement balance' | t" />
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="inputFor(s).minimum" [name]="'bm' + s.id" [placeholder]="'Minimum payment' | t" />
+          <div class="card-actions">
+            <button class="x-btn" (click)="saveBankFigures(s)">{{ 'Save bank figures' | t }}</button>
+            <button class="x-btn card-ghost" (click)="recalculate(s)">{{ 'Recalculate' | t }}</button>
+          </div>
+
+          <h3>{{ 'Movements of the period' | t }}</h3>
+          <app-transaction-item *ngFor="let t of movementsOf(s)" [transaction]="t"></app-transaction-item>
+        </div>
+      </div>
+    </section>
+
+    <!-- Payment history -->
+    <section class="card-statements" *ngIf="payments().length">
+      <h2>{{ 'Payments to this card' | t }}</h2>
+      <app-transaction-item *ngFor="let t of payments()" [transaction]="t"></app-transaction-item>
+    </section>
+  </ng-container>
+</div>

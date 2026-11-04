@@ -17,6 +17,7 @@ import { AuthService } from '../../../shared/services/auth.service';
 import { SyncService } from '../../../shared/services/sync.service';
 import { StorageService } from '../../../shared/services/storage.service';
 import { BackupReminderService } from '../../../shared/services/backup-reminder.service';
+import { CardNoticeService } from '../../../shared/services/card-notice.service';
 import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
 import { ChangeHistoryComponent } from '../../../shared/components/change-history/change-history';
 
@@ -54,8 +55,20 @@ export class SettingsComponent {
     public auth: AuthService,
     private sync: SyncService,
     private storage: StorageService,
-    private reminder: BackupReminderService
+    private reminder: BackupReminderService,
+    public cardNotices: CardNoticeService
   ) {}
+
+  // Device reminders for card cut and due dates. The system permission is asked only here.
+  async toggleCardAlerts(event: Event): Promise<void> {
+    const on = (event.target as HTMLInputElement).checked;
+    if (on) {
+      const granted = await this.cardNotices.enable();
+      if (!granted) (event.target as HTMLInputElement).checked = false;
+    } else {
+      await this.cardNotices.disable();
+    }
+  }
 
   abs(value: number): number {
     return Math.abs(value);

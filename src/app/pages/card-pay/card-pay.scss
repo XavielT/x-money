@@ -1,0 +1,67 @@
+.pay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pay-back {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.4rem;
+}
+
+.pay-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+
+  label {
+    font-size: 0.85rem;
+    color: var(--main-ultra-light);
+  }
+}
+
+.pay-hint {
+  font-size: 0.82rem;
+  color: var(--main-ultra-light);
+}
+
+.pay-error {
+  font-size: 0.85rem;
+  color: var(--expense);
+}
+
+.pay-toggle,
+.pay-choices {
+  display: flex;
+  gap: 8px;
+
+  button {
+    flex: 1;
+    padding: 8px 6px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--secondary);
+    color: var(--text);
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    &.active {
+      border-color: var(--Hub);
+      color: var(--Hub);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+    }
+  }
+}
+
+.pay-ghost {
+  background: var(--secondary);
+  color: var(--text);
+}

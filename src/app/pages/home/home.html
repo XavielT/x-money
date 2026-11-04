@@ -32,6 +32,18 @@
     </div>
   </section>
 
+  <!-- Credit cards: cut and due alerts, and cards that still need their data -->
+  <section class="home-card-alerts" *ngIf="cardAlerts().length || incompleteCards().length">
+    <a class="home-card-alert x-card" *ngFor="let a of cardAlerts()" [class.urgent]="a.stage === 'overdue' || a.stage === 'due-1'" [routerLink]="['/card', a.accountId]">
+      <strong>💳 {{ alertText(a) }}</strong>
+      <small *ngIf="a.balance !== undefined">{{ 'Balance' | t }} {{ alertSymbol(a) }}{{ a.balance | number:'1.2-2' }} · {{ 'minimum' | t }} {{ alertSymbol(a) }}{{ a.minimum | number:'1.2-2' }} · {{ a.date }}</small>
+    </a>
+    <a class="home-card-alert x-card" *ngFor="let c of incompleteCards()" [routerLink]="['/card', c.id]">
+      <strong>💳 {{ 'Complete your card data' | t }}: {{ c.name }}</strong>
+      <small>{{ 'Limit, cut day and payment deadline.' | t }}</small>
+    </a>
+  </section>
+
   <!-- Accounts strip (capped; full list lives on the Accounts page) -->
   <section class="home-accounts">
     <a routerLink="/accounts" class="home-account x-card" *ngFor="let acc of visibleAccounts()">

@@ -20,6 +20,9 @@ import { TranslateService } from '../../../shared/services/translate.service';
 import { bankById } from '../../../shared/data/banks';
 import { NetWorthService } from '../../../shared/services/net-worth.service';
 import { SuggestionsService } from '../../../shared/services/suggestions.service';
+import { CreditCardService } from '../../../shared/services/credit-card.service';
+import { CardPaymentSuggestion } from '../../../shared/domain/card-payments';
+import { isCreditCard } from '../../../shared/domain/cards';
 import { NetWorth, defaultLiquid } from '../../../shared/domain/networth';
 import { TransferSuggestion } from '../../../shared/domain/transfers';
 import { Cadence, IncomePatternSuggestion } from '../../../shared/domain/income-patterns';
@@ -68,6 +71,7 @@ export class AccountsComponent {
   netWorth: Signal<NetWorth>;
   transferSuggestions: Signal<TransferSuggestion[]>;
   incomeSuggestions: Signal<IncomePatternSuggestion[]>;
+  cardPaymentSuggestions: Signal<CardPaymentSuggestion[]>;
 
   constructor(
     private router: Router,
@@ -76,11 +80,13 @@ export class AccountsComponent {
     public transactionService: TransactionService,
     public settings: SettingsService,
     private netWorthService: NetWorthService,
-    private suggestions: SuggestionsService
+    private suggestions: SuggestionsService,
+    public cardService: CreditCardService
   ) {
     this.netWorth = netWorthService.summary;
     this.transferSuggestions = suggestions.transfers;
     this.incomeSuggestions = suggestions.incomes;
+    this.cardPaymentSuggestions = suggestions.cardPayments;
   }
 
   abs(value: number): number {
@@ -338,6 +344,29 @@ export class AccountsComponent {
   }
 
   // ----- suggestions (nothing happens until the user confirms)
+
+  isCreditCard(account: AccountModel): boolean {
+    return isCreditCard(account);
+  }
+
+  openCard(account: AccountModel, event: Event): void {
+    event.stopPropagation();
+    this.router.navigate(['/card', account.id]);
+  }
+
+  convertCardPayment(s: CardPaymentSuggestion): void {
+    const result = this.suggestions.convertCardPayment(s);
+    this.message.set(this.translate.instant(result.ok ? 'Converted to a card payment. You can undo it in Settings → Change history.' : this.errorKey(result.error)));
+  }
+
+  dismissCardPayment(s: CardPaymentSuggestion): void {
+    this.suggestions.dismissCardPayment(s);
+  }
+
+  describeExpense(id: string): string {
+    const t = this.transactionService.byId(id);
+    return t ? this.accountName(t.accountId) : '';
+  }
 
   convertTransfer(s: TransferSuggestion): void {
     const result = this.suggestions.convertTransfer(s);

@@ -38,7 +38,7 @@
   </p>
 
   <!-- Suggestions: nothing happens until you confirm -->
-  <div class="accounts-suggestions x-card" *ngIf="transferSuggestions().length || incomeSuggestions().length || message()">
+  <div class="accounts-suggestions x-card" *ngIf="transferSuggestions().length || incomeSuggestions().length || cardPaymentSuggestions().length || message()">
     <h2>{{ 'Suggestions' | t }}</h2>
     <p class="accounts-form-hint" *ngIf="message()">{{ message() }}</p>
     <div class="accounts-suggestion" *ngFor="let s of transferSuggestions()">
@@ -49,6 +49,17 @@
       <div class="accounts-suggestion-actions">
         <button class="x-btn" (click)="convertTransfer(s)">{{ 'Yes, convert' | t }}</button>
         <button class="x-btn accounts-form-cancel" (click)="dismissTransfer(s)">{{ 'No' | t }}</button>
+      </div>
+    </div>
+    <div class="accounts-suggestion" *ngFor="let s of cardPaymentSuggestions()">
+      <p>
+        <b>{{ 'Was this the payment of your credit card?' | t }}</b><br />
+        {{ settings.currency() }}{{ s.amount | number:'1.2-2' }} · {{ describeExpense(s.expenseId) }} → {{ accountName(s.cardId) }} · {{ s.date }}<br />
+        <small>{{ 'If so, it stops counting as an expense: the purchases were already counted.' | t }}</small>
+      </p>
+      <div class="accounts-suggestion-actions">
+        <button class="x-btn" (click)="convertCardPayment(s)">{{ 'Yes, it was the card payment' | t }}</button>
+        <button class="x-btn accounts-form-cancel" (click)="dismissCardPayment(s)">{{ 'No' | t }}</button>
       </div>
     </div>
     <div class="accounts-suggestion" *ngFor="let s of incomeSuggestions()">
@@ -62,6 +73,12 @@
       </div>
     </div>
   </div>
+
+  <!-- Credit cards that still lack limit, cut day or deadline -->
+  <p class="accounts-warn x-card" *ngIf="cardService.incompleteCards().length">
+    💳 {{ 'Complete your card data' | t }}:
+    <a class="accounts-link" *ngFor="let c of cardService.incompleteCards(); let last = last" (click)="openCard(c, $event)">{{ c.name }}<ng-container *ngIf="!last">, </ng-container></a>
+  </p>
 
   <!-- Account cards, grouped by bank so cards/checking/savings of the same bank sit together -->
   <div
@@ -86,6 +103,7 @@
           {{ usdBalanceOf(acc) < 0 ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
         </strong>
       </div>
+      <button class="accounts-card-reconcile" *ngIf="isCreditCard(acc)" (click)="openCard(acc, $event)">{{ 'Card' | t }}</button>
       <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Reconcile' | t }}</button>
       <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

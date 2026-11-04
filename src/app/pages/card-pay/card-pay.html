@@ -1,0 +1,55 @@
+<div class="x-page pay">
+  <header class="pay-header">
+    <button class="pay-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Pay card' | t }}</h1>
+  </header>
+
+  <p *ngIf="!card">{{ 'Card not found.' | t }}</p>
+
+  <div class="x-card pay-card" *ngIf="card">
+    <p class="pay-hint"><b>{{ card.name }}</b> · {{ 'Owed now' | t }}: {{ symbol() }}{{ owed() | number:'1.2-2' }}</p>
+    <p class="pay-hint" *ngIf="dueDate()">
+      {{ 'Applied first to the oldest open statement' | t }} ({{ 'due' | t }} {{ dueDate() }}).
+    </p>
+
+    <div class="pay-toggle" *ngIf="currencies().length > 1">
+      <button [class.active]="currency() === 'DOP'" (click)="setCurrency('DOP')">{{ settings.currency() }}</button>
+      <button [class.active]="currency() === 'USD'" (click)="setCurrency('USD')">US$</button>
+    </div>
+
+    <label>{{ 'Pay from' | t }}</label>
+    <select class="x-input" [ngModel]="fromId()" (ngModelChange)="fromId.set($event)" name="from">
+      <option *ngFor="let a of payers()" [value]="a.id">{{ a.name }}</option>
+    </select>
+    <p class="pay-hint" *ngIf="!payers().length">{{ 'There is no account that can pay in this currency.' | t }}</p>
+
+    <label>{{ 'Amount' | t }}</label>
+    <div class="pay-choices">
+      <button [class.active]="choice() === 'balance'" [disabled]="balanceAmount() === undefined" (click)="choice.set('balance')">
+        {{ 'Statement balance' | t }}<small *ngIf="balanceAmount() !== undefined">{{ symbol() }}{{ balanceAmount() | number:'1.2-2' }}</small>
+      </button>
+      <button [class.active]="choice() === 'minimum'" [disabled]="minimumAmount() === undefined" (click)="choice.set('minimum')">
+        {{ 'Minimum payment' | t }}<small *ngIf="minimumAmount() !== undefined">{{ symbol() }}{{ minimumAmount() | number:'1.2-2' }}</small>
+      </button>
+      <button [class.active]="choice() === 'other'" (click)="choice.set('other')">{{ 'Other amount' | t }}</button>
+    </div>
+    <input *ngIf="choice() === 'other'" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="other()" (ngModelChange)="other.set($event)" name="other" />
+
+    <label>{{ 'Date' | t }}</label>
+    <input class="x-input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event)" name="date" />
+
+    <label>{{ 'Note (optional)' | t }}</label>
+    <input class="x-input" type="text" maxlength="80" [ngModel]="note()" (ngModelChange)="note.set($event)" name="note" />
+
+    <p class="pay-hint" *ngIf="amount() > 0">
+      {{ 'After this payment the card owes' | t }} {{ symbol() }}{{ afterOwed() | number:'1.2-2' }}<ng-container *ngIf="inFavorAfter() > 0"> · {{ 'balance in your favor' | t }} {{ symbol() }}{{ inFavorAfter() | number:'1.2-2' }}</ng-container>.
+      {{ 'This is a transfer, not an expense.' | t }}
+    </p>
+    <p class="pay-error" *ngIf="error()">{{ error() }}</p>
+
+    <button class="x-btn" [disabled]="!canPay()" (click)="pay()">{{ 'Register payment' | t }}</button>
+    <button class="x-btn pay-ghost" *ngIf="balanceAmount() !== undefined" [disabled]="!fromId() || saved()" (click)="payFull()">
+      {{ 'I already paid the full statement' | t }}
+    </button>
+  </div>
+</div>

@@ -12,6 +12,8 @@ import { BudgetService } from '../../../shared/services/budget.service';
 import { AccountService } from '../../../shared/services/account.service';
 import { InsightsService } from '../../../shared/services/insights.service';
 import { TranslateService } from '../../../shared/services/translate.service';
+import { CreditCardService } from '../../../shared/services/credit-card.service';
+import { CardAlert } from '../../../shared/domain/cards';
 
 @Component({
   selector: 'app-home',
@@ -75,6 +77,10 @@ export class HomeComponent {
     return insight.count >= 8 && insight.percent >= 10 ? insight : null;
   });
 
+  // Credit card cut / due alerts (nothing is shown for a paid statement) and cards to complete
+  cardAlerts = computed(() => this.cardService.alerts().slice(0, 4));
+  incompleteCards = computed(() => this.cardService.incompleteCards());
+
   constructor(
     private budgetService: BudgetService,
     private insights: InsightsService,
@@ -82,9 +88,32 @@ export class HomeComponent {
     public transactionService: TransactionService,
     public categoryService: CategoryService,
     public accountService: AccountService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    private cardService: CreditCardService
   ) {
+    this.cardService.ensureStatements();
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });
+  }
+
+  // Alert sentence. English phrases are the translation keys.
+  alertText(a: CardAlert): string {
+    const name = this.accountService.byId(a.accountId)?.name ?? '';
+    const days = String(Math.abs(a.daysLeft));
+    const t = (key: string) => this.translate.instant(key, { name, days });
+    switch (a.stage) {
+      case 'cut-today':
+        return t('Today is the cut day of your {name} card');
+      case 'cut-3':
+        return t('Your {name} card cuts in {days} days');
+      case 'overdue':
+        return t('The payment of your {name} card is overdue');
+      default:
+        return a.daysLeft <= 0 ? t('The payment of your {name} card is due today') : a.daysLeft === 1 ? t('The payment of your {name} card is due tomorrow') : t('The payment of your {name} card is due in {days} days');
+    }
+  }
+
+  alertSymbol(a: CardAlert): string {
+    return a.currency === 'USD' ? 'US$' : this.settings.currency();
   }
 
   abs(value: number): number {
