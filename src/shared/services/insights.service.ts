@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { TransactionCurrency } from '../models/transaction.model';
 import { ownerId } from '../domain/ledger';
-import { SmallPurchases, smallPurchases } from '../domain/small-purchases';
+import { SmallBreakdown, SmallPurchases, smallBreakdown, smallPurchases } from '../domain/small-purchases';
 import { isCounted } from '../domain/stats';
+import { MONTHLY_FACTOR } from '../domain/fixed';
 import { AccountService } from './account.service';
+import { SettingsService } from './settings.service';
 import { TransactionService } from './transaction.service';
 import { RecurringService } from './recurring.service';
 
@@ -29,14 +31,29 @@ export class InsightsService {
   constructor(
     private transactionService: TransactionService,
     private recurringService: RecurringService,
-    private accountService: AccountService
+    private accountService: AccountService,
+    private settings: SettingsService
   ) {}
 
   // Small purchases (below ~2% of the month's spending, min 100) that in
   // volume become a meaningful share of the month
   antExpenses(year: number, month: number): AntExpensesInsight {
     const prefix = `${year}-${String(month).padStart(2, '0')}`;
-    return this.antExpensesFor({ from: `${prefix}-01`, to: `${prefix}-31` });
+    return this.antExpensesFor({ from: `${prefix}-01`, to: `${prefix}-31`, ceiling: this.settings.antMax() });
+  }
+
+  // Where the small purchases of a month pile up, what weighs most, and the change against the month before
+  antBreakdown(year: number, month: number): SmallBreakdown & { previous: SmallPurchases; trendPercent: number | null } {
+    const prefix = `${year}-${String(month).padStart(2, '0')}`;
+    const prev = new Date(year, month - 2, 1);
+    const previous = this.antExpenses(prev.getFullYear(), prev.getMonth() + 1);
+    const items = this.transactionService
+      .transactions()
+      .filter((t) => t.type === 'expense' && isCounted(t) && this.transactionService.currencyOf(t) === 'DOP' && t.date.startsWith(prefix))
+      .map((t) => ({ amount: t.amount, categoryId: t.categoryId, note: t.note }));
+    const breakdown = smallBreakdown(items, this.settings.antMax());
+    const trendPercent = previous.total > 0 ? Math.round(((breakdown.summary.total - previous.total) / previous.total) * 100) : null;
+    return { ...breakdown, previous, trendPercent };
   }
 
   // The same rule for one account (a credit card, for instance) and any period, inclusive
@@ -60,12 +77,11 @@ export class InsightsService {
 
   // What active recurring expense rules cost per month / per year
   subscriptionCost(): SubscriptionInsight {
-    const factors: Record<string, number> = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
     let monthly = 0;
     let count = 0;
     for (const rule of this.recurringService.recurring()) {
       if (!rule.active || rule.type !== 'expense') continue;
-      monthly += rule.amount * (factors[rule.frequency] ?? 1);
+      monthly += rule.amount * (MONTHLY_FACTOR[rule.frequency] ?? 1);
       count++;
     }
     return { count, monthly, yearly: monthly * 12 };

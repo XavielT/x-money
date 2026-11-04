@@ -4,6 +4,7 @@ import { StorageService } from './storage.service';
 import { TransactionService } from './transaction.service';
 import { AuditLogService } from './audit-log.service';
 import { AccountService } from './account.service';
+import { advanceDate, anchorDayOf } from '../domain/fixed';
 
 @Injectable({ providedIn: 'root' })
 export class RecurringService {
@@ -38,6 +39,8 @@ export class RecurringService {
           type: rule.type,
           amount: rule.amount,
           categoryId: rule.categoryId,
+          subcategoryId: rule.subcategoryId,
+          nature: rule.nature,
           accountId: rule.accountId,
           toAccountId: rule.toAccountId,
           // rules created before 2.7.0 have no currency: a US$ account posts in US$
@@ -52,7 +55,7 @@ export class RecurringService {
         // advance, the occurrence waits until the rule is fixed
         if (!result.ok) break;
         posted++;
-        next = this.advance(next, rule.frequency, this.anchorDay(rule));
+        next = advanceDate(next, rule.frequency, anchorDayOf(rule));
         changed = true;
         guard++;
       }
@@ -105,38 +108,6 @@ export class RecurringService {
   remove(id: string): void {
     this._recurring.update((list) => list.filter((r) => r.id !== id));
     this.persist();
-  }
-
-  // Day of month of the first occurrence, so "every 31st" clamps in short
-  // months (Feb -> 28) but returns to 31 afterwards
-  private anchorDay(rule: RecurringModel): number {
-    return Number(rule.startDate.split('-')[2]);
-  }
-
-  private advance(date: string, frequency: RecurringFrequency, anchorDay: number): string {
-    const [y, m, d] = date.split('-').map(Number);
-    let next: Date;
-    switch (frequency) {
-      case 'daily':
-        next = new Date(y, m - 1, d + 1);
-        break;
-      case 'weekly':
-        next = new Date(y, m - 1, d + 7);
-        break;
-      case 'monthly': {
-        const lastDay = new Date(y, m + 1, 0).getDate(); // last day of following month
-        next = new Date(y, m, Math.min(anchorDay, lastDay));
-        break;
-      }
-      case 'yearly': {
-        const lastDay = new Date(y + 1, m, 0).getDate();
-        next = new Date(y + 1, m - 1, Math.min(anchorDay, lastDay));
-        break;
-      }
-    }
-    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(
-      next.getDate()
-    ).padStart(2, '0')}`;
   }
 
   private todayIso(): string {
