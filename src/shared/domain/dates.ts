@@ -56,3 +56,15 @@ export function addMonthsKeepingDay(iso: string, months: number, anchorDay?: num
 export function localIso(now: Date): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+
+// 'YYYY-MM' keys: the month `by` months away (negative = earlier)
+export function shiftMonthKey(key: string, by: number): string {
+  const idx = Number(key.slice(0, 4)) * 12 + (Number(key.slice(5, 7)) - 1) + by;
+  return `${String(Math.floor(idx / 12)).padStart(4, '0')}-${String((idx % 12) + 1).padStart(2, '0')}`;
+}
+
+// The last `n` COMPLETE months before the month of `today`, oldest first
+export function lastCompleteMonths(today: string, n: number): string[] {
+  const current = today.slice(0, 7);
+  return Array.from({ length: n }, (_, i) => shiftMonthKey(current, -(n - i)));
+}

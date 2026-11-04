@@ -1,7 +1,7 @@
 // Characterization tests (prompt 00 / v2.5.2) for the integrity cases of
 // docs/AUDITORIA-2026-11.md §2 (C1-C9). Prompt 01 (v2.7.0) flipped the gaps it fixes into
 // tests of the correct behavior; the ones still named "KNOWN GAP:" document a violation that a
-// later prompt owns (02: the US$ opening balance of a dual card, 04: budgets/stats, recurring clock).
+// later prompt owns (02: the US$ opening balance of a dual card, recurring clock; the USD fee in statistics).
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { BudgetsComponent } from '../../app/pages/budgets/budgets';
@@ -94,14 +94,14 @@ describe('C3 bank fee / DGII tax on a movement (R1, R9)', () => {
     expect(s.transactions.totalBalance()).toBe(9990);
   });
 
-  it('KNOWN GAP: a budget on Bank fees never sees the fees, only stats do (AUDITORIA §2/C3)', () => {
+  it('a budget on Bank fees sees the fees, like the statistics (fixed in 2.10.0, was a KNOWN GAP)', () => {
     const s = session({ budgets: [{ id: 'b1', categoryId: 'cat-bank-fees', monthlyLimit: 100 }] });
     s.transactions.add(
       transaction({ type: 'transfer', accountId: 'bank', toAccountId: 'cash', amount: 5000, fee: 90, categoryId: undefined })
     );
     const row = TestBed.createComponent(BudgetsComponent).componentInstance.rows()[0];
     expect(s.transactions.categoryTotals(2026, 11, 'expense')[0].total).toBe(90);
-    expect(row.spent).toBe(0);
+    expect(row.spent).toBe(90);
   });
 
   it('KNOWN GAP: a USD fee leaves the USD balance but is invisible in stats (AUDITORIA §2/C3, C8)', () => {
@@ -346,7 +346,7 @@ describe('C7 importing backups (R9)', () => {
   it('export then import on a wiped device restores the same data', () => {
     const s = session({ transactions: [transaction({ accountId: 'bank', amount: 75 })] });
     const backup = s.settings.exportData();
-    expect(JSON.parse(backup).schemaVersion).toBe(2);
+    expect(JSON.parse(backup).schemaVersion).toBe(3);
     s.settings.wipeData();
     expect(boot(s.storage).transactions.transactions()).toEqual([]);
     expect(boot(s.storage).settings.importData(backup).ok).toBe(true);
@@ -410,12 +410,12 @@ describe('C8 USD and DOP (no mixing)', () => {
     expect(s.transactions.accountBalance('dual', 'USD')).toBe(0);
   });
 
-  it('KNOWN GAP: a RD$ budget counts US$ expenses of the same category (AUDITORIA §2/C8)', () => {
+  it('a RD$ budget never counts US$ expenses (fixed in 2.10.0, was a KNOWN GAP)', () => {
     const s = session({ budgets: [{ id: 'b', categoryId: 'cat-food', monthlyLimit: 1000 }] }, [dual]);
     s.transactions.add(transaction({ accountId: 'dual', currency: 'USD', amount: 100, categoryId: 'cat-food' }));
     const row = TestBed.createComponent(BudgetsComponent).componentInstance.rows()[0];
     expect(s.transactions.monthSummary(2026, 11).expense).toBe(0);
-    expect(row.spent).toBe(100);
+    expect(row.spent).toBe(0);
   });
 });
 

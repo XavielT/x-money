@@ -80,10 +80,10 @@ describe('MigrationService', () => {
     await migration.run();
 
     expect(storage.get<any[]>('transactions', []).every((t) => t.origin === 'manual' || t.origin === 'transfer')).toBe(true);
-    expect(await local.get('device', 'schemaVersion')).toBe(2);
+    expect(await local.get('device', 'schemaVersion')).toBe(3);
     expect(await local.get('device', 'uploadAfterMigration')).toBe(true);
     const queue = (await local.get<any[]>('device', 'queue'))!;
-    expect(queue[0]).toMatchObject({ schemaVersion: 2, data: { origin: 'manual', status: 'posted' } });
+    expect(queue[0]).toMatchObject({ schemaVersion: 3, data: { origin: 'manual', status: 'posted' } });
 
     const snapshots = await migration.snapshots();
     expect(snapshots).toHaveLength(1);
@@ -97,14 +97,14 @@ describe('MigrationService', () => {
   it('keeps only the two most recent snapshots', async () => {
     const { storage, local } = await installed(FIXTURE_251_FULL);
     const { migration } = services(storage);
-    const second: Migration = { version: 3, name: 'noop', record: (_c, item) => item };
-    const third: Migration = { version: 4, name: 'noop', record: (_c, item) => item };
-    await migration.run(MIGRATIONS, 2);
-    await migration.run([...MIGRATIONS, second], 3);
-    await migration.run([...MIGRATIONS, second, third], 4);
+    const second: Migration = { version: 4, name: 'noop', record: (_c, item) => item };
+    const third: Migration = { version: 5, name: 'noop', record: (_c, item) => item };
+    await migration.run(MIGRATIONS, 3);
+    await migration.run([...MIGRATIONS, second], 4);
+    await migration.run([...MIGRATIONS, second, third], 5);
     const snaps = await migration.snapshots();
-    expect(snaps.map((s) => s.fromVersion)).toEqual([2, 3]);
-    expect(await local.get('device', 'schemaVersion')).toBe(4);
+    expect(snaps.map((s) => s.fromVersion)).toEqual([3, 4]);
+    expect(await local.get('device', 'schemaVersion')).toBe(5);
   });
 
   it('is idempotent: a second run does nothing', async () => {
@@ -115,7 +115,7 @@ describe('MigrationService', () => {
     await migration.run();
     expect(JSON.stringify(storage.snapshotAll())).toBe(after);
     expect(await migration.snapshots()).toHaveLength(1);
-    expect(await local.get('device', 'schemaVersion')).toBe(2);
+    expect(await local.get('device', 'schemaVersion')).toBe(3);
   });
 
   it('a fresh install is born current: no snapshot, no migration', async () => {
@@ -123,7 +123,7 @@ describe('MigrationService', () => {
     await storage.hydrate({ local: new MemoryLocalDb(), legacy: new FakeLegacy() });
     const { migration } = services(storage);
     await migration.run();
-    expect(await storage.localDb.get('device', 'schemaVersion')).toBe(2);
+    expect(await storage.localDb.get('device', 'schemaVersion')).toBe(3);
     expect(await migration.snapshots()).toEqual([]);
   });
 

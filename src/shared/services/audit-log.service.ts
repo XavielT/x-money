@@ -25,9 +25,13 @@ export type AuditType =
   | 'income-source'
   | 'income-received'
   | 'income-classify'
-  | 'benefit';
+  | 'benefit'
+  | 'category'
+  | 'budget-move'
+  | 'budget-move-undo'
+  | 'bucket';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget';
 
 export interface AuditEvent {
   id: string;

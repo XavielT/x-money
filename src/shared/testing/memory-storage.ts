@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { StorageService } from '../services/storage.service';
 import { AccountService } from '../services/account.service';
 import { BudgetService } from '../services/budget.service';
@@ -54,7 +55,8 @@ export class MemoryStorage {
 export function boot<S extends object = MemoryStorage>(storage: S = new MemoryStorage() as unknown as S) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [{ provide: StorageService, useValue: storage as unknown as StorageService }],
+    // the router is there for components that link to other screens (BudgetsComponent)
+    providers: [{ provide: StorageService, useValue: storage as unknown as StorageService }, provideRouter([])],
   });
   return {
     storage,

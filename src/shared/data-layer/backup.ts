@@ -5,7 +5,7 @@ import { CLIENT_SCHEMA_VERSION } from './registry';
 import { migrateSnapshot } from './migrations';
 
 // Collections that make up a backup (the PIN hash and the language are device matters)
-export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits'] as const;
+export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 
 export interface BackupCounts {
@@ -60,6 +60,8 @@ const CHECKS: Record<string, Check> = {
     : !fin(b['monthlyValue']) ? 'monthlyValue'
     : !Array.isArray(b['uses']) ? 'uses'
     : null,
+  buckets: (b) => (!str(b['id']) ? 'id' : !str(b['kind']) ? 'kind' : !fin(b['value']) ? 'value' : !Array.isArray(b['categoryIds']) ? 'categoryIds' : null),
+  budgetMoves: (m) => (!str(m['id']) ? 'id' : !str(m['month']) ? 'month' : !fin(m['amount']) ? 'amount' : null),
   statements: (s) =>
     !str(s['id']) ? 'id'
     : !str(s['accountId']) ? 'accountId'

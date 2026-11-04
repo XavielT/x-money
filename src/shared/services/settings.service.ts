@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { BACKUP_KEYS, BackupCounts, ImportError, buildBackup, parseBackup } from '../data-layer/backup';
+import { BaseIncome, BudgetSettings } from '../models/budget.model';
 import { AuditLogService } from './audit-log.service';
 import { StorageService } from './storage.service';
 
@@ -14,7 +15,11 @@ interface SettingsState {
   currency: string;
   taxPercent?: number; // bank transfer tax (DGII), editable because it changes
   suggestions?: SuggestionMemory;
+  budget?: BudgetSettings; // distribution base and risk threshold (2.10.0)
+  antMax?: number; // ceiling of a "small purchase"; empty = the usual relative rule
 }
+
+export const DEFAULT_BUDGET_SETTINGS: BudgetSettings = { base: 'avg3', riskAt: 90 };
 
 const NO_SUGGESTIONS: SuggestionMemory = { transferDismissed: [], incomeDismissed: [], incomeConfirmed: [] };
 
@@ -28,6 +33,12 @@ export class SettingsService {
   // 0.20% since the 2026 update (was 0.15%) — user-editable in Settings
   private _taxPercent = signal<number>(0.2);
   taxPercent = this._taxPercent.asReadonly();
+
+  private _budget = signal<BudgetSettings>(DEFAULT_BUDGET_SETTINGS);
+  budget = this._budget.asReadonly();
+
+  private _antMax = signal<number | undefined>(undefined);
+  antMax = this._antMax.asReadonly();
 
   private _suggestions = signal<SuggestionMemory>(NO_SUGGESTIONS);
   suggestions = this._suggestions.asReadonly();
@@ -44,6 +55,25 @@ export class SettingsService {
     this._currency.set(saved.currency);
     this._taxPercent.set(saved.taxPercent ?? 0.2);
     this._suggestions.set({ ...NO_SUGGESTIONS, ...(saved.suggestions ?? {}) });
+    this._budget.set({ ...DEFAULT_BUDGET_SETTINGS, ...(saved.budget ?? {}) });
+    this._antMax.set(saved.antMax);
+  }
+
+  setBudgetBase(base: BaseIncome): void {
+    this._budget.set({ ...this._budget(), base });
+    this.persist();
+  }
+
+  setRiskAt(percent: number): void {
+    if (!Number.isFinite(percent) || percent < 10 || percent > 200) return;
+    this._budget.set({ ...this._budget(), riskAt: percent });
+    this.persist();
+  }
+
+  setAntMax(amount: number | undefined): void {
+    if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0)) return;
+    this._antMax.set(amount);
+    this.persist();
   }
 
   setCurrency(symbol: string): void {
@@ -79,6 +109,8 @@ export class SettingsService {
       currency: this._currency(),
       taxPercent: this._taxPercent(),
       suggestions: this._suggestions(),
+      budget: this._budget(),
+      antMax: this._antMax(),
     });
   }
 

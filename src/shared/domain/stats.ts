@@ -58,12 +58,19 @@ export function totalsByCategory(txs: readonly TransactionModel[], type: Transac
   return [...totals.entries()].map(([categoryId, total]) => ({ categoryId, total })).sort((a, b) => b.total - a.total);
 }
 
-// Spent in one category (all currencies, as the budget screens always did; the
-// RD$/US$ split of budgets belongs to prompt 04)
+// Spent in one category or subcategory, RD$ only (a RD$ budget never counts US$ movements).
+// The bank fee of a movement belongs to "Bank fees", exactly as in totalsByCategory, so a budget
+// on that category sees it (a reversed movement keeps the fee the bank already charged).
 export function spentInCategory(txs: readonly TransactionModel[], categoryId: string): number {
   let spent = 0;
   for (const t of txs) {
-    if (isCounted(t) && t.type === 'expense' && t.categoryId === categoryId) spent = addMoney(spent, t.amount);
+    if (txCurrency(t) !== 'DOP') continue;
+    if (!isCounted(t)) {
+      if (categoryId === BANK_FEES_CATEGORY && feeOnly(t)) spent = addMoney(spent, t.fee!);
+      continue;
+    }
+    if (categoryId === BANK_FEES_CATEGORY && t.fee) spent = addMoney(spent, t.fee);
+    if (t.type === 'expense' && (t.categoryId === categoryId || t.subcategoryId === categoryId)) spent = addMoney(spent, t.amount);
   }
   return spent;
 }

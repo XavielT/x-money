@@ -13,6 +13,8 @@ or storage; it takes plain data in and returns plain data out.
 
 **Income (2.9.0):** `income.ts` (fechas esperadas, promedios, estabilidad, garantizado vs variable, desglose mensual) y `benefits.ts` (beneficios no monetarios, aislado a propósito).
 
+**Budgets (2.10.0):** `categories.ts` (naturaleza y árbol), `irregular.ts` (gasto irregular), `fixed.ts` (obligaciones), `budget.ts` (bloques, movimientos, riesgo, proyección, recomendaciones, tendencias).
+
 **Does not go here**
 - Signals, `StorageService`, HTTP/sync, `TranslateService`, components.
 - Formatting for display (pages and pipes do that).

@@ -2,7 +2,8 @@ import { Injectable, computed } from '@angular/core';
 import { IncomeKind, IncomeSchedule, IncomeSourceModel } from '../models/income-source.model';
 import { TransactionModel } from '../models/transaction.model';
 import { Cadence, IncomePatternSuggestion } from '../domain/income-patterns';
-import { localIso, weekdayOf } from '../domain/dates';
+import { lastCompleteMonths, lastDayOfMonth, localIso, weekdayOf } from '../domain/dates';
+import { addMoney } from '../utils/money';
 import {
   Averages,
   Expectation,
@@ -11,6 +12,7 @@ import {
   SourceWeight,
   StabilityReport,
   averages,
+  expectations,
   incomeCapacity,
   isIncomeTx,
   monthBreakdown,
@@ -109,6 +111,28 @@ export class IncomeService {
 
   categoryFor(kind: IncomeKind): string {
     return CATEGORY_OF[kind];
+  }
+
+  // Guaranteed income still expected before the end of this month: only recurring + documented
+  // sources, only expectations that have not been reached yet. Never variable income.
+  guaranteedExpectedRemaining(): number {
+    const today = this.today();
+    const monthEnd = `${today.slice(0, 7)}-${String(lastDayOfMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)))).padStart(2, '0')}`;
+    const ids = new Set(this.capacity().guaranteedSources);
+    let total = 0;
+    for (const e of this.upcomingBetween(today, monthEnd)) if (ids.has(e.sourceId)) total = addMoney(total, this.incomeSources.byId(e.sourceId)?.expectedNet ?? 0);
+    return total;
+  }
+
+  private upcomingBetween(from: string, to: string): Expectation[] {
+    const out: Expectation[] = [];
+    for (const s of this.incomeSources.active()) out.push(...expectations(s, this.transactions.transactions(), from, to, this.today()).filter((e) => e.status === 'upcoming'));
+    return out;
+  }
+
+  // Available income (personal net + commercial net benefit) of each of the last complete months
+  availableHistory(months: number): number[] {
+    return lastCompleteMonths(this.today(), months).map((key) => this.monthBreakdown(Number(key.slice(0, 4)), Number(key.slice(5, 7))).available);
   }
 
   // ----- actions
