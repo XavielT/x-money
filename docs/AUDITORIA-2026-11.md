@@ -1,5 +1,12 @@
 # Auditoría de código — noviembre 2026 (base: v2.5.1, escrita en v2.5.2)
 
+> **Actualización 2.7.0 (prompt 01):** corregidos: C5 (cuentas con movimientos se archivan, no se borran; total por ledger con
+> neto de huérfanos), C6 (validación en el servicio: monto, fecha, cuenta, moneda, destino, sin `NaN`), C7 (importación validada
+> y migrada antes de escribir, versión de esquema, atómica), C9 (todo redondeado a 2 decimales, también presupuestos), C4 «regla
+> hacia cuenta inexistente». Siguen como `KNOWN GAP`: C1 (pago de tarjeta como gasto → prompt 02), C3 (presupuesto de Bank fees y
+> comisión US$ en estadísticas → prompt 04), C4 (reloj adelantado), C5 (débito vinculada con banco borrado vía servicio), C8 (saldo
+> inicial US$ de una cuenta dual → 02; presupuestos que mezclan monedas → 04).
+>
 > **Actualización 2.6.0:** el hueco "no es atómico / duplica tras un fallo de guardado" de C4 (y el riesgo de duplicar
 > recurrentes entre dispositivos al sincronizar) quedó corregido: cada ocurrencia usa el id determinístico
 > `rec-<regla>-<fecha>` y `TransactionService.add` es idempotente por id. El resto de los hallazgos sigue vigente.

@@ -5,8 +5,8 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 | Prompt | Tema | Versión destino | Estado |
 |---|---|---|---|
 | 00 | Fundamentos: auditoría, documentación y base de pruebas | 2.5.2 | **hecho** (commiteado y probado en el teléfono) |
-| 00b | Cuenta, base de datos en x-core y sincronización | 2.6.0 | **hecho en código** (pendiente: aplicar SQL y desplegar la función según `docs/SETUP-XCORE.md`, commit y prueba con dos dispositivos reales) |
-| 01 | Integridad financiera P0 | 2.7.0 | pendiente |
+| 00b | Cuenta, base de datos en x-core y sincronización | 2.6.0 | **hecho** (SQL aplicado y función desplegada en x-core; commiteado) |
+| 01 | Integridad financiera P0 | 2.7.0 | **hecho** (pendiente: commit y prueba en teléfono; la migración de datos corre sola al abrir la app) |
 | 02 | Tarjetas de crédito | 2.8.0 | pendiente |
 | 03 | Ingresos y beneficios laborales | 2.9.0 | pendiente |
 | 04 | Gastos, categorías y presupuestos | 2.10.0 | pendiente |

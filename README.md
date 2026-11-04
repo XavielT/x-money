@@ -17,7 +17,10 @@ and architecture, and `docs/` for the architecture, integrity rules, roadmap and
 - 💱 Accounts in RD$ or US$; credit cards can be dual-currency with per-transaction currency and separate US$ balances (no fake conversions)
 - 🐜 Insights: "gastos hormiga" detection, real cost of recurring services (monthly/yearly), and month-over-month spending warnings
 - 📅 Stats in Month or Year mode with a 12-month yearly report and per-account filtering
-- 🔄 Transfers between accounts (excluded from income/expense stats)
+- 🔄 Transfers between accounts (excluded from income/expense stats); an expense + income that was really a transfer is suggested and converted only when you confirm
+- ↩️ Reversals instead of deleting (both movements stay visible), corrections of reconciled movements, full change history (audit log)
+- ⚖️ Account reconciliation against the bank statement (never adjusts silently), archive instead of delete, liquid net worth and net worth by currency
+- 🧾 Versioned data with automatic migrations and a snapshot before each one
 - 🔁 Recurring transactions (daily/weekly/monthly/yearly) with automatic catch-up posting; edit/pause/delete in Settings
 - 🏷️ 26 built-in categories (incl. Hobby, Car project) + create your own with custom name, emoji and color
 - 🔎 Search and filter history by text, category, or account

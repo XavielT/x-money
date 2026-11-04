@@ -22,6 +22,7 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
   (catálogos) · `ui` y `components` · `pipes` (`t` = traducción).
 - `src/shared/domain/` cálculos financieros **puros** (ver su README) · `src/shared/utils/money.ts` redondeo a 2 decimales.
 - `src/shared/data-layer/` registro de colecciones, copia local, motor de sincronización y cliente de la API; `supabase/` migración, función `xmoney-api` y pruebas SQL (`docs/SETUP-XCORE.md`).
+- Esquema versionado: nueva forma de datos = una `Migration` en `data-layer/migrations.ts` + subir `CLIENT_SCHEMA_VERSION` + prueba con fixtures de la forma anterior. Los saldos solo salen de `domain/ledger.ts`; todo movimiento se escribe con `TransactionService` (valida, traza y audita).
 - `src/shared/testing/` builders (`account()`, `transaction()`, `category()`, `recurring()`) y `MemoryStorage`/`boot()`.
 - `src/shared/characterization/` pruebas que fijan el comportamiento actual (`KNOWN GAP:` = violación documentada).
 - `docs/` AUDITORIA, INTEGRIDAD, VISION, ROADMAP, IA, ARQUITECTURA. `supabase/migrations/` SQL (`<timestamp>_xmoney_*.sql`, schema `xmoney`); **no lo aplica Claude**, lo aplica Xaviel.

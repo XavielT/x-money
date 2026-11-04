@@ -1,4 +1,4 @@
-# Arquitectura (estado a v2.6.0)
+# Arquitectura (estado a v2.7.0)
 
 Angular 22 (standalone + Signals), SCSS, Capacitor/Android y PWA (web e iPhone). Desde la 2.6.0 la fuente de verdad es
 `x-core` (schema `xmoney`, solo accesible por la Edge Function `xmoney-api`) y cada dispositivo guarda una copia local
@@ -16,6 +16,7 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `categories` | `CategoryModel` (`cat-*` por defecto, `custom-*`) | `CategoryService` | **sincronizada** |
 | `budgets` | `BudgetModel` | `BudgetService` | **sincronizada** |
 | `recurring` | `RecurringModel` | `RecurringService` | **sincronizada** |
+| `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
 | `conflicts` | `ConflictModel` (versiones que perdieron un conflicto; las escribe el servidor) | `ConflictService` | **sincronizada** |
 | `settings` | `{currency, taxPercent}` | `SettingsService` | **sincronizada** (documento) |
 | `lang` | `'en' \| 'es'` | `TranslateService` | **sincronizada** (documento) |
@@ -48,6 +49,28 @@ parametrizado; `index.ts` HTTP/CORS/Deno) y `supabase/migrations/*_xmoney_*.sql`
 
 Los cálculos de dinero viven hoy mezclados en `TransactionService` y en componentes (`budgets.ts`, `home.ts`); ver
 riesgos RK-7 y RK-10 en `docs/AUDITORIA-2026-11.md`.
+
+## Dominio puro (`src/shared/domain/`, `utils/money.ts`)
+
+`dates.ts` (calendario UTC, bisiestos) · `ledger.ts` (saldo, saldo por moneda, saldo a una fecha, total, neto de huérfanos) ·
+`stats.ts` (ingresos/gastos/categorías, qué cuenta) · `validation.ts` (todas las reglas de guardado, devuelve un código) ·
+`reversal.ts` (inverso, grupos atómicos, partes) · `transfers.ts` (transferencias no marcadas) · `income-patterns.ts` ·
+`networth.ts` (patrimonio líquido y neto) · `reconcile.ts`. Sin Angular ni almacenamiento; cada archivo con pruebas.
+
+## Esquema versionado y migraciones (2.7.0)
+
+- Versión de esquema de los datos: `CLIENT_SCHEMA_VERSION` (`data-layer/registry.ts`, hoy 2). Cada registro sincronizado lleva
+  `schema_version`; `xmoney.meta` guarda la del servidor (una app más vieja queda en solo lectura).
+- Migraciones en `data-layer/migrations.ts`: funciones puras e idempotentes **por registro**; sirven para la copia local, la cola de
+  salida, los registros descargados de otro dispositivo (`applyRemote`) y los respaldos importados.
+- `MigrationService` corre en el `APP_INITIALIZER` **antes** de que cualquier servicio lea datos: snapshot completo (se conservan
+  los dos últimos), migra en memoria, escribe, sube la versión local y marca "subir lo migrado". Si algo falla restaura el snapshot,
+  la app arranca con los datos viejos, `syncBlocked` impide subir nada y se muestra un aviso discreto.
+- Orden con sincronización: migrar local → (al sincronizar) poner en cola todos los registros migrados → vaciar la cola → **solo
+  entonces** subir la versión a `xmoney.meta` (`ApiTransport.raiseSchema`). Diferencia con el enunciado ("sincronizar y vaciar la
+  cola" antes de migrar): la cola pendiente se **migra también** en lugar de vaciarse primero, así la migración funciona sin conexión.
+- Para el siguiente cambio de forma: sumar una `Migration` con `version = N+1`, subir `CLIENT_SCHEMA_VERSION`, y probarla con
+  fixtures de la forma anterior (`testing/fixtures.ts`).
 
 ## Modelo de sincronización
 

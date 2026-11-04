@@ -1,25 +1,27 @@
 # Reglas de integridad financiera
 
 Mandan sobre cualquier comodidad de implementación. Si una regla choca con lo que pide un prompt, gana la regla y
-se reporta. Estado a v2.6.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). Las pruebas están en
-`src/shared/characterization/integrity.spec.ts` (casos C1–C9); las `KNOWN GAP:` documentan violaciones actuales.
+se reporta. Estado a v2.7.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). Las pruebas están en
+`src/shared/characterization/integrity.spec.ts` (casos C1–C9, las `KNOWN GAP:` que siguen documentan violaciones que
+poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt 01), `src/shared/domain/domain.spec.ts` y
+`src/shared/data-layer/migrations.spec.ts`.
 
 ## Las 10 reglas
 
 ### 1. Una transferencia entre cuentas propias no representa un ingreso ni un gasto.
-- Dónde se aplica (archivo): `src/shared/services/transaction.service.ts` (`summarize`, `totalsByCategory`, `accountBalance`, `totalBalanceIn`).
-- Prueba que la protege: C2 y C6 («a bank to card transfer is neither income nor expense…», «a transfer is one record…»).
-- Estado: **cumple** (la comisión del movimiento sí es gasto, a propósito; ver C3).
+- Dónde se aplica (archivo): `src/shared/domain/stats.ts` (`summarize`, `totalsByCategory`, `isCounted`), `domain/ledger.ts` (las dos patas se anulan en el total), `domain/validation.ts` (mismo dueño o RD$↔US$ rechazados), `services/transaction.service.ts` (`convertToTransfer`).
+- Prueba que la protege: `integrity-2-7.spec.ts` «transfers between own accounts (rule 1)» y «suggestions…»; C2 y C6 de caracterización; `domain.spec.ts` (stats, validation, transfers).
+- Estado: **cumple.** Decisiones: (a) la comisión/impuesto DGII de una transferencia sigue siendo un gasto real aparte (categoría Bank fees) y se conserva el comportamiento y los números históricos; (b) una transferencia RD$↔US$ se **bloquea** (`cross-currency`) porque exige los dos montos y no existe esa opción (no se inventa una tasa); (c) las transferencias "no marcadas" (gasto en A + ingreso en B, ≤ 3 días, mismo monto salvo la comisión) solo se **sugieren**; el usuario las convierte, queda auditado y se puede deshacer.
 
 ### 2. Una compra con tarjeta de crédito se registra como gasto una sola vez.
-- Dónde se aplica (archivo): `transaction.service.ts` (la compra es un gasto en la cuenta tarjeta).
-- Prueba que la protege: C1 «a card purchase is one expense…».
-- Estado: **cumple**.
+- Dónde se aplica (archivo): `domain/stats.ts`; la compra es un gasto en la cuenta tarjeta y `domain/networth.ts` la muestra como deuda.
+- Prueba que la protege: `integrity-2-7.spec.ts` «rules 2 and 3: credit cards»; C1.
+- Estado: **cumple.**
 
 ### 3. El pago de una tarjeta de crédito no vuelve a contabilizar las compras.
-- Dónde se aplica (archivo): solo por convención del usuario (registrarlo como transferencia); no existe tipo "pago de tarjeta".
-- Prueba que la protege: C1 «paying the card as a transfer…» (conducta correcta) y `KNOWN GAP: paying the card as an expense counts the purchases twice`.
-- Estado: **parcial** → prompt 02.
+- Dónde se aplica (archivo): `services/transaction.service.ts` (`defaultOrigin`: una transferencia a una tarjeta de crédito es `card-payment`); el formulario avisa «¿Pagas una tarjeta? Usa Transferencia» cuando hay una tarjeta de crédito.
+- Prueba que la protege: `integrity-2-7.spec.ts` (compra + pago + pago parcial: gasto una vez, deuda correcta, patrimonio neto igual) y `KNOWN GAP: paying the card as an expense counts the purchases twice` (C1).
+- Estado: **parcial.** El pago como transferencia es correcto y está trazado; registrar el pago como *gasto* sigue duplicando (no hay forma de saber que un gasto en el banco es un pago). Lo cierra el módulo de tarjetas del prompt 02 (pago ligado al estado de cuenta).
 
 ### 4. Los beneficios laborales no monetarios no se consideran efectivo disponible.
 - Dónde se aplica (archivo): —
@@ -37,8 +39,8 @@ se reporta. Estado a v2.6.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). La
 - Estado: no aplica todavía → prompt 06.
 
 ### 7. Los ingresos variables no deben tratarse como ingresos recurrentes garantizados.
-- Dónde se aplica (archivo): —  (hoy no hay distinción fijo/variable; las reglas recurrentes de ingreso en `recurring.service.ts` son el único "garantizado").
-- Prueba que la protege: —
+- Dónde se aplica (archivo): `domain/income-patterns.ts` solo *sugiere* un patrón (≥ 3 depósitos, ±5 % de monto, cadencia semanal/quincenal/mensual ±3 días) y nada se etiqueta (`incomePattern`) sin confirmación; el prompt 03 lo enlaza a una fuente.
+- Prueba que la protege: `domain.spec.ts` «detectRecurringIncomes» (nómina quincenal/mensual/semanal, un pago atrasado sí; irregulares, montos distintos, pocos o el mismo día NO) e `integrity-2-7.spec.ts` (confirmar/descartar)
 - Estado: no aplica todavía → prompt 03.
 
 ### 8. Los gastos ocasionales deben conservar su naturaleza variable.
@@ -47,14 +49,14 @@ se reporta. Estado a v2.6.0 (detalle y casos en `docs/AUDITORIA-2026-11.md`). La
 - Estado: no aplica todavía (sin clasificación) → prompt 04.
 
 ### 9. Los saldos deben calcularse a partir de movimientos financieros consistentes.
-- Dónde se aplica (archivo): `transaction.service.ts` (`accountBalance`, `totalBalanceIn`: saldo = inicial + movimientos). **Desde la 2.6.0 los saldos y totales no se guardan ni se sincronizan**: `data-layer/registry.ts` no tiene ninguna colección de saldos; cada dispositivo los deriva de los movimientos.
-- Prueba que la protege: C2, C6 (consistentes); `sync.spec.ts` «both devices compute the same balances from the same movements» y `data-layer.spec.ts` «no regression: balances before and after the data layer»; `KNOWN GAP` en C5, C6, C7, C9 (huérfanos, `NaN`, flotantes, importación). El duplicado por fallo de guardado de recurrentes (C4) quedó corregido en la 2.6.0 con ids determinísticos (`rec-<regla>-<fecha>`).
-- Estado: **parcial** → prompt 01.
+- Dónde se aplica (archivo): `domain/ledger.ts` (única fuente: saldo, saldo por moneda, saldo a una fecha, total), consumido por `TransactionService`/`NetWorthService`/`ReconciliationService`. Ningún saldo se guarda ni se sincroniza. Todo movimiento pasa por `domain/validation.ts` (monto > 0 y finito, fecha válida, cuenta existente y no archivada, moneda coherente) y por `utils/money.ts` (redondeo a 2 decimales).
+- Prueba que la protege: `integrity-2-7.spec.ts` «ledger invariants over random sequences» (semillas fijas: tras agregar/editar/reversar/transferir/borrar, cada saldo = lo recalculado en centavos y la suma de saldos varía exactamente en ingresos − gastos − comisiones), «the ledger gives the same numbers as the formulas of 2.5.1», `sync.spec.ts` (mismos saldos en dos dispositivos), `data-layer.spec.ts` y `migrations.spec.ts` (sin regresión con fixtures 2.5.1), reversos/correcciones/conciliación en `integrity-2-7.spec.ts`.
+- Estado: **cumple** en lo nuevo. Decisiones: (a) un **reverso** agrega el movimiento inverso y marca el par `reversed` (los saldos conservan ambos y se anulan; estadísticas y presupuestos los saltan); la comisión que el banco ya cobró **no se devuelve** (sigue como gasto); (b) las cuentas con movimientos se **archivan**, no se borran; (c) los movimientos huérfanos de cuentas borradas antes de la 2.7.0 siguen sumando en el total (`orphan` del ledger) para no cambiar números históricos, y Cuentas avisa de cuántos son; (d) el `KNOWN GAP` de una tarjeta de débito cuyo banco se borra por el servicio sigue documentado (la pantalla ya no permite borrar cuentas con movimientos).
 
 ### 10. Las proyecciones deben identificarse claramente como estimaciones.
 - Dónde se aplica (archivo): `insights.service.ts` (`subscriptionCost`), mostrado con «≈» en `stats.html:136-143` sin supuestos.
 - Prueba que la protege: —
-- Estado: **parcial** → prompts 05 y 09.
+- Estado: **parcial** → prompts 05 y 09. (La 2.7.0 no agrega proyecciones: la conciliación y el patrimonio muestran solo datos calculados; la detección de ingresos recurrentes es una *sugerencia* con su cadencia y cantidad de depósitos visibles, no una proyección.)
 
 ## Criterios antes de desarrollar cada función
 

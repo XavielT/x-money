@@ -125,8 +125,8 @@ gratuitos no incluyen respaldos automáticos descargables. Si no los hay, tu seg
 **Dos dispositivos (p. ej. laptop y Android):**
 1. En el dispositivo A crea un movimiento → en B (Ajustes → Sincronizar ahora, o espera ≤ 5 min / vuelve a primer plano) aparece.
 2. Pon ambos sin conexión; edita el **mismo** movimiento en A y luego en B (más tarde). Reconecta primero A y luego B.
-   Debe ganar la edición de B en los dos; la de A queda en Ajustes → Historial de cambios con "Restaurar esta versión".
-3. Borra un movimiento en A; en B edítalo después sin conexión; reconecta: el borrado pierde y aparece en el historial.
+   Debe ganar la edición de B en los dos; la de A queda en Ajustes → Versiones en conflicto con "Restaurar esta versión".
+3. Borra un movimiento en A; en B edítalo después sin conexión; reconecta: el borrado pierde y aparece en Versiones en conflicto.
 4. Ajustes → Cuenta → Dispositivos: revoca B desde A. B debe pedir iniciar sesión y conservar sus datos locales.
 5. Cambia la contraseña en A: B se desconecta; vuelve a entrar.
 6. Recupera con el código de recuperación (cierra sesión → "¿Olvidaste tu contraseña?").
