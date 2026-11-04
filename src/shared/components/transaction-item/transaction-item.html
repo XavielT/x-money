@@ -4,7 +4,8 @@
     <small class="transaction-item-tag" *ngIf="transaction.status === 'reversed' && transaction.reversedBy">{{ 'Reversed' | t }}</small>
     <small class="transaction-item-tag" *ngIf="transaction.origin === 'reversal'">{{ 'Reversal' | t }}</small>
     <small class="transaction-item-tag" *ngIf="transaction.origin === 'adjustment'">{{ 'Adjustment' | t }}</small>
-    <small class="transaction-item-tag" *ngIf="transaction.type === 'income'">{{ (isCashIncome ? 'Cash' : 'Bank transfer') | t }}</small>
+    <small class="transaction-item-tag" *ngIf="transaction.scope === 'business'">{{ 'Business' | t }}</small>
+    <small class="transaction-item-tag" *ngIf="transaction.type === 'income' && transaction.scope !== 'business'">{{ (isCashIncome ? 'Cash' : 'Bank transfer') | t }}</small>
     <small class="transaction-item-tag" *ngIf="sourceName">{{ sourceName }}</small>
     <small class="transaction-item-tag ok" *ngIf="transaction.reconciled">✓</small>
   </ng-template>

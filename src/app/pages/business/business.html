@@ -1,0 +1,195 @@
+<div class="x-page biz">
+  <header class="biz-header">
+    <button class="biz-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Business' | t }}</h1>
+  </header>
+
+  <p class="biz-msg" *ngIf="message()">{{ message() }}</p>
+
+  <!-- ================= SUMMARY ================= -->
+  <ng-container *ngIf="view() === 'summary'">
+    <section class="x-card biz-card">
+      <h2>{{ 'Working capital' | t }}</h2>
+      <div class="biz-row"><span>{{ 'Capital invested (unsold inventory, at cost)' | t }}</span><strong>{{ settings.currency() }}{{ business.inventory().cost | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Capital recovered (cost of what was sold)' | t }}</span><strong>{{ settings.currency() }}{{ business.pool().recovered | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Available to reinvest' | t }}</span><strong>{{ settings.currency() }}{{ business.pool().available | number:'1.2-2' }}</strong></div>
+      <small class="biz-hint">{{ 'Available to reinvest = capital recovered + net profit not withdrawn − what was already reinvested in later purchases. Inventory is never part of your personal assets.' | t }}</small>
+    </section>
+
+    <section class="x-card biz-card">
+      <h2>{{ 'Profit' | t }}</h2>
+      <div class="biz-row"><span>{{ 'Sales this month (revenue)' | t }}</span><strong>{{ settings.currency() }}{{ monthProfit().revenue | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Net profit this month' | t }}</span><strong [class.neg]="monthProfit().netProfit < 0">{{ monthProfit().netProfit < 0 ? '-' : '' }}{{ settings.currency() }}{{ (monthProfit().netProfit < 0 ? -monthProfit().netProfit : monthProfit().netProfit) | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Net profit this year' | t }}</span><strong [class.neg]="yearProfit().netProfit < 0">{{ yearProfit().netProfit < 0 ? '-' : '' }}{{ settings.currency() }}{{ (yearProfit().netProfit < 0 ? -yearProfit().netProfit : yearProfit().netProfit) | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Return of the month' | t }}</span><strong [class.neg]="(monthReturn().percent ?? 0) < 0">{{ monthReturn().percent !== null ? (monthReturn().percent | number:'1.0-1') + '%' : '—' }}</strong></div>
+      <small class="biz-hint">{{ 'Return = net profit of the month ÷ average capital employed in the month' | t }} ({{ settings.currency() }}{{ monthReturn().averageCapital | number:'1.0-0' }}). {{ 'Only the net profit counts as personal income, in the month of the sale; the cost recovered is capital coming back.' | t }}</small>
+      <button class="x-btn biz-ghost" *ngIf="business.pool().unwithdrawnProfit > 0" (click)="go('withdraw')">{{ 'Withdraw profit' | t }} ({{ settings.currency() }}{{ business.pool().unwithdrawnProfit | number:'1.0-0' }})</button>
+    </section>
+
+    <section class="x-card biz-card">
+      <h2>{{ 'Inventory waiting to be sold' | t }}</h2>
+      <div class="biz-row"><span>{{ 'Units' | t }}</span><strong>{{ business.inventory().units }}</strong></div>
+      <div class="biz-row"><span>{{ 'Cost' | t }}</span><strong>{{ settings.currency() }}{{ business.inventory().cost | number:'1.2-2' }}</strong></div>
+      <div class="biz-row"><span>{{ 'Expected value' | t }} <small class="biz-tag">{{ 'Estimate' | t }}</small></span><strong>{{ settings.currency() }}{{ business.inventory().expectedValue | number:'1.2-2' }}</strong></div>
+      <small class="biz-hint" *ngIf="business.inventory().withoutTarget">{{ business.inventory().withoutTarget }} {{ 'items have no target price, so they are not in the expected value.' | t }}</small>
+      <div class="biz-row"><span>{{ 'Oldest item' | t }}</span><strong>{{ business.inventory().oldestDays }} {{ 'days' | t }}</strong></div>
+      <p class="biz-warn" *ngFor="let s of business.slow()">⚠️ {{ s.item.op.name }} · {{ s.item.ageDays }} {{ 'days in inventory' | t }}</p>
+    </section>
+
+    <section class="x-card biz-card" *ngIf="convertible().length">
+      <h2>{{ 'Sales recorded as income' | t }}</h2>
+      <small class="biz-hint">{{ 'These commercial sales were recorded by hand. Turn them into operations: the same movement is used, nothing is duplicated.' | t }}</small>
+      <div class="biz-row" *ngFor="let t of convertible()">
+        <span>{{ t.date }} · {{ settings.currency() }}{{ t.amount | number:'1.2-2' }}</span>
+        <button class="biz-link" (click)="openConvert(t)">{{ 'Convert' | t }}</button>
+      </div>
+    </section>
+
+    <div class="biz-filters">
+      <select class="x-input" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="fs"><option value="">{{ 'All statuses' | t }}</option><option *ngFor="let s of statuses" [value]="s">{{ statusLabel(s) | t }}</option></select>
+      <select class="x-input" [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)" name="fc"><option value="">{{ 'All categories' | t }}</option><option *ngFor="let c of categories" [value]="c">{{ catLabel(c) | t }}</option></select>
+    </div>
+
+    <p class="biz-hint" *ngIf="!list().length">{{ 'No operations yet. Buy an article to start: it takes a few seconds.' | t }}</p>
+    <button class="biz-item x-card" *ngFor="let o of list()" (click)="open(o)">
+      <span class="biz-item-main">
+        <strong>{{ o.name }}</strong>
+        <small>{{ catLabel(o.category) | t }} · {{ statusLabel(o.status) | t }} · {{ ageOf(o) }} {{ 'days' | t }}<ng-container *ngIf="slowLevel(o)"> ⚠️</ng-container></small>
+      </span>
+      <span class="biz-item-cost">{{ settings.currency() }}{{ (o.status === 'sold' ? o.totalCost : costLeft(o)) | number:'1.0-0' }}</span>
+    </button>
+
+    <button class="x-btn" (click)="go('new')">{{ 'Buy an article' | t }}</button>
+  </ng-container>
+
+  <!-- ================= DETAIL ================= -->
+  <ng-container *ngIf="view() === 'detail' && selected() as o">
+    <section class="x-card biz-card">
+      <h2>{{ o.name }} <small class="biz-tag">{{ statusLabel(o.status) | t }}</small></h2>
+      <small class="biz-hint">{{ catLabel(o.category) | t }} · {{ o.acquiredAt }} · {{ accountName(o.accountId) }}<ng-container *ngIf="o.supplier"> · {{ o.supplier }}</ng-container></small>
+      <div class="biz-row"><span>{{ 'Quantity' | t }}</span><strong>{{ o.quantity }}</strong></div>
+      <div class="biz-row"><span>{{ 'Total cost' | t }}</span><strong>{{ settings.currency() }}{{ o.totalCost | number:'1.2-2' }}</strong></div>
+      <div class="biz-row" *ngIf="o.quantity > 1"><span>{{ 'Cost per unit (constant)' | t }}</span><strong>{{ settings.currency() }}{{ o.totalCost / o.quantity | number:'1.2-2' }}</strong></div>
+      <div class="biz-row" *ngIf="o.targetPrice"><span>{{ 'Target price' | t }}</span><strong>{{ settings.currency() }}{{ o.targetPrice | number:'1.2-2' }}</strong></div>
+      <p class="biz-hint" *ngIf="o.reservation">{{ 'Reserved' | t }}<ng-container *ngIf="o.reservation.buyer"> · {{ o.reservation.buyer }}</ng-container> · {{ 'deposit' | t }} {{ settings.currency() }}{{ o.reservation.deposit | number:'1.2-2' }} ({{ 'not income and not profit until the sale' | t }})</p>
+      <p class="biz-hint" *ngIf="o.notes">{{ o.notes }}</p>
+
+      <div class="biz-actions">
+        <button class="x-btn" *ngIf="o.status !== 'sold'" (click)="go('sale', o)">{{ 'Register sale' | t }}</button>
+        <button class="x-btn biz-ghost" *ngIf="o.status === 'available'" (click)="go('reserve', o)">{{ 'Reserve' | t }}</button>
+        <button class="x-btn biz-ghost" *ngIf="o.reservation" (click)="cancelReservation(o)">{{ 'Cancel reservation' | t }}</button>
+        <button class="x-btn biz-ghost" (click)="go('expense', o)">{{ 'Add expense' | t }}</button>
+        <button class="x-btn biz-ghost" (click)="go('cost', o)">{{ 'Correct cost' | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="removeOperation(o)">{{ 'Delete' | t }}</button>
+      </div>
+    </section>
+
+    <section class="x-card biz-card" *ngIf="facts().length">
+      <h2>{{ 'Sales and profitability' | t }}</h2>
+      <div class="biz-sale" *ngFor="let f of facts()">
+        <div class="biz-row"><strong>{{ f.sale.date }} · {{ f.sale.quantity }} {{ 'unit(s)' | t }} · {{ methodLabel(f.sale.method) | t }}</strong><strong>{{ settings.currency() }}{{ f.sale.price | number:'1.2-2' }}</strong></div>
+        <div class="biz-row small"><span>{{ 'Cost recovered' | t }}</span><span>{{ settings.currency() }}{{ f.cost | number:'1.2-2' }}</span></div>
+        <div class="biz-row small"><span>{{ 'Gross profit' | t }}</span><span [class.neg]="f.grossProfit < 0">{{ settings.currency() }}{{ f.grossProfit | number:'1.2-2' }}</span></div>
+        <div class="biz-row small"><span>{{ 'Expenses of the operation' | t }}</span><span>{{ settings.currency() }}{{ f.expenses | number:'1.2-2' }}</span></div>
+        <div class="biz-row"><span>{{ 'Net profit' | t }}</span><strong [class.neg]="f.netProfit < 0">{{ f.netProfit < 0 ? '-' : '' }}{{ settings.currency() }}{{ (f.netProfit < 0 ? -f.netProfit : f.netProfit) | number:'1.2-2' }}</strong></div>
+        <small class="biz-hint">{{ 'Margin' | t }} {{ f.margin !== null ? (f.margin | number:'1.0-1') + '%' : '—' }} · ROI {{ f.roi !== null ? (f.roi | number:'1.0-1') + '%' : '—' }} · {{ f.days }} {{ 'days in inventory' | t }}<ng-container *ngIf="f.sale.depositApplied"> · {{ 'deposit applied' | t }} {{ settings.currency() }}{{ f.sale.depositApplied | number:'1.2-2' }}</ng-container></small>
+        <div class="biz-actions">
+          <button class="biz-link" (click)="correctPrice(o, f.sale.id)">{{ 'Correct price' | t }}</button>
+          <button class="biz-link" (click)="reverseSale(o, f.sale.id)">{{ 'Reverse sale' | t }}</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="x-card biz-card" *ngIf="o.expenses.length">
+      <h2>{{ 'Expenses of the operation' | t }}</h2>
+      <ng-container *ngFor="let e of o.expenses">
+        <div class="biz-row" *ngIf="!e.reversed">
+          <span>{{ e.date }} · {{ expenseLabel(e.kind) | t }}<ng-container *ngIf="e.note"> · {{ e.note }}</ng-container></span>
+          <span>{{ settings.currency() }}{{ e.amount | number:'1.2-2' }} <button class="biz-link" (click)="removeExpense(o, e.id)" aria-label="Remove">✕</button></span>
+        </div>
+      </ng-container>
+    </section>
+  </ng-container>
+
+  <!-- ================= FORMS ================= -->
+  <section class="x-card biz-card" *ngIf="view() === 'new'">
+    <h2>{{ 'Buy an article' | t }}</h2>
+    <small class="biz-hint">{{ 'The money becomes working capital: it is not a personal expense and does not touch your personal budgets.' | t }}</small>
+    <label>{{ 'Name' | t }}</label><input class="x-input" type="text" maxlength="60" [(ngModel)]="fName" name="bn" />
+    <label>{{ 'Category' | t }}</label>
+    <select class="x-input" [(ngModel)]="fCategory" name="bc"><option *ngFor="let c of categories" [value]="c">{{ catLabel(c) | t }}</option></select>
+    <label>{{ 'Total cost' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fCost" name="bcost" />
+    <label>{{ 'Quantity (units in the lot)' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" [(ngModel)]="fQuantity" name="bq" />
+    <label>{{ 'Paid with' | t }}</label>
+    <select class="x-input" [(ngModel)]="fAccount" name="ba"><option *ngFor="let a of payAccounts()" [value]="a.id">{{ a.name }}</option></select>
+    <label>{{ 'Date' | t }}</label><input class="x-input" type="date" [(ngModel)]="fDate" name="bd" />
+    <label>{{ 'Target price of the lot (optional)' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fTarget" name="bt" />
+    <label>{{ 'Supplier (optional)' | t }}</label><input class="x-input" type="text" maxlength="40" [(ngModel)]="fSupplier" name="bs" />
+    <label>{{ 'Notes' | t }}</label><input class="x-input" type="text" maxlength="120" [(ngModel)]="fNotes" name="bnotes" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="!fName.trim() || !fCost" (click)="saveNew()">{{ 'Save' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'sale' && selected() as o">
+    <h2>{{ 'Register sale' | t }}: {{ o.name }}</h2>
+    <small class="biz-hint" *ngIf="o.reservation?.deposit">{{ 'The deposit already received is part of the price: this sale records only the balance.' | t }}</small>
+    <label>{{ 'Price (for these units)' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fPrice" name="sp" />
+    <label>{{ 'Units sold' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" [(ngModel)]="fQuantity" name="sq" />
+    <label>{{ 'How you were paid' | t }}</label>
+    <select class="x-input" [(ngModel)]="fMethod" name="sm"><option *ngFor="let m of methods" [value]="m">{{ methodLabel(m) | t }}</option></select>
+    <label>{{ 'Received in' | t }}</label>
+    <select class="x-input" [(ngModel)]="fAccount" name="sa"><option *ngFor="let a of payAccounts()" [value]="a.id">{{ a.name }}</option></select>
+    <label>{{ 'Date' | t }}</label><input class="x-input" type="date" [(ngModel)]="fDate" name="sd" />
+    <label>{{ 'Buyer (optional)' | t }}</label><input class="x-input" type="text" maxlength="40" [(ngModel)]="fBuyer" name="sb" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="fPrice === null" (click)="saveSale()">{{ 'Save sale' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'reserve'">
+    <h2>{{ 'Reserve' | t }}</h2>
+    <small class="biz-hint">{{ 'A deposit is not income and not profit until the sale.' | t }}</small>
+    <label>{{ 'Buyer (optional)' | t }}</label><input class="x-input" type="text" maxlength="40" [(ngModel)]="fBuyer" name="rb" />
+    <label>{{ 'Deposit received (optional)' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fDeposit" name="rd" />
+    <label>{{ 'Received in' | t }}</label>
+    <select class="x-input" [(ngModel)]="fAccount" name="ra"><option *ngFor="let a of payAccounts()" [value]="a.id">{{ a.name }}</option></select>
+    <label>{{ 'Date' | t }}</label><input class="x-input" type="date" [(ngModel)]="fDate" name="rdt" />
+    <div class="biz-actions"><button class="x-btn" (click)="saveReserve()">{{ 'Reserve' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'expense'">
+    <h2>{{ 'Add expense' | t }}</h2>
+    <small class="biz-hint">{{ 'It lowers the profit of this operation. It is not a personal expense.' | t }}</small>
+    <label>{{ 'Amount' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fAmount" name="ea" />
+    <label>{{ 'Type' | t }}</label>
+    <select class="x-input" [(ngModel)]="fKind" name="ek"><option *ngFor="let k of expenseKinds" [value]="k">{{ expenseLabel(k) | t }}</option></select>
+    <label>{{ 'Paid with' | t }}</label>
+    <select class="x-input" [(ngModel)]="fAccount" name="eac"><option *ngFor="let a of payAccounts()" [value]="a.id">{{ a.name }}</option></select>
+    <label>{{ 'Date' | t }}</label><input class="x-input" type="date" [(ngModel)]="fDate" name="ed" />
+    <label>{{ 'Note (optional)' | t }}</label><input class="x-input" type="text" maxlength="60" [(ngModel)]="fNote" name="en" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="!fAmount" (click)="saveExpense()">{{ 'Save' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'cost'">
+    <h2>{{ 'Correct cost' | t }}</h2>
+    <small class="biz-hint">{{ 'The purchase is reversed and recorded again (audited). Only possible before any sale.' | t }}</small>
+    <label>{{ 'Total cost' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fCost" name="cc" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="!fCost" (click)="saveCost()">{{ 'Save' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'withdraw'">
+    <h2>{{ 'Withdraw profit' | t }}</h2>
+    <small class="biz-hint">{{ 'Marks how much of the net profit moved to personal use. It creates no income and moves no balance. You can withdraw up to' | t }} {{ settings.currency() }}{{ business.pool().unwithdrawnProfit | number:'1.2-2' }}.</small>
+    <label>{{ 'Amount' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="fAmount" name="wa" />
+    <label>{{ 'Date' | t }}</label><input class="x-input" type="date" [(ngModel)]="fDate" name="wd" />
+    <label>{{ 'Note (optional)' | t }}</label><input class="x-input" type="text" maxlength="60" [(ngModel)]="fNote" name="wn" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="!fAmount" (click)="saveWithdraw()">{{ 'Save' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+
+  <section class="x-card biz-card" *ngIf="view() === 'convert'">
+    <h2>{{ 'Convert a sale into an operation' | t }}</h2>
+    <small class="biz-hint">{{ 'The income already recorded is used as the sale; no income is duplicated. The cost comes from what you declared with the sale.' | t }}</small>
+    <label>{{ 'Name' | t }}</label><input class="x-input" type="text" maxlength="60" [(ngModel)]="fName" name="cn" />
+    <label>{{ 'Category' | t }}</label>
+    <select class="x-input" [(ngModel)]="fCategory" name="ccat"><option *ngFor="let c of categories" [value]="c">{{ catLabel(c) | t }}</option></select>
+    <label>{{ 'Quantity (units in the lot)' | t }}</label><input class="x-input" type="number" inputmode="decimal" min="0" [(ngModel)]="fQuantity" name="cq" />
+    <div class="biz-actions"><button class="x-btn" [disabled]="!fName.trim()" (click)="saveConvert()">{{ 'Convert' | t }}</button><button class="x-btn biz-ghost" (click)="back()">{{ 'Cancel' | t }}</button></div>
+  </section>
+</div>
