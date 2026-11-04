@@ -1,0 +1,49 @@
+<section class="ai-settings x-card">
+  <h2>{{ 'Artificial intelligence' | t }}</h2>
+  <p class="ai-note">{{ 'Optional. The app works fully without it. When it is on, only calculated summaries leave your device (never account names, banks, card digits or ids), and the figures of every text are calculated here.' | t }}</p>
+
+  <label class="ai-row">
+    <input type="checkbox" [ngModel]="ai.prefs().enabled" (ngModelChange)="toggle($event)" name="ai-enabled" />
+    <span><b>{{ 'Use artificial intelligence' | t }}</b><small>{{ statusKey() | t }} {{ 'It uses the account of Settings → Account.' | t }}</small></span>
+  </label>
+
+  <ng-container *ngIf="ai.prefs().enabled">
+    <h3>{{ 'By module' | t }}</h3>
+    <label class="ai-row" *ngFor="let m of modules">
+      <input type="checkbox" [ngModel]="ai.moduleEnabled(m)" (ngModelChange)="ai.setModule(m, $event)" [name]="'ai-' + m" />
+      <span>{{ moduleLabel(m) | t }}</span>
+    </label>
+    <label class="ai-row ai-disabled">
+      <input type="checkbox" [checked]="false" disabled name="ai-documents" />
+      <span><b>{{ 'Smart capture of documents' | t }}</b><small>{{ 'Not available yet. It will have its own switch, off by default, because it needs to send the document itself.' | t }}</small></span>
+    </label>
+
+    <h3>{{ 'Use this month' | t }}</h3>
+    <div class="ai-bar"><div class="ai-bar-fill" [class.warn]="ai.usageLevel() === 'warn'" [class.full]="ai.usageLevel() === 'full'" [style.width.%]="ai.usagePercent() > 100 ? 100 : ai.usagePercent()"></div></div>
+    <p class="ai-note">{{ ai.used().requests }} / {{ ai.caps().requests }} {{ 'requests' | t }} · {{ ai.used().tokens }} / {{ ai.caps().tokens }} {{ 'tokens' | t }} · {{ ai.dayRequests() }} {{ 'today on this device' | t }}</p>
+    <p class="ai-warn" *ngIf="ai.usageLevel() === 'warn'">⚠️ {{ 'You have used 80% of the month. The normal functions keep working the same.' | t }}</p>
+    <p class="ai-warn" *ngIf="ai.usageLevel() === 'full'">⛔ {{ 'You reached the limit for the month; the normal functions keep working the same.' | t }}</p>
+
+    <a routerLink="/ai" class="ai-link">✨ {{ 'Open the AI suggestions' | t }}</a>
+
+    <div class="ai-actions">
+      <button class="x-btn" (click)="test()" [disabled]="testing()">{{ 'Test connection' | t }}</button>
+      <button class="x-btn" (click)="ai.refreshUsage()">{{ 'Refresh use' | t }}</button>
+      <button class="x-btn" (click)="clearCache()">{{ 'Clear AI cache' | t }}</button>
+      <button class="x-btn" (click)="showSent.set(!showSent())">{{ 'See what is sent' | t }}</button>
+    </div>
+    <p class="ai-note" *ngIf="testResult() as r" [class.ai-fail]="!r.ok">{{ r.text | t }}</p>
+    <p class="ai-note" *ngIf="cleared()">{{ 'The AI cache was cleared.' | t }}</p>
+
+    <div *ngIf="showSent()" class="ai-sent">
+      <div *ngFor="let f of ai.registered()">
+        <b>{{ f.labelKey | t }}</b>
+        <small>{{ f.describeKey | t }}</small>
+      </div>
+      <p class="ai-note">{{ 'Exact content of the connection test:' | t }}</p>
+      <pre class="ai-preview">{{ sentPreview() | json }}</pre>
+    </div>
+  </ng-container>
+
+  <app-ai-consent-sheet *ngIf="consent()" [title]="'Connection test' | t" [description]="'Nothing from your data is sent: only a fixed test word.' | t" [preview]="sentPreview()" (confirmed)="confirmTest()" (cancelled)="consent.set(false)"></app-ai-consent-sheet>
+</section>

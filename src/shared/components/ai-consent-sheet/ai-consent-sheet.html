@@ -1,0 +1,16 @@
+<div class="sheet-backdrop" (click)="cancelled.emit()" role="presentation"></div>
+<div class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="title">
+  <header class="sheet-head">
+    <h2>{{ 'What will be sent' | t }}</h2>
+    <button class="sheet-close" (click)="cancelled.emit()" [attr.aria-label]="'Close' | t">✕</button>
+  </header>
+  <p class="sheet-text">{{ title }}</p>
+  <p class="sheet-text">{{ description }}</p>
+  <h3>{{ 'Exact content' | t }}</h3>
+  <pre class="sheet-text ai-preview">{{ json() }}</pre>
+  <p class="sheet-text">{{ 'Nothing else leaves your device: no account names, banks, card digits or ids. The answer is a suggestion: it never changes your data on its own, and its figures are always calculated here.' | t }}</p>
+  <div class="ai-consent-actions">
+    <button class="x-btn" [disabled]="!canConfirm" (click)="confirmed.emit()">{{ 'Send and continue' | t }}</button>
+    <button class="x-btn x-btn-danger" (click)="cancelled.emit()">{{ 'Not now' | t }}</button>
+  </div>
+</div>

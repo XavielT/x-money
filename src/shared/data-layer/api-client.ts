@@ -91,6 +91,7 @@ export interface AuthResponse {
 interface CallOptions {
   auth?: boolean;
   retry?: boolean; // only for idempotent calls (sync)
+  base?: string; // another function of the same project (xmoney-ai); the session is shared
 }
 
 export class XMoneyApiClient {
@@ -129,7 +130,7 @@ export class XMoneyApiClient {
     const auth = options.auth ?? true;
     for (let attempt = 0; ; attempt++) {
       try {
-        return await this.once<T>(action, body, auth);
+        return await this.once<T>(action, body, auth, options.base);
       } catch (error) {
         const transient = error instanceof ApiError && (error.status === 0 || error.status >= 500);
         if (!options.retry || !transient || attempt >= 2) throw error;
@@ -138,23 +139,23 @@ export class XMoneyApiClient {
     }
   }
 
-  private async once<T>(action: string, body: object, auth: boolean): Promise<T> {
+  private async once<T>(action: string, body: object, auth: boolean, base?: string): Promise<T> {
     if (auth && !this.accessToken) await this.refreshOnce();
-    let res = await this.send(action, body, auth);
+    let res = await this.send(action, body, auth, base);
     if (res.status === 401 && auth) {
       await this.refreshOnce(); // a single refresh, shared by every request in flight
-      res = await this.send(action, body, auth);
+      res = await this.send(action, body, auth, base);
     }
     return this.parse<T>(res);
   }
 
-  private async send(action: string, body: object, auth: boolean): Promise<Response> {
+  private async send(action: string, body: object, auth: boolean, base?: string): Promise<Response> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (auth && this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
-      return await this.fetchFn(`${this.baseUrl}/${action}`, {
+      return await this.fetchFn(`${base ?? this.baseUrl}/${action}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -177,7 +178,8 @@ export class XMoneyApiClient {
     }
     if (typeof data['serverNow'] === 'number') this.skewMs = data['serverNow'] - Date.now();
     if (!res.ok) {
-      throw new ApiError(res.status, String(data['error'] ?? 'error'), data['retryAfterSeconds'] as number | undefined);
+      // xmoney-api answers { error }, xmoney-ai answers { ok: false, code }
+      throw new ApiError(res.status, String(data['error'] ?? data['code'] ?? 'error'), data['retryAfterSeconds'] as number | undefined);
     }
     return data as T;
   }

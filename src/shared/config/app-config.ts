@@ -9,3 +9,7 @@ export const APP_CONFIG = {
 };
 
 export const isSyncConfigured = (): boolean => /^https?:\/\//.test(APP_CONFIG.apiUrl);
+
+// The AI function lives next to xmoney-api in the same project: same host, other function name.
+// Still no key here: the provider key is a secret of that function (docs/SETUP-XCORE.md).
+export const aiUrl = (apiUrl: string = APP_CONFIG.apiUrl): string => apiUrl.replace(/\/+$/, '').replace(/\/xmoney-api$/, '/xmoney-ai');
