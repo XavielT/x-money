@@ -1,0 +1,262 @@
+<div class="x-page sim">
+  <h1 class="x-page-title">{{ 'Loan simulator' | t }}</h1>
+  <p class="sim-note">{{ 'Everything here is a simulation: an estimate with its assumptions, not an offer from any bank.' | t }}</p>
+  <a routerLink="/loans" class="sim-link">← {{ 'My loans' | t }}</a>
+  <p class="sim-message" *ngIf="message()">{{ message() }}</p>
+
+  <!-- Saved simulations -->
+  <section class="x-card sim-block" *ngIf="saved().length">
+    <h2>{{ 'Saved simulations' | t }}</h2>
+    <div class="sim-saved" *ngFor="let s of saved()">
+      <button class="sim-link" (click)="open(s)">{{ s.name }} · {{ money(s.amount) }} · {{ s.termMonths }} {{ 'months' | t }}</button>
+      <button class="sim-link" (click)="loans.removeSimulation(s.id)">✕</button>
+    </div>
+  </section>
+
+  <!-- Inputs -->
+  <section class="x-card sim-block">
+    <h2>{{ 'The loan' | t }}</h2>
+    <label>{{ 'Amount requested' | t }}<input class="x-input" type="number" inputmode="decimal" min="0" [ngModel]="f().amount" (ngModelChange)="upd({ amount: $event })" name="amount" /></label>
+    <div class="sim-row">
+      <label>{{ 'Rate (% per year)' | t }}<input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="f().rateValue" (ngModelChange)="upd({ rateValue: $event })" name="rate" /></label>
+      <label>{{ 'Rate type' | t }}
+        <select class="x-input" [ngModel]="f().rateType" (ngModelChange)="upd({ rateType: $event })" name="rateType">
+          <option value="nominal">{{ 'Nominal annual' | t }}</option>
+          <option value="effective">{{ 'Effective annual' | t }}</option>
+          <option value="flat">{{ 'Flat rate' | t }}</option>
+        </select>
+      </label>
+    </div>
+    <label *ngIf="f().rateType === 'nominal'">{{ 'Capitalizations per year' | t }}<input class="x-input" type="number" min="1" max="365" [ngModel]="f().compounding" (ngModelChange)="upd({ compounding: $event })" name="comp" /></label>
+    <div class="sim-row">
+      <label>{{ 'Method' | t }}
+        <select class="x-input" [ngModel]="f().method" (ngModelChange)="upd({ method: $event })" name="method">
+          <option value="french">{{ 'Fixed installment (french)' | t }}</option>
+          <option value="german">{{ 'Constant principal (german)' | t }}</option>
+          <option value="flat">{{ 'Flat rate (on the original amount)' | t }}</option>
+        </select>
+      </label>
+      <label>{{ 'Term (months)' | t }}<input class="x-input" type="number" min="1" [ngModel]="f().termMonths" (ngModelChange)="upd({ termMonths: $event })" name="term" /></label>
+    </div>
+    <div class="sim-row">
+      <label>{{ 'Payment frequency' | t }}
+        <select class="x-input" [ngModel]="f().frequency" (ngModelChange)="upd({ frequency: $event })" name="freq">
+          <option value="monthly">{{ 'Monthly' | t }}</option>
+          <option value="biweekly">{{ 'Every two weeks' | t }}</option>
+          <option value="weekly">{{ 'Weekly' | t }}</option>
+        </select>
+      </label>
+      <label>{{ 'First payment' | t }}<input class="x-input" type="date" [ngModel]="f().firstDate" (ngModelChange)="upd({ firstDate: $event })" name="first" /></label>
+    </div>
+    <h3>{{ 'Costs of the loan' | t }}</h3>
+    <div class="sim-row">
+      <label>{{ 'Insurance per period' | t }}<input class="x-input" type="number" min="0" step="0.01" [ngModel]="f().insuranceValue" (ngModelChange)="upd({ insuranceValue: $event })" name="ins" /></label>
+      <label>{{ 'Insurance is' | t }}
+        <select class="x-input" [ngModel]="f().insuranceMode" (ngModelChange)="upd({ insuranceMode: $event })" name="insMode">
+          <option value="percent">{{ '% of the balance' | t }}</option>
+          <option value="fixed">{{ 'Fixed amount' | t }}</option>
+        </select>
+      </label>
+    </div>
+    <div class="sim-row">
+      <label>{{ 'Commission' | t }}<input class="x-input" type="number" min="0" step="0.01" [ngModel]="f().commissionValue" (ngModelChange)="upd({ commissionValue: $event })" name="com" /></label>
+      <label>{{ 'Commission is' | t }}
+        <select class="x-input" [ngModel]="f().commissionMode" (ngModelChange)="upd({ commissionMode: $event })" name="comMode">
+          <option value="percent">{{ '% of the amount' | t }}</option>
+          <option value="fixed">{{ 'Fixed amount' | t }}</option>
+        </select>
+      </label>
+    </div>
+    <label class="sim-check"><input type="checkbox" [ngModel]="f().commissionFinanced" (ngModelChange)="upd({ commissionFinanced: $event })" name="fin" /> {{ 'Financed (added to the debt) instead of paid at the start' | t }}</label>
+    <div class="sim-row">
+      <label>{{ 'Other charge, once' | t }}<input class="x-input" type="number" min="0" step="0.01" [ngModel]="f().otherOnce" (ngModelChange)="upd({ otherOnce: $event })" name="once" /></label>
+      <label>{{ 'Other charge, every period' | t }}<input class="x-input" type="number" min="0" step="0.01" [ngModel]="f().otherEvery" (ngModelChange)="upd({ otherEvery: $event })" name="every" /></label>
+    </div>
+  </section>
+
+  <p class="sim-error x-card" *ngIf="error()">{{ error() }}</p>
+
+  <ng-container *ngIf="!quote().error">
+    <!-- Results -->
+    <section class="x-card sim-block">
+      <h2>{{ 'Result' | t }} <small>({{ 'Estimate' | t }})</small></h2>
+      <div class="sim-grid2">
+        <div><small>{{ 'Estimated installment' | t }}</small><b>{{ money(quote().totals.installment) }}</b></div>
+        <div><small>{{ 'Total interest' | t }}</small><b>{{ money(quote().totals.interest) }}</b></div>
+        <div><small>{{ 'Total charges' | t }}</small><b>{{ money(quote().totals.fees + quote().totals.upfront + quote().totals.financedCommission) }}</b></div>
+        <div><small>{{ 'Total to pay' | t }}</small><b>{{ money(quote().totals.totalPayable) }}</b></div>
+        <div><small>{{ 'Cash you receive' | t }}</small><b>{{ money(quote().totals.disbursed) }}</b></div>
+        <div><small>{{ 'Number of payments' | t }}</small><b>{{ quote().rows.length }}</b></div>
+      </div>
+      <p>{{ 'Estimated effective cost' | t }}: <b>{{ quote().effectiveCost | number:'1.2-2' }}%</b> {{ 'a year' | t }}
+        <small *ngIf="quote().effectiveRate !== null && f().rateType === 'flat'"> · {{ 'Equivalent effective rate of the flat rate' | t }}: {{ quote().effectiveRate | number:'1.2-2' }}%</small>
+        <small *ngIf="quote().effectiveRate !== null && f().rateType !== 'flat'"> · {{ 'Declared rate as effective annual' | t }}: {{ quote().effectiveRate | number:'1.2-2' }}%</small>
+      </p>
+      <ul class="sim-assumptions"><li *ngFor="let a of quote().assumptions">{{ a | t }}</li></ul>
+      <div class="sim-actions">
+        <input class="x-input" [(ngModel)]="simName" name="simName" [placeholder]="'Name this simulation' | t" />
+        <button class="x-btn" (click)="save()">{{ 'Save' | t }}</button>
+        <button class="x-btn" (click)="openRegister()">{{ 'Register this loan' | t }}</button>
+      </div>
+      <form class="sim-register" *ngIf="registerOpen()" (ngSubmit)="register()">
+        <input class="x-input" name="rname" [(ngModel)]="rName" [placeholder]="'Name' | t" />
+        <input class="x-input" name="rlender" [(ngModel)]="rLender" [placeholder]="'Bank or lender (optional)' | t" />
+        <label>{{ 'Money arrives in' | t }}<select class="x-input" name="rdis" [(ngModel)]="rDisbursementAccount"><option *ngFor="let a of accountOptions()" [value]="a.id">{{ a.name }}</option></select></label>
+        <label>{{ 'Installments leave from' | t }}<select class="x-input" name="rpay" [(ngModel)]="rPayAccount"><option *ngFor="let a of accountOptions()" [value]="a.id">{{ a.name }}</option></select></label>
+        <label>{{ 'Disbursement date' | t }}<input class="x-input" type="date" name="rdate" [(ngModel)]="rDate" /></label>
+        <small class="sim-note">{{ 'The money received is not income: it is a debt you will repay. Each payment splits into principal and interest.' | t }}</small>
+        <button class="x-btn" type="submit">{{ 'Register' | t }}</button>
+      </form>
+    </section>
+
+    <!-- Capacity -->
+    <section class="x-card sim-block" *ngIf="capacity() as cap">
+      <h2>{{ 'Can I pay it?' | t }} <small>({{ 'Estimate' | t }})</small></h2>
+      <p class="sim-note">{{ 'Non-monetary benefits are never counted as income. The thresholds are a personal reference, not a bank rule.' | t }}</p>
+      <div class="sim-reading" *ngFor="let r of cap.rows; let i = index" [class.risky]="r.status === 'risky'" [class.tight]="r.status === 'tight'">
+        <div class="sim-reading-head"><b>{{ readingLabel(r.key) | t }}</b><span class="sim-badge sim-{{ r.status }}">{{ statusLabel(r.status) | t }}</span></div>
+        <div>{{ 'Income' | t }}: {{ money(r.income) }}</div>
+        <div>{{ 'Committed' | t }}: {{ r.committed === null ? '—' : (r.committed | number:'1.0-1') + '%' }}</div>
+        <div>{{ 'Left after the installment' | t }}: <b [class.neg]="r.availableAfter < 0">{{ money(r.availableAfter) }}</b></div>
+        <small class="sim-note"><ng-container *ngFor="let p of cap.readings[i].parts">{{ tierLabel(p.tier) | t }} {{ money(p.amount) }}<ng-container *ngIf="p.discount"> ({{ 'after' | t }} −{{ money(p.discount) }})</ng-container>; </ng-container></small>
+      </div>
+      <p class="sim-note">{{ 'Used' | t }}: {{ 'fixed expenses' | t }} {{ money(cap.obligations.fixed) }} · {{ 'variable expenses' | t }} {{ money(cap.obligations.variable) }} ({{ cap.obligations.variableBasis === 'history' ? ('median of your history' | t) : ('declared: fewer than 3 months of history' | t) }}) · {{ 'existing debts' | t }} {{ money(cap.obligations.debts) }} · {{ 'this installment (per month)' | t }} {{ money(cap.installment) }}</p>
+      <button class="sim-link" (click)="showSettings.set(!showSettings())">⚙ {{ 'Income levels and thresholds' | t }}</button>
+      <div class="sim-settings" *ngIf="showSettings()">
+        <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.salary" (ngModelChange)="setSwitch('salary', $event)" name="s1" /> {{ 'Documented salary' | t }}</label>
+        <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.bonuses" (ngModelChange)="setSwitch('bonuses', $event)" name="s2" /> {{ 'Recurring bonuses' | t }}</label>
+        <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.commercial" (ngModelChange)="setSwitch('commercial', $event)" name="s3" /> {{ 'Business income (6-month average)' | t }}</label>
+        <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.declared" (ngModelChange)="setSwitch('declared', $event)" name="s4" /> {{ 'Other declared income' | t }}</label>
+        <label>{{ 'Prudence discount on business income (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().commercialDiscount" (ngModelChange)="setSetting({ commercialDiscount: $event })" name="disc" /></label>
+        <div class="sim-row">
+          <label>{{ 'Comfortable up to (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().comfortable" (ngModelChange)="setSetting({ comfortable: $event })" name="cmf" /></label>
+          <label>{{ 'Tight up to (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().tight" (ngModelChange)="setSetting({ tight: $event })" name="tgt" /></label>
+        </div>
+        <label>{{ 'Variable spending to assume with little history' | t }}<input class="x-input" type="number" min="0" [ngModel]="loans.settings().declaredVariable" (ngModelChange)="setSetting({ declaredVariable: $event })" name="decl" /></label>
+      </div>
+
+      <h3>{{ 'If my income drops' | t }}</h3>
+      <table class="sim-table">
+        <tr><th>{{ 'Income drop' | t }}</th><th *ngFor="let r of cap.rows">{{ readingLabel(r.key) | t }}</th></tr>
+        <tr *ngFor="let d of dropRows()">
+          <td>−{{ d.drop }}%</td>
+          <td *ngFor="let r of d.rows" [class.neg]="r.status === 'risky'">{{ statusLabel(r.status) | t }} · {{ r.committed === null ? '—' : (r.committed | number:'1.0-0') + '%' }}</td>
+        </tr>
+      </table>
+      <div class="sim-row"><input class="x-input" type="number" min="1" max="100" [(ngModel)]="customDrop" name="drop" [placeholder]="'Another drop (%)' | t" /><button class="x-btn" (click)="addDrop()">{{ 'Add' | t }}</button></div>
+    </section>
+
+    <!-- Terms -->
+    <section class="x-card sim-block">
+      <h2>{{ 'Compare terms' | t }} <small>({{ 'Estimate' | t }})</small></h2>
+      <table class="sim-table">
+        <tr><th>{{ 'Months' | t }}</th><th>{{ 'Installment' | t }}</th><th>{{ 'Interest' | t }}</th><th>{{ 'Total' | t }}</th></tr>
+        <tr *ngFor="let c of termRows()"><td>{{ c.termMonths }}</td><td>{{ money(c.installment) }}</td><td>{{ money(c.totalCost) }}</td><td>{{ money(c.totalPayable) }}</td></tr>
+      </table>
+      <h3>{{ 'Amounts and terms' | t }} ({{ 'installment' | t }})</h3>
+      <div class="sim-scroll">
+        <table class="sim-table">
+          <tr><th>{{ 'Amount' | t }}</th><th *ngFor="let t of terms">{{ t }}</th><th></th></tr>
+          <tr *ngFor="let row of grid()">
+            <td>{{ money(row[0].amount) }}</td>
+            <td *ngFor="let c of row">{{ c.installment | number:'1.0-0' }}</td>
+            <td><button class="sim-link" (click)="removeGridAmount(row[0].amount)">✕</button></td>
+          </tr>
+        </table>
+      </div>
+      <div class="sim-row"><input class="x-input" type="number" min="1" [(ngModel)]="newGridAmount" name="gridAmount" [placeholder]="'Add an amount' | t" /><button class="x-btn" (click)="addGridAmount()">{{ 'Add' | t }}</button></div>
+    </section>
+
+    <!-- Offers -->
+    <section class="x-card sim-block">
+      <h2>{{ 'Compare offers' | t }} <small>({{ 'same amount' | t }}: {{ money(f().amount) }})</small></h2>
+      <div class="sim-offer" *ngFor="let o of offerForms(); let i = index">
+        <input class="x-input" [ngModel]="o.name" (ngModelChange)="setOffer(i, { name: $event })" [name]="'on' + i" [placeholder]="'Bank or lender' | t" />
+        <div class="sim-row">
+          <input class="x-input" type="number" step="0.01" [ngModel]="o.rateValue" (ngModelChange)="setOffer(i, { rateValue: $event })" [name]="'or' + i" [attr.aria-label]="'Rate' | t" />
+          <select class="x-input" [ngModel]="o.rateType" (ngModelChange)="setOffer(i, { rateType: $event })" [name]="'ot' + i">
+            <option value="nominal">{{ 'Nominal annual' | t }}</option><option value="effective">{{ 'Effective annual' | t }}</option><option value="flat">{{ 'Flat rate' | t }}</option>
+          </select>
+        </div>
+        <div class="sim-row">
+          <label>{{ 'Months' | t }}<input class="x-input" type="number" [ngModel]="o.termMonths" (ngModelChange)="setOffer(i, { termMonths: $event })" [name]="'om' + i" /></label>
+          <label>{{ 'Commission (%)' | t }}<input class="x-input" type="number" step="0.01" [ngModel]="o.commissionPct" (ngModelChange)="setOffer(i, { commissionPct: $event })" [name]="'oc' + i" /></label>
+          <label>{{ 'Insurance' | t }}<input class="x-input" type="number" step="0.01" [ngModel]="o.insuranceFixed" (ngModelChange)="setOffer(i, { insuranceFixed: $event })" [name]="'oi' + i" /></label>
+        </div>
+        <button class="sim-link" (click)="removeOffer(i)">{{ 'Remove' | t }}</button>
+      </div>
+      <button class="x-btn" *ngIf="offerForms().length < 4" (click)="addOffer()">{{ 'Add an offer' | t }}</button>
+      <div class="sim-scroll">
+        <table class="sim-table" *ngIf="offers().length">
+          <tr><th></th><th *ngFor="let o of offers()" [class.best]="o.best">{{ o.name }}</th></tr>
+          <tr><td>{{ 'Installment' | t }}</td><td *ngFor="let o of offers()" [class.best]="o.best">{{ money(o.quote.totals.installment) }}</td></tr>
+          <tr><td>{{ 'Total cost' | t }}</td><td *ngFor="let o of offers()" [class.best]="o.best">{{ money(o.quote.totals.totalCost) }}</td></tr>
+          <tr><td>{{ 'Total to pay' | t }}</td><td *ngFor="let o of offers()" [class.best]="o.best">{{ money(o.quote.totals.totalPayable) }}</td></tr>
+          <tr><td>{{ 'Effective cost' | t }}</td><td *ngFor="let o of offers()" [class.best]="o.best">{{ o.quote.effectiveCost | number:'1.2-2' }}%</td></tr>
+        </table>
+      </div>
+      <p class="sim-note">{{ 'The highlighted column has the lowest total cost. It is a reading of the numbers, not a recommendation: check the terms with each lender.' | t }}</p>
+    </section>
+
+    <!-- What if -->
+    <section class="x-card sim-block">
+      <h2>{{ 'What if…' | t }} <small>({{ 'Estimate' | t }})</small></h2>
+
+      <h3>{{ 'Extra payments to principal' | t }}</h3>
+      <div class="sim-row">
+        <input class="x-input" type="number" min="0" [ngModel]="extraAmount" (ngModelChange)="extraAmount = $event; refresh()" name="xa" [placeholder]="'Extra amount' | t" />
+        <label>{{ 'At payment' | t }}<input class="x-input" type="number" min="1" [ngModel]="extraPeriod" (ngModelChange)="extraPeriod = $event; refresh()" name="xp" /></label>
+        <label>{{ 'Repeat every (0 = once)' | t }}<input class="x-input" type="number" min="0" [ngModel]="extraEvery" (ngModelChange)="extraEvery = $event; refresh()" name="xe" /></label>
+      </div>
+      <select class="x-input" [ngModel]="extraMode" (ngModelChange)="extraMode = $event; refresh()" name="xm">
+        <option value="reduce-term">{{ 'Reduce the term (same installment)' | t }}</option>
+        <option value="reduce-installment">{{ 'Reduce the installment (same end date)' | t }}</option>
+      </select>
+      <ng-container *ngIf="extraResult() as x">
+        <p *ngIf="x.savings as s">{{ 'Interest saved' | t }}: <b>{{ money(s.interestSaved) }}</b> · {{ 'Payments saved' | t }}: {{ s.periodsSaved }} · {{ 'New end date' | t }}: {{ s.newEndDate }} · {{ 'New installment' | t }}: {{ money(s.newInstallment) }}</p>
+      </ng-container>
+
+      <h3>{{ 'Early cancellation' | t }}</h3>
+      <div class="sim-row">
+        <label>{{ 'After payment' | t }}<input class="x-input" type="number" min="1" [ngModel]="cancelPeriod" (ngModelChange)="cancelPeriod = $event; refresh()" name="cp" /></label>
+        <label>{{ 'Penalty (% of the balance)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="cancelPenalty" (ngModelChange)="cancelPenalty = $event; refresh()" name="cpen" /></label>
+      </div>
+      <ng-container *ngIf="cancelResult() as c">
+        <p>{{ 'Balance' | t }}: {{ money(c.balance) }} · {{ 'Penalty' | t }}: {{ money(c.penalty) }} · <b>{{ 'To close the loan' | t }}: {{ money(c.payoff) }}</b> · {{ 'Saved versus paying to the end' | t }}: <b>{{ money(c.savedVsEnd) }}</b></p>
+      </ng-container>
+
+      <ng-container *ngIf="rateResult() as r">
+        <h3>{{ 'Change of rate' | t }}</h3>
+        <div class="sim-row">
+          <label>{{ 'From payment' | t }}<input class="x-input" type="number" min="1" [ngModel]="rateChangeAt" (ngModelChange)="rateChangeAt = $event; refresh()" name="rca" /></label>
+          <label>{{ 'New rate (%)' | t }}<input class="x-input" type="number" step="0.01" [ngModel]="rateChangeTo" (ngModelChange)="rateChangeTo = $event; refresh()" name="rct" /></label>
+        </div>
+        <select class="x-input" [ngModel]="rateChangeMode" (ngModelChange)="rateChangeMode = $event; refresh()" name="rcm">
+          <option value="adjust-installment">{{ 'Adjust the installment' | t }}</option>
+          <option value="adjust-term">{{ 'Adjust the term' | t }}</option>
+        </select>
+        <p *ngIf="r.quote as q">{{ 'New installment' | t }}: <b>{{ money(q.rows[(rateChangeAt - 1) < q.rows.length ? (rateChangeAt - 1) : q.rows.length - 1]?.payment) }}</b> · {{ 'Payments' | t }}: {{ q.rows.length }} · {{ 'Total interest' | t }}: {{ money(q.totals.interest) }} ({{ money(q.totals.interest - quote().totals.interest) }})</p>
+      </ng-container>
+
+      <h3>{{ 'A shorter term' | t }}</h3>
+      <label>{{ 'Months' | t }}<input class="x-input" type="number" min="1" [ngModel]="shorterTerm" (ngModelChange)="shorterTerm = $event; refresh()" name="st" /></label>
+      <table class="sim-table" *ngIf="shorterResult() as s">
+        <tr><th></th><th>{{ f().termMonths }} {{ 'months' | t }}</th><th>{{ shorterTerm }} {{ 'months' | t }}</th></tr>
+        <tr><td>{{ 'Installment' | t }}</td><td>{{ money(quote().totals.installment) }}</td><td>{{ money(s.totals.installment) }}</td></tr>
+        <tr><td>{{ 'Interest' | t }}</td><td>{{ money(quote().totals.interest) }}</td><td>{{ money(s.totals.interest) }}</td></tr>
+        <tr><td>{{ 'Total' | t }}</td><td>{{ money(quote().totals.totalPayable) }}</td><td>{{ money(s.totals.totalPayable) }}</td></tr>
+      </table>
+    </section>
+
+    <!-- Schedule -->
+    <section class="x-card sim-block">
+      <h2>{{ 'Amortization table' | t }}</h2>
+      <div class="sim-scroll">
+        <table class="sim-table sim-schedule">
+          <tr><th>#</th><th>{{ 'Date' | t }}</th><th>{{ 'Installment' | t }}</th><th>{{ 'Principal' | t }}</th><th>{{ 'Interest' | t }}</th><th>{{ 'Charges' | t }}</th><th>{{ 'Balance' | t }}</th></tr>
+          <tr *ngFor="let r of quote().rows"><td>{{ r.n }}</td><td>{{ r.date }}</td><td>{{ r.payment | number:'1.2-2' }}</td><td>{{ r.principal | number:'1.2-2' }}</td><td>{{ r.interest | number:'1.2-2' }}</td><td>{{ r.fees | number:'1.2-2' }}</td><td>{{ r.balance | number:'1.2-2' }}</td></tr>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</div>

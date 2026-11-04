@@ -16,6 +16,7 @@ import { CreditCardService } from '../../../shared/services/credit-card.service'
 import { CardAlert } from '../../../shared/domain/cards';
 import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
 import { GoalService } from '../../../shared/services/goal.service';
+import { LoanService } from '../../../shared/services/loan.service';
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
@@ -103,6 +104,13 @@ export class HomeComponent {
   cardAlerts = computed(() => this.cardService.alerts().slice(0, 4));
   incompleteCards = computed(() => this.cardService.incompleteCards());
   goalReminders = computed(() => this.goals.reminders());
+  loanAlerts = computed(() => this.loans.alerts().slice(0, 3));
+
+  loanAlertText(a: { loanId: string; stage: string; daysLeft: number }): string {
+    const name = this.loans.byId(a.loanId)?.name ?? '';
+    const key = a.stage === 'overdue' ? 'The installment of {name} is {days} days overdue' : a.daysLeft <= 0 ? 'The installment of {name} is due today' : 'The installment of {name} is due in {days} days';
+    return this.translate.instant(key, { name, days: String(Math.abs(a.daysLeft)) });
+  }
 
   goalName(id: string): string {
     return this.goals.byId(id)?.name ?? '';
@@ -117,7 +125,8 @@ export class HomeComponent {
     public accountService: AccountService,
     public settings: SettingsService,
     private cardService: CreditCardService,
-    private goals: GoalService
+    private goals: GoalService,
+    private loans: LoanService
   ) {
     this.cardService.ensureStatements();
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });

@@ -1,0 +1,102 @@
+<div class="x-page loans">
+  <h1 class="x-page-title">{{ 'Loans' | t }}</h1>
+  <div class="loans-links">
+    <a routerLink="/loans/simulator" class="x-card">🧮 {{ 'Simulator and register a loan' | t }}</a>
+  </div>
+  <p class="loans-message" *ngIf="message()">{{ message() }}</p>
+
+  <div class="loans-alert x-card" *ngFor="let a of loans.alerts()" [class.overdue]="a.stage === 'overdue'">
+    ⏰ {{ alertText(a, loans.byId(a.loanId)?.name || '') }} · {{ money(a.amount) }}
+  </div>
+
+  <div class="loans-total x-card" *ngIf="active().length">
+    <small>{{ 'Owed on loans' | t }}</small>
+    <b>{{ money(loans.totalOwed()) }}</b>
+    <small>{{ 'Estimated monthly installments' | t }}: {{ money(loans.monthlyPayments()) }}</small>
+  </div>
+
+  <div class="loans-empty x-card" *ngIf="!active().length">
+    <p>{{ 'No loans yet. Simulate one and register it when you take it.' | t }}</p>
+  </div>
+
+  <ng-template #loanCard let-row>
+    <div class="loans-row x-card" [class.closed]="row.loan.status !== 'active'">
+      <button class="loans-row-head" (click)="toggle(row.loan)">
+        <span>🏦 {{ row.loan.name }}<small *ngIf="row.loan.lender"> · {{ row.loan.lender }}</small></span>
+        <span>{{ money(row.owed) }}</span>
+      </button>
+      <div class="loans-bar"><div class="loans-bar-fill" [style.width.%]="row.percent"></div></div>
+      <div class="loans-numbers">
+        <span>{{ row.percent }}% {{ 'repaid' | t }}</span>
+        <span *ngIf="row.next">{{ 'Next' | t }}: {{ row.next.date }} · {{ money(row.nextLeft) }}</span>
+        <span *ngIf="row.loan.status === 'paid'">{{ 'Paid off' | t }}</span>
+        <span *ngIf="row.loan.status === 'voided'">{{ 'Undone' | t }}</span>
+      </div>
+
+      <div class="loans-detail" *ngIf="openId() === row.loan.id">
+        <small class="loans-note">{{ 'Interest and charges are expenses; the principal repaid is not: it only lowers what you owe.' | t }}</small>
+
+        <!-- Pay -->
+        <section *ngIf="row.loan.status === 'active'" class="loans-pay">
+          <h3>{{ 'Pay an installment' | t }}</h3>
+          <select class="x-input" [(ngModel)]="payInstallment" (ngModelChange)="prefill(row.loan)" name="pi-{{ row.loan.id }}">
+            <option [ngValue]="null">{{ 'Next installment' | t }}</option>
+            <option *ngFor="let r of row.loan.schedule" [ngValue]="r.n">#{{ r.n }} · {{ r.date }} · {{ money(loans.remaining(row.loan, r.n)) }}</option>
+          </select>
+          <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="payAmount" name="pa-{{ row.loan.id }}" [placeholder]="money(row.nextLeft)" />
+          <input class="x-input" type="date" [(ngModel)]="payDate" name="pd-{{ row.loan.id }}" />
+          <div class="loans-actions">
+            <button class="x-btn" (click)="prefill(row.loan)">{{ 'Prefill the amount due' | t }}</button>
+            <button class="x-btn" (click)="pay(row.loan)">{{ 'Pay' | t }}</button>
+          </div>
+          <small class="loans-note">{{ 'Less than the installment is a partial payment: it covers interest and charges first.' | t }}</small>
+
+          <button class="loans-link" *ngIf="!extraOpen()" (click)="extraOpen.set(true)">➕ {{ 'Extra payment to principal' | t }}</button>
+          <div *ngIf="extraOpen()" class="loans-pay">
+            <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="extraAmount" name="xa-{{ row.loan.id }}" [placeholder]="'Extra amount' | t" />
+            <select class="x-input" [(ngModel)]="extraMode" name="xm-{{ row.loan.id }}">
+              <option value="reduce-term">{{ 'Reduce the term (same installment)' | t }}</option>
+              <option value="reduce-installment">{{ 'Reduce the installment (same end date)' | t }}</option>
+            </select>
+            <div class="loans-actions">
+              <button class="x-btn" (click)="payExtra(row.loan)">{{ 'Apply extra payment' | t }}</button>
+              <button class="loans-link" (click)="extraOpen.set(false)">{{ 'Cancel' | t }}</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Payments -->
+        <section>
+          <h3>{{ 'Payments' | t }}</h3>
+          <p class="loans-note" *ngIf="!row.loan.payments.length">{{ 'No payments yet.' | t }}</p>
+          <div class="loans-payment" *ngFor="let p of row.loan.payments" [class.reversed]="p.reversed">
+            <span>{{ p.date }} · {{ p.kind === 'extra' ? ('Extra to principal' | t) : ('Installment' | t) + ' #' + p.installment }}<small *ngIf="p.kind === 'partial'"> · {{ 'partial' | t }}</small><small *ngIf="p.kind === 'advance'"> · {{ 'in advance' | t }}</small><small *ngIf="p.reversed"> · {{ 'reversed' | t }}</small><br /><small>{{ 'Principal' | t }} {{ money(p.principal) }} · {{ 'Interest' | t }} {{ money(p.interest) }} · {{ 'Charges' | t }} {{ money(p.fees) }}</small></span>
+            <b>{{ money(p.amount) }}</b>
+            <button class="loans-link" *ngIf="!p.reversed" (click)="reverse(row.loan, p.id)">{{ 'Reverse' | t }}</button>
+          </div>
+          <button class="loans-link" *ngIf="row.loan.status === 'active' && !row.loan.payments.length" (click)="undo(row.loan)">{{ 'Undo this loan' | t }}</button>
+        </section>
+
+        <!-- Schedule -->
+        <section>
+          <h3>{{ 'Amortization table' | t }} <small>({{ 'fixed at registration; only an extra payment recomputes it' | t }})</small></h3>
+          <div class="loans-scroll">
+            <table class="loans-table">
+              <tr><th>#</th><th>{{ 'Date' | t }}</th><th>{{ 'Installment' | t }}</th><th>{{ 'Principal' | t }}</th><th>{{ 'Interest' | t }}</th><th>{{ 'Balance' | t }}</th><th></th></tr>
+              <tr *ngFor="let r of row.loan.schedule" [class.paid]="loans.remaining(row.loan, r.n) === 0">
+                <td>{{ r.n }}</td><td>{{ r.date }}</td><td>{{ r.payment | number:'1.2-2' }}</td><td>{{ r.principal | number:'1.2-2' }}</td><td>{{ r.interest | number:'1.2-2' }}</td><td>{{ r.balance | number:'1.2-2' }}</td>
+                <td>{{ loans.remaining(row.loan, r.n) === 0 ? '✓' : '' }}</td>
+              </tr>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-container *ngFor="let row of active()"><ng-container *ngTemplateOutlet="loanCard; context: { $implicit: row }"></ng-container></ng-container>
+  <ng-container *ngIf="voided().length">
+    <h2 class="loans-section">{{ 'Undone' | t }}</h2>
+    <ng-container *ngFor="let row of voided()"><ng-container *ngTemplateOutlet="loanCard; context: { $implicit: row }"></ng-container></ng-container>
+  </ng-container>
+</div>

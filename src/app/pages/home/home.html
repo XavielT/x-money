@@ -58,7 +58,11 @@
     <a routerLink="/benefits" class="x-card">🎁 {{ 'Benefits' | t }}</a>
     <a routerLink="/business" class="x-card">🧰 {{ 'Business' | t }}</a>
     <a routerLink="/goals" class="x-card">🎯 {{ 'Goals' | t }}</a>
+    <a routerLink="/loans" class="x-card">🏦 {{ 'Loans' | t }}</a>
   </section>
+
+  <!-- Loan installments: 7, 3 and 1 day before, and overdue -->
+  <a routerLink="/loans" class="home-goal-reminder x-card" *ngFor="let a of loanAlerts()">🏦 {{ loanAlertText(a) }}</a>
 
   <!-- Plan reminders: one tap on the Goals page confirms; nothing is contributed on its own -->
   <a routerLink="/goals" class="home-goal-reminder x-card" *ngFor="let r of goalReminders()">🎯 {{ 'Today it is time to contribute to' | t }} <b>{{ goalName(r.goalId) }}</b></a>
