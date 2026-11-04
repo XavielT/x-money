@@ -45,9 +45,9 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
 - Estado: **cumple.** Los ingresos recurrentes antiguos (`recurring`, tipo ingreso) siguen publicándose solos como antes (comportamiento previo conservado a propósito); se pueden vincular a una fuente.
 
 ### 8. Los gastos ocasionales deben conservar su naturaleza variable.
-- Dónde se aplica (archivo): —
-- Prueba que la protege: —
-- Estado: no aplica todavía (sin clasificación) → prompt 04.
+- Dónde se aplica (archivo): `domain/categories.ts` (`DEFAULT_NATURE`, `natureOfCategory`, `natureOfTransaction`). **La naturaleza (fija / variable) es de la categoría** (la migración v3 la escribe explícita: las fijas integradas por id —alquiler, electricidad, internet, servicios, suscripciones, facturas y obligaciones recurrentes—, todo lo demás variable) y el usuario puede sobrescribirla por categoría, subcategoría o movimiento. **Nunca se infiere por repetición.** Un gasto recurrente *sugiere* «fijo» al crearse, pero el usuario decide (`ruleNature`). Los gastos irregulares (`domain/irregular.ts`) siguen siendo variables.
+- Prueba que la protege: `domain/budget.spec.ts` «rule 8» (12 compras semanales de «Occasional purchases» siguen variables; sobrescritura por movimiento/subcategoría) y `services/budget.spec.ts` «rule 8: fixed obligations and repetition» (una regla semanal de categoría variable NO es obligación fija; una marcada fija sí; una de categoría fija marcada variable no).
+- Estado: **cumple.**
 
 ### 9. Los saldos deben calcularse a partir de movimientos financieros consistentes.
 - Dónde se aplica (archivo): `domain/ledger.ts` (única fuente: saldo, saldo por moneda, saldo a una fecha, total), consumido por `TransactionService`/`NetWorthService`/`ReconciliationService`. Ningún saldo se guarda ni se sincroniza. Todo movimiento pasa por `domain/validation.ts` (monto > 0 y finito, fecha válida, cuenta existente y no archivada, moneda coherente) y por `utils/money.ts` (redondeo a 2 decimales).
@@ -55,9 +55,9 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
 - Estado: **cumple** en lo nuevo. Decisiones: (a) un **reverso** agrega el movimiento inverso y marca el par `reversed` (los saldos conservan ambos y se anulan; estadísticas y presupuestos los saltan); la comisión que el banco ya cobró **no se devuelve** (sigue como gasto); (b) las cuentas con movimientos se **archivan**, no se borran; (c) los movimientos huérfanos de cuentas borradas antes de la 2.7.0 siguen sumando en el total (`orphan` del ledger) para no cambiar números históricos, y Cuentas avisa de cuántos son; (d) el `KNOWN GAP` de una tarjeta de débito cuyo banco se borra por el servicio sigue documentado (la pantalla ya no permite borrar cuentas con movimientos).
 
 ### 10. Las proyecciones deben identificarse claramente como estimaciones.
-- Dónde se aplica (archivo): `insights.service.ts` (`subscriptionCost`), mostrado con «≈» en `stats.html:136-143` sin supuestos.
-- Prueba que la protege: —
-- Estado: **parcial** → prompts 05 y 09. (La 2.7.0 no agrega proyecciones: la conciliación y el patrimonio muestran solo datos calculados; la detección de ingresos recurrentes es una *sugerencia* con su cadencia y cantidad de depósitos visibles, no una proyección.)
+- Dónde se aplica (archivo): toda proyección o inferencia devuelve `estimate: true` y sus supuestos, y la pantalla la rotula «Estimación»: `domain/irregular.ts` (proyección de gastos irregulares: ocurrencias por semana de las últimas 8 semanas × promedio × semanas restantes + lo gastado, con rango del patrón declarado; con menos de 4 semanas de historial usa el punto medio declarado y lo dice), `domain/budget.ts` (`budgetRisk`, `monthEndProjection`: saldo líquido − fijos pendientes − variables esperadas + ingreso **garantizado** aún esperado, con rango, y **sin** ingreso variable ni beneficios no monetarios; `recommend`; `trend`; `reduceCandidates`), `domain/income.ts` (promedios, estabilidad), `domain/fixed.ts` (proyección anual). Las recomendaciones muestran de dónde salen (meses, mediana, fórmula) y con menos de 3 meses dicen «Historial insuficiente».
+- Prueba que la protege: `domain/budget.spec.ts` (todo lo marcado `estimate`, el piso de 3 meses, ejemplo de almuerzos RD$250–400 × 0–4 por semana: sin historial, con 2 semanas, con 6, con 8, semanas en cero, mes que empieza a mitad de semana), `services/budget.spec.ts` «rule 10».
+- Estado: **cumple** en los módulos 2.7.0–2.10.0. Pendiente: dashboard (05) y proyecciones de ahorro/préstamos (07/08) heredan el mismo contrato. Limitación conocida: el «≈» de suscripciones de `stats.html` sigue mostrándose sin supuestos (prompt 05).
 
 ## Criterios antes de desarrollar cada función
 

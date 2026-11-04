@@ -9,7 +9,7 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 | 01 | Integridad financiera P0 | 2.7.0 | **hecho** (pendiente: commit y prueba en teléfono; la migración de datos corre sola al abrir la app) |
 | 02 | Tarjetas de crédito | 2.8.0 | **hecho** (01 commiteado y subido; pendiente: commit de 02 y prueba en teléfono; el permiso de notificaciones se pide al activar «Avisos de tarjeta») |
 | 03 | Ingresos y beneficios laborales | 2.9.0 | **hecho** (02 commiteado y subido; pendiente: commit de 03 y prueba en teléfono) |
-| 04 | Gastos, categorías y presupuestos | 2.10.0 | pendiente |
+| 04 | Gastos, categorías y presupuestos | 2.10.0 | **hecho** (03 commiteado y subido; pendiente: commit de 04 y prueba en teléfono; la migración v3 de categorías corre sola al abrir la app) |
 | 05 | Dashboard | 2.11.0 | pendiente |
 | 06 | Negocios e inventario | 2.12.0 | pendiente |
 | 07 | Ahorros y objetivos | 2.13.0 | pendiente |
