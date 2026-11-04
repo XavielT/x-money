@@ -13,7 +13,7 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 | 05 | Dashboard | 2.11.0 | **hecho** (04 commiteado y subido; pendiente: commit de 05 y prueba en teléfono; no hay migración de datos) |
 | 06 | Negocios e inventario | 2.12.0 | **hecho** (05 commiteado y subido; pendiente: commit de 06 y prueba en teléfono; la migración v4 marca todo lo existente como personal al abrir la app) |
 | 07 | Ahorros y objetivos | 2.13.0 | **hecho** (06 commiteado y subido; pendiente: commit de 07 y prueba en teléfono; no hay migración de datos: `goals` es una colección nueva y los respaldos viejos se importan sin ella) |
-| 08 | Préstamos | 2.14.0 | pendiente |
+| 08 | Préstamos | 2.14.0 | **hecho** (07 commiteado y subido; pendiente: commit de 08 y prueba en teléfono; no hay migración de datos: `loans`, `loanSimulations` y `loanSettings` son colecciones nuevas y los respaldos viejos se importan sin ellas) |
 | 09 | Inteligencia determinística | 2.15.0 | pendiente |
 | 10 | Infraestructura de IA | 2.16.0 | pendiente |
 | 11 | IA en los módulos | 2.17.0 | pendiente |

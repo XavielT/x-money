@@ -19,6 +19,9 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
 | `incomeSources` | `IncomeSourceModel` (tipo, estabilidad, periodicidad, método, verificabilidad, montos esperados) | `IncomeSourceService` | **sincronizada** |
 | `benefits` | `BenefitModel` (beneficio no monetario con sus notas de uso embebidas; nunca es dinero) | `BenefitService` | **sincronizada** |
+| `loans` | `LoanModel` (préstamo con su tabla de amortización y sus pagos; lo adeudado se deriva) | `LoanService` | **sincronizada** |
+| `loanSimulations` | `LoanSimulationModel` (simulación u oferta guardada con nombre) | `LoanService` | **sincronizada** |
+| `loanSettings` | `LoanSettings` (niveles de ingreso, descuento de prudencia, umbrales) | `LoanService` | **sincronizada** (doc) |
 | `goals` | `GoalModel` (objetivo con sus aportes y retiros embebidos; apartado virtual) | `GoalService` | **sincronizada** |
 | `businessOperations` | `BusinessOperationModel` (lote o artículo con sus ventas, gastos y reserva embebidos) | `BusinessService` | **sincronizada** |
 | `businessWithdrawals` | `BusinessWithdrawal` (ganancia pasada a uso personal; nota neutra) | `BusinessService` | **sincronizada** |
