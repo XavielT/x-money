@@ -19,6 +19,7 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
 | `incomeSources` | `IncomeSourceModel` (tipo, estabilidad, periodicidad, método, verificabilidad, montos esperados) | `IncomeSourceService` | **sincronizada** |
 | `benefits` | `BenefitModel` (beneficio no monetario con sus notas de uso embebidas; nunca es dinero) | `BenefitService` | **sincronizada** |
+| `goals` | `GoalModel` (objetivo con sus aportes y retiros embebidos; apartado virtual) | `GoalService` | **sincronizada** |
 | `businessOperations` | `BusinessOperationModel` (lote o artículo con sus ventas, gastos y reserva embebidos) | `BusinessService` | **sincronizada** |
 | `businessWithdrawals` | `BusinessWithdrawal` (ganancia pasada a uso personal; nota neutra) | `BusinessService` | **sincronizada** |
 | `contacts` | `ContactModel` (compradores y proveedores, solo referencia) | `BusinessService` | **sincronizada** |

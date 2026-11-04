@@ -17,6 +17,8 @@ or storage; it takes plain data in and returns plain data out.
 
 **Dashboard (2.11.0):** `dashboard.ts` (desglose fijo/variable, flujo mensual, historial de ahorros, comparación de meses, dinero disponible, flujo de efectivo 30/60/90, gastos inusuales).
 
+**Goals (2.13.0):** `goals.ts` (reservado, progreso con excedente visible, recordatorios del plan, proyección con dos escenarios y «historial insuficiente», viabilidad contra el margen mensual, fondo de emergencia de N meses con aviso de cambio de meta, totales personal/comercial, validación).
+
 **Business (2.12.0):** `business.ts` (costo por unidad, ventas y beneficio, inventario, pool de capital, rentabilidad mensual, inventario lento, validación).
 
 **Does not go here**
