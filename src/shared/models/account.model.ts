@@ -8,6 +8,26 @@ export type BankAccountKind = 'checking' | 'savings' | 'payroll';
 // USD = US dollar, dual = credit cards with both a RD$ and a US$ side
 export type AccountCurrency = 'DOP' | 'USD' | 'dual';
 
+// Credit card data (2.8.0). Everything is optional: cards created before 2.8.0 simply have
+// none of it until the user completes it, and nothing is guessed on their behalf.
+export interface CardConfig {
+  creditLimit?: number; // RD$ side
+  creditLimitUsd?: number; // US$ side (USD and dual cards)
+  cutDay?: number; // 1-31; short months use their last day
+  dueMode?: 'days-after' | 'fixed-day'; // payment deadline: N days after the cut, or a fixed day of the month
+  dueDays?: number;
+  dueDay?: number;
+  minPercent?: number; // minimum payment: % of the balance...
+  minFloor?: number; // ...but never below this amount (RD$ side; capped by the balance)
+  minFloorUsd?: number;
+  // A purchase made ON the cut day goes into the statement that closes ('closing', the
+  // default) or into the next one ('next')
+  cutDayPurchases?: 'closing' | 'next';
+  warnAt?: number; // utilization thresholds in %, editable ("usual reference": 30 / 90)
+  dangerAt?: number;
+  smallPurchaseMax?: number; // "small purchase" ceiling; empty = the usual relative rule
+}
+
 export interface AccountModel {
   id: string;
   name: string;
@@ -23,4 +43,5 @@ export interface AccountModel {
   liquid?: boolean; // counts in "liquid net worth" (schema v2: set explicitly by type)
   archived?: boolean; // hidden from selectors and totals, history kept
   reconciledAt?: string; // ISO date of the last reconciliation
+  card?: CardConfig; // credit cards only
 }
