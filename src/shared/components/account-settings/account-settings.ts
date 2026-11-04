@@ -70,7 +70,7 @@ export class AccountSettingsComponent {
     const code = e instanceof ApiError ? e.code : '';
     if (e instanceof ApiError && e.status === 0) return 'No connection. The first sign-in needs internet.';
     if (code === 'invalid_credentials') return 'Wrong password.';
-    if (code === 'weak_password') return 'The password needs at least 10 characters.';
+    if (code === 'weak_password') return 'The password needs at least 6 characters.';
     if (code === 'locked') return 'Account locked. Try again later.';
     return 'Something went wrong. Try again.';
   }

@@ -1,4 +1,4 @@
-export const MIN_PASSWORD_LENGTH = 10;
+export const MIN_PASSWORD_LENGTH = 6; // hotfix 2.18.3: the owner asked for 6 (was 10)
 export const MAX_PASSWORD_LENGTH = 200;
 export const MAX_RECORD_BYTES = 256 * 1024;
 export const MAX_BATCH_OPS = 500;

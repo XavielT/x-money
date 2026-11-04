@@ -295,7 +295,7 @@ export const ES: Record<string, string> = {
   'Account locked. Try again in': 'Cuenta bloqueada. Intenta de nuevo en',
   'Account locked. Try again later.': 'Cuenta bloqueada. Intenta más tarde.',
   'No connection. The first sign-in needs internet.': 'Sin conexión. El primer inicio de sesión necesita internet.',
-  'The password needs at least 10 characters.': 'La contraseña necesita al menos 10 caracteres.',
+  'The password needs at least 6 characters.': 'La contraseña necesita al menos 6 caracteres.',
   'Could not create the account.': 'No se pudo crear la cuenta.',
   'Wrong email or recovery code.': 'Correo o código de recuperación incorrectos.',
   'Too many attempts. Wait a moment.': 'Demasiados intentos. Espera un momento.',

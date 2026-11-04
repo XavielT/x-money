@@ -56,7 +56,8 @@ describe('passwords', () => {
   });
 
   it('rejects short passwords', async () => {
-    expect((await signup('a@example.com', 'device-aaaa', { password: 'short' })).body['error']).toBe('weak_password');
+    expect((await signup('a@example.com', 'device-aaaa', { password: 'abcde' })).body['error']).toBe('weak_password');
+    expect((await signup('six@example.com', 'device-aaaa', { password: 'abcdef' })).status).toBe(200); // 6 characters is the minimum
   });
 });
 

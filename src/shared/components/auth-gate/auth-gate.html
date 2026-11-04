@@ -55,7 +55,7 @@
           <ng-container *ngSwitchCase="'invalid_credentials'">{{ 'Wrong email or password.' | t }}</ng-container>
           <ng-container *ngSwitchCase="'locked'">{{ 'Account locked. Try again in' | t }} {{ lockedMinutes() }} min.</ng-container>
           <ng-container *ngSwitchCase="'network'">{{ 'No connection. The first sign-in needs internet.' | t }}</ng-container>
-          <ng-container *ngSwitchCase="'weak_password'">{{ 'The password needs at least 10 characters.' | t }}</ng-container>
+          <ng-container *ngSwitchCase="'weak_password'">{{ 'The password needs at least 6 characters.' | t }}</ng-container>
           <ng-container *ngSwitchCase="'signup_failed'">{{ 'Could not create the account.' | t }}</ng-container>
           <ng-container *ngSwitchCase="'recovery_failed'">{{ 'Wrong email or recovery code.' | t }}</ng-container>
           <ng-container *ngSwitchCase="'too_many_requests'">{{ 'Too many attempts. Wait a moment.' | t }}</ng-container>
