@@ -1,0 +1,77 @@
+<div class="x-page insights">
+  <h1 class="x-page-title">{{ 'Smart alerts' | t }}</h1>
+  <p class="insights-note">{{ 'Calculated on your device from your own data. No internet, no AI. Estimates are marked and show their assumptions.' | t }}</p>
+
+  <div class="insights-filters">
+    <button class="insights-chip" [class.on]="!severity()" (click)="severity.set(null)">{{ 'All' | t }}</button>
+    <button class="insights-chip" *ngFor="let s of severities" [class.on]="severity() === s" (click)="severity.set(severity() === s ? null : s)">{{ (s === 'alert' ? 'Alert' : s === 'attention' ? 'Attention' : 'Information') | t }}</button>
+  </div>
+  <div class="insights-filters">
+    <button class="insights-chip" [class.on]="!module()" (click)="module.set(null)">{{ 'All areas' | t }}</button>
+    <button class="insights-chip" *ngFor="let m of modules" [class.on]="module() === m" (click)="module.set(module() === m ? null : m)">{{ moduleLabel(m) | t }}</button>
+  </div>
+
+  <div class="x-card insights-empty" *ngIf="!list().length">
+    <p>{{ 'Nothing needs your attention right now.' | t }}</p>
+  </div>
+
+  <article class="x-card insights-card" *ngFor="let i of list()" [class.alert]="i.severity === 'alert'" [class.attention]="i.severity === 'attention'">
+    <header>
+      <span class="insights-badge sev-{{ i.severity }}">{{ (i.severity === 'alert' ? 'Alert' : i.severity === 'attention' ? 'Attention' : 'Information') | t }}</span>
+      <span class="insights-tag" *ngIf="i.dataState === 'estimate'">{{ 'Estimate' | t }}</span>
+      <span class="insights-tag" *ngIf="i.dataState === 'confirmed'">{{ 'Confirmed data' | t }}</span>
+    </header>
+    <h2>{{ text(i).title }}</h2>
+    <p>{{ text(i).message }}</p>
+    <div class="insights-actions">
+      <button class="insights-link" (click)="explain(i)">ⓘ {{ 'Where does it come from?' | t }}</button>
+      <a class="insights-link" *ngFor="let a of i.actions" [routerLink]="a.link">{{ a.labelKey | t }}</a>
+      <button class="insights-link" (click)="insights.snooze(i, 7)">{{ 'Remind me in a week' | t }}</button>
+      <button class="insights-link" (click)="insights.dismiss(i)">{{ 'Dismiss' | t }}</button>
+    </div>
+  </article>
+
+  <!-- What could not be calculated for lack of history -->
+  <section class="x-card insights-block" *ngIf="missing().length">
+    <h2>{{ 'Needs more history' | t }}</h2>
+    <p class="insights-note">{{ 'These checks never invent a result: they wait until there is enough data.' | t }}</p>
+    <div class="insights-missing" *ngFor="let m of missing()">
+      <span>{{ m.rule.labelKey | t }}</span>
+      <small>{{ m.history.have }} / {{ m.history.needed }} {{ unitLabel(m.history.unit) | t }}</small>
+    </div>
+  </section>
+
+  <!-- Projections: always estimates -->
+  <section class="x-card insights-block">
+    <button class="insights-link" (click)="showProjections.set(!showProjections())">📈 {{ (showProjections() ? 'Hide projections' : 'Show projections (estimates)') | t }}</button>
+    <ng-container *ngIf="showProjections()">
+      <div class="insights-proj" *ngFor="let p of projections()">
+        <div class="insights-proj-head">
+          <b>{{ p.labelKey | t }}<ng-container *ngIf="p.subject">: {{ p.subject }}</ng-container></b>
+          <span class="insights-tag">{{ 'Estimate' | t }}</span>
+        </div>
+        <ng-container *ngIf="isNumber(p.estimate.value)">
+          <div>{{ money(num(p.estimate.value)) }} <small>({{ money(num(p.estimate.low)) }} – {{ money(num(p.estimate.high)) }})</small></div>
+          <small *ngIf="p.withoutVariableIncome">{{ 'If variable income does not arrive' | t }}: {{ money(num(p.withoutVariableIncome.value)) }}</small>
+        </ng-container>
+        <ng-container *ngIf="!isNumber(p.estimate.value)">
+          <div>{{ timing(p.estimate.value) }} <small>({{ timing(p.estimate.low) }} – {{ timing(p.estimate.high) }})</small></div>
+        </ng-container>
+        <button class="insights-link" (click)="explainProjection(p)">ⓘ {{ 'Assumptions' | t }}</button>
+      </div>
+    </ng-container>
+  </section>
+
+  <!-- Dismissed -->
+  <section class="insights-block" *ngIf="hidden().length">
+    <button class="insights-link" (click)="showHidden.set(!showHidden())">{{ (showHidden() ? 'Hide dismissed alerts' : 'Show dismissed alerts') | t }} ({{ hidden().length }})</button>
+    <div class="insights-missing" *ngFor="let i of (showHidden() ? hidden() : [])">
+      <span>{{ text(i).title }}</span>
+      <button class="insights-link" (click)="insights.restore(i)">{{ 'Bring back' | t }}</button>
+    </div>
+  </section>
+
+  <a routerLink="/settings" class="insights-link">⚙ {{ 'Choose which alerts you want' | t }}</a>
+
+  <app-explain-sheet *ngIf="sheet() as s" [title]="s.title" [evidence]="s.evidence" [formula]="s.formula" [assumptions]="s.assumptions" [state]="s.state" [period]="s.period" (closed)="sheet.set(null)"></app-explain-sheet>
+</div>

@@ -146,6 +146,18 @@
       <div class="sim-row"><input class="x-input" type="number" min="1" max="100" [(ngModel)]="customDrop" name="drop" [placeholder]="'Another drop (%)' | t" /><button class="x-btn" (click)="addDrop()">{{ 'Add' | t }}</button></div>
     </section>
 
+    <!-- Sustainability of the new debt -->
+    <section class="x-card sim-block" *ngIf="sustainability() as sus">
+      <h2>{{ 'Is this debt sustainable?' | t }} <small>({{ 'Estimate' | t }})</small></h2>
+      <ng-container *ngIf="sus.insight as ins">
+        <p><b>{{ insightText(ins).title }}</b></p>
+        <p>{{ insightText(ins).message }}</p>
+        <button class="sim-link" (click)="explainOpen.set(true)">ⓘ {{ 'Where does it come from?' | t }}</button>
+        <app-explain-sheet *ngIf="explainOpen()" [title]="insightText(ins).title" [evidence]="ins.evidence" [formula]="ins.formula" [assumptions]="['The stress test lowers only the business and declared income by 20%.', 'Non-monetary benefits are never counted.']" state="estimate" (closed)="explainOpen.set(false)"></app-explain-sheet>
+      </ng-container>
+      <p class="sim-note" *ngIf="!sus.insight">{{ 'Needs some income registered to evaluate it.' | t }}</p>
+    </section>
+
     <!-- Terms -->
     <section class="x-card sim-block">
       <h2>{{ 'Compare terms' | t }} <small>({{ 'Estimate' | t }})</small></h2>

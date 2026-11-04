@@ -61,6 +61,11 @@
     <a routerLink="/loans" class="x-card">🏦 {{ 'Loans' | t }}</a>
   </section>
 
+  <!-- Smart alerts: the three most important in one card (not one banner each) -->
+  @defer (on idle) {
+    <app-home-insights />
+  }
+
   <!-- Loan installments: 7, 3 and 1 day before, and overdue -->
   <a routerLink="/loans" class="home-goal-reminder x-card" *ngFor="let a of loanAlerts()">🏦 {{ loanAlertText(a) }}</a>
 

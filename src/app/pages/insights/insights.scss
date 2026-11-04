@@ -1,0 +1,133 @@
+.insights-note {
+  color: var(--main-ultra-light);
+  font-size: 0.78rem;
+  margin: 0 0 10px;
+}
+
+.insights-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.insights-chip {
+  border: 1px solid var(--main-ultra-light);
+  background: transparent;
+  color: var(--text);
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+
+  &.on {
+    background: var(--income);
+    border-color: var(--income);
+    color: #fff;
+  }
+}
+
+.insights-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--main-ultra-light);
+}
+
+.insights-card {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--main-ultra-light);
+
+  &.alert {
+    border-left-color: var(--expense);
+  }
+
+  &.attention {
+    border-left-color: #f9a825;
+  }
+
+  header {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  h2 {
+    font-size: 0.98rem;
+    margin: 0 0 4px;
+  }
+
+  p {
+    font-size: 0.84rem;
+    margin: 0 0 8px;
+  }
+}
+
+.insights-badge,
+.insights-tag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--secondary);
+  color: var(--main-ultra-light);
+}
+
+.sev-alert {
+  background: var(--expense);
+  color: #fff;
+}
+
+.sev-attention {
+  background: #f9a825;
+  color: #000;
+}
+
+.insights-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.insights-link {
+  background: transparent;
+  border: none;
+  color: var(--main-ultra-light);
+  font-size: 0.8rem;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-align: left;
+}
+
+.insights-block {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+
+  h2 {
+    font-size: 0.95rem;
+    margin: 0 0 4px;
+  }
+}
+
+.insights-missing {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 3px 0;
+
+  small {
+    color: var(--main-ultra-light);
+  }
+}
+
+.insights-proj {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 1px solid var(--secondary);
+  font-size: 0.82rem;
+}
+
+.insights-proj-head {
+  display: flex;
+  justify-content: space-between;
+}

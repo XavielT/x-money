@@ -17,6 +17,7 @@ import { CardAlert } from '../../../shared/domain/cards';
 import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
 import { GoalService } from '../../../shared/services/goal.service';
 import { LoanService } from '../../../shared/services/loan.service';
+import { HomeInsightsComponent } from '../../../shared/components/home-insights/home-insights';
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
@@ -24,7 +25,7 @@ import { DashboardIndicatorsComponent } from '../../../shared/components/dashboa
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent],
+  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent, HomeInsightsComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })

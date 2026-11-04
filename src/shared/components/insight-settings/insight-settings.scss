@@ -1,0 +1,50 @@
+.insight-settings {
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  h2 {
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+.insight-settings-note {
+  color: var(--main-ultra-light);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.insight-rule-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.85rem;
+
+  span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  small {
+    color: var(--main-ultra-light);
+    font-size: 0.72rem;
+  }
+}
+
+.insight-rule-thresholds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 26px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.72rem;
+    color: var(--main-ultra-light);
+  }
+}

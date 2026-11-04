@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, Injector, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
@@ -12,6 +12,7 @@ import { AuthService } from '../shared/services/auth.service';
 import { SyncService } from '../shared/services/sync.service';
 import { CreditCardService } from '../shared/services/credit-card.service';
 import { CardNoticeService } from '../shared/services/card-notice.service';
+import { StorageService } from '../shared/services/storage.service';
 import { AuthGateComponent } from '../shared/components/auth-gate/auth-gate';
 import { LinkWizardComponent } from '../shared/components/link-wizard/link-wizard';
 import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banner';
@@ -41,8 +42,14 @@ export class App {
     private recurringService: RecurringService,
     public lock: LockService,
     public auth: AuthService,
-    public sync: SyncService
+    public sync: SyncService,
+    private storage: StorageService,
+    private injector: Injector
   ) {
+    // the optional device notices for critical alerts load only when the user turned them on
+    if (Capacitor.isNativePlatform() && this.storage.get<{ smartAlerts?: boolean }>('device-prefs', {}).smartAlerts) {
+      void import('../shared/services/insight-notice.service').then((m) => this.injector.get(m.InsightNoticeService));
+    }
     if (Capacitor.isNativePlatform()) {
       // Android hardware back: navigate back inside the app, exit only from Home
       CapacitorApp.addListener('backButton', () => {

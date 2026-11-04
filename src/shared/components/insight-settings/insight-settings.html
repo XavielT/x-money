@@ -1,0 +1,23 @@
+<section class="insight-settings x-card">
+  <h2>{{ 'Smart alerts' | t }}</h2>
+  <p class="insight-settings-note">{{ 'Each alert is calculated on your device from your own data. Turn off the ones you do not want and adjust their thresholds.' | t }}</p>
+
+  <div class="insight-rule" *ngFor="let r of rules">
+    <label class="insight-rule-head">
+      <input type="checkbox" [ngModel]="enabled(r)" (ngModelChange)="toggle(r, $event)" [name]="'rule-' + r.id" />
+      <span><b>{{ r.labelKey | t }}</b><small>{{ r.descriptionKey | t }}</small></span>
+    </label>
+    <div class="insight-rule-thresholds" *ngIf="enabled(r) && r.thresholds.length">
+      <label *ngFor="let t of r.thresholds">
+        {{ t.labelKey | t }}
+        <input class="x-input" type="number" [min]="t.min" [max]="t.max" [ngModel]="value(r, t.key)" (ngModelChange)="setThreshold(r, t.key, $event)" [name]="r.id + '-' + t.key" />
+      </label>
+    </div>
+  </div>
+
+  <label class="insight-rule-head" *ngIf="notices.supported">
+    <input type="checkbox" [ngModel]="notices.enabled()" (ngModelChange)="toggleNotices($event)" name="smart-notices" />
+    <span><b>{{ 'Notify me about critical alerts' | t }}</b><small>{{ 'Only overdue payments and not enough money for the next 30 days. The notice never shows amounts.' | t }}</small></span>
+  </label>
+  <p class="insight-settings-note" *ngIf="notices.status() === 'denied'">{{ 'Notifications are blocked in the system settings.' | t }}</p>
+</section>

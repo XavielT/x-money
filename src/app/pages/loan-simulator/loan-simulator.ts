@@ -7,6 +7,8 @@ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { AccountService } from '../../../shared/services/account.service';
 import { BorrowingService } from '../../../shared/services/borrowing.service';
 import { LoanService } from '../../../shared/services/loan.service';
+import { SmartInsightService } from '../../../shared/services/smart-insight.service';
+import { ExplainSheetComponent } from '../../../shared/components/explain-sheet/explain-sheet';
 import { SettingsService } from '../../../shared/services/settings.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { addMonthsKeepingDay } from '../../../shared/domain/dates';
@@ -53,7 +55,7 @@ const ERRORS: Record<string, string> = {
 @Component({
   selector: 'app-loan-simulator',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ExplainSheetComponent],
   templateUrl: './loan-simulator.html',
   styleUrl: './loan-simulator.scss',
 })
@@ -113,6 +115,13 @@ export class LoanSimulatorComponent {
 
   quote = computed(() => quoteLoan(this.input()));
   error = computed(() => (this.quote().error ? this.translate.instant(ERRORS[this.quote().error as LoanError] ?? 'Check the data.') : ''));
+
+  // ----- sustainability of this debt (stress test of the variable income, months of reserve)
+  sustainability = computed(() => (this.quote().error ? null : this.smart.debtSustainability(this.input())));
+  explainOpen = signal(false);
+  insightText(i: Parameters<SmartInsightService['text']>[0]) {
+    return this.smart.text(i);
+  }
 
   // ----- capacity
   capacity = computed(() => (this.quote().error ? null : this.borrowing.evaluate(this.quote().totals.installment, this.f().frequency)));
@@ -308,7 +317,8 @@ export class LoanSimulatorComponent {
     public loans: LoanService,
     public borrowing: BorrowingService,
     public accounts: AccountService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    private smart: SmartInsightService
   ) {
     this.f.update((f) => ({ ...f, firstDate: addMonthsKeepingDay(this.loans.today(), 1) }));
     this.rDate = this.loans.today();

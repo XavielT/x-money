@@ -1,0 +1,33 @@
+<div class="sheet-backdrop" (click)="closed.emit()" role="presentation"></div>
+<div class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="title">
+  <header class="sheet-head">
+    <h2>{{ 'Where does it come from?' | t }}</h2>
+    <button class="sheet-close" (click)="closed.emit()" [attr.aria-label]="'Close' | t">✕</button>
+  </header>
+  <p class="sheet-text">{{ title }}</p>
+  <p class="sheet-value"><span class="sheet-tag" [class.estimate]="state === 'estimate'">{{ stateLabel() | t }}</span> <small *ngIf="period">{{ period }}</small></p>
+
+  <h3>{{ 'Formula' | t }}</h3>
+  <p class="sheet-text">{{ formula | t }}</p>
+
+  <ng-container *ngIf="evidence.length">
+    <h3>{{ 'Evidence' | t }}</h3>
+    <div class="sheet-row" *ngFor="let e of evidence">
+      <span>
+        {{ e.label | t }}
+        <small class="sheet-note" *ngIf="e.source?.period">{{ e.source?.period }}</small>
+        <small class="sheet-note" *ngIf="e.source?.txIds?.length">{{ e.source?.txIds?.length }} {{ 'movements' | t }}</small>
+      </span>
+      <strong [ngSwitch]="e.kind">
+        <ng-container *ngSwitchCase="'money'">{{ num(e) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(e) | number:'1.2-2' }}</ng-container>
+        <ng-container *ngSwitchCase="'percent'">{{ e.value | number:'1.0-1' }}%</ng-container>
+        <ng-container *ngSwitchDefault>{{ e.value }}</ng-container>
+      </strong>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="assumptions.length">
+    <h3>{{ 'Assumptions' | t }}</h3>
+    <ul class="sheet-text"><li *ngFor="let a of assumptions">{{ a | t }}</li></ul>
+  </ng-container>
+</div>
