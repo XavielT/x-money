@@ -13,6 +13,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { StorageService } from '../shared/services/storage.service';
 import { AuthService } from '../shared/services/auth.service';
 import { MigrationService } from '../shared/services/migration.service';
+import { TranslateService } from '../shared/services/translate.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -26,6 +27,8 @@ export const appConfig: ApplicationConfig = {
       await injector.get(MigrationService).run();
       // resolved only now: AuthService pulls in the data services, which read the hydrated copy
       await injector.get(AuthService).init();
+      // the Spanish texts load only for Spanish users
+      await injector.get(TranslateService).ensureLoaded();
     }),
     provideRouter(routes),
     provideServiceWorker('ngsw-worker.js', {
