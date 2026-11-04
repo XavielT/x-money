@@ -17,6 +17,8 @@ or storage; it takes plain data in and returns plain data out.
 
 **Dashboard (2.11.0):** `dashboard.ts` (desglose fijo/variable, flujo mensual, historial de ahorros, comparación de meses, dinero disponible, flujo de efectivo 30/60/90, gastos inusuales).
 
+**Business (2.12.0):** `business.ts` (costo por unidad, ventas y beneficio, inventario, pool de capital, rentabilidad mensual, inventario lento, validación).
+
 **Does not go here**
 - Signals, `StorageService`, HTTP/sync, `TranslateService`, components.
 - Formatting for display (pages and pipes do that).

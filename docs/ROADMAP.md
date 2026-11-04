@@ -11,7 +11,7 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 | 03 | Ingresos y beneficios laborales | 2.9.0 | **hecho** (02 commiteado y subido; pendiente: commit de 03 y prueba en teléfono) |
 | 04 | Gastos, categorías y presupuestos | 2.10.0 | **hecho** (03 commiteado y subido; pendiente: commit de 04 y prueba en teléfono; la migración v3 de categorías corre sola al abrir la app) |
 | 05 | Dashboard | 2.11.0 | **hecho** (04 commiteado y subido; pendiente: commit de 05 y prueba en teléfono; no hay migración de datos) |
-| 06 | Negocios e inventario | 2.12.0 | pendiente |
+| 06 | Negocios e inventario | 2.12.0 | **hecho** (05 commiteado y subido; pendiente: commit de 06 y prueba en teléfono; la migración v4 marca todo lo existente como personal al abrir la app) |
 | 07 | Ahorros y objetivos | 2.13.0 | pendiente |
 | 08 | Préstamos | 2.14.0 | pendiente |
 | 09 | Inteligencia determinística | 2.15.0 | pendiente |

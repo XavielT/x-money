@@ -19,6 +19,9 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
 | `incomeSources` | `IncomeSourceModel` (tipo, estabilidad, periodicidad, método, verificabilidad, montos esperados) | `IncomeSourceService` | **sincronizada** |
 | `benefits` | `BenefitModel` (beneficio no monetario con sus notas de uso embebidas; nunca es dinero) | `BenefitService` | **sincronizada** |
+| `businessOperations` | `BusinessOperationModel` (lote o artículo con sus ventas, gastos y reserva embebidos) | `BusinessService` | **sincronizada** |
+| `businessWithdrawals` | `BusinessWithdrawal` (ganancia pasada a uso personal; nota neutra) | `BusinessService` | **sincronizada** |
+| `contacts` | `ContactModel` (compradores y proveedores, solo referencia) | `BusinessService` | **sincronizada** |
 | `buckets` | `BudgetBucketModel` (bloques de distribución: categorías, % o monto, aporte manual por mes) | `BudgetService` | **sincronizada** |
 | `budgetMoves` | `BudgetMoveModel` (dinero movido entre bloques o categorías dentro de un mes; se puede deshacer) | `BudgetService` | **sincronizada** |
 | `statements` | `CardStatementModel` (periodos cerrados de tarjeta; id `stmt-<tarjeta>-<moneda>-<corte>`, igual en todos los dispositivos) | `CreditCardService` | **sincronizada** |
