@@ -21,6 +21,8 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `benefits` | `BenefitModel` (beneficio no monetario con sus notas de uso embebidas; nunca es dinero) | `BenefitService` | **sincronizada** |
 | `insightStates` | `InsightStateModel` (alerta descartada o pospuesta con la huella de su evidencia) | `SmartInsightService` | **sincronizada** |
 | `insightSettings` | `InsightSettings` (qué alertas están encendidas y sus umbrales) | `SmartInsightService` | **sincronizada** (doc) |
+| `textRules` | `TextRule` (palabra aprendida de una sugerencia aceptada → categoría, tipo de ingreso o familia de artículos) | `TextRuleService` | **sincronizada** |
+| `ai-prefs` / `ai-cache` | consentimiento, interruptores y respuestas en caché de la IA | `AiService` | **solo del dispositivo** |
 | `loans` | `LoanModel` (préstamo con su tabla de amortización y sus pagos; lo adeudado se deriva) | `LoanService` | **sincronizada** |
 | `loanSimulations` | `LoanSimulationModel` (simulación u oferta guardada con nombre) | `LoanService` | **sincronizada** |
 | `loanSettings` | `LoanSettings` (niveles de ingreso, descuento de prudencia, umbrales) | `LoanService` | **sincronizada** (doc) |

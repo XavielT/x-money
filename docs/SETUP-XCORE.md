@@ -101,6 +101,23 @@ sesiones. Para cerrarlas todas usa el SQL de arriba.
 **Quitar X Money de x-core por completo:** `drop schema xmoney cascade;` y `supabase functions delete xmoney-api`.
 **Auditar conflictos/ediciones:** los registros borrados quedan con `deleted_at` y su último `data` (recuperables por SQL).
 
+## IA (2.16.0): pasos para Xaviel
+
+Nada de esto lo aplica ni lo despliega Claude Code. **No pegues la key en chats, commits ni archivos del repo.**
+
+1. **Revisa el historial:** `supabase migration list` (x-core), para no chocar con otras apps. El archivo nuevo es `supabase/migrations/202611041200_xmoney_ai_usage.sql` (crea `xmoney.ai_usage` con RLS y sin permisos para `anon`/`authenticated`; no guarda contenido).
+2. **Aplica el SQL** (editor SQL o `supabase db push` tras leerlo). Luego corre `supabase/tests/xmoney_isolation.sql`: ahora también revisa `ai_usage`.
+3. **La key de Anthropic:** copia **tú** la misma que ya usan SGC y csd-app (la credencial se reutiliza, los proyectos no) y guárdala como secreto de x-core: `supabase secrets set ANTHROPIC_API_KEY=...`. Escríbela directamente en tu terminal (no desde un archivo del repo) y limpia el historial de la terminal si la dejaste ahí. Como el costo cae en la cuenta del trabajo, los topes de abajo son obligatorios.
+4. **Proveedor y modelos (secretos, no están en la app):** `supabase secrets set XMONEY_AI_PROVIDER=anthropic XMONEY_MODEL_FAST=<modelo rápido> XMONEY_MODEL_SMART=<modelo inteligente>`. Los identificadores los eliges tú mirando la documentación del proveedor. Para estimar costos, llena `lib/pricing.ts` con los precios oficiales (sin precio, el costo queda en `null` y solo se registran tokens).
+5. **Despliega la función:** `supabase functions deploy xmoney-ai --no-verify-jwt`. Usa `XMONEY_TOKEN_SECRET` y `XMONEY_ALLOWED_ORIGINS` que ya existen. Importa código de `../xmoney-api/lib`: si el despliegue se queja, mueve `tokens.ts`, `crypto.ts`, `db.ts` y `pg-db.ts` a `supabase/functions/_shared/`.
+6. **Activa la IA en tu cuenta** (por defecto está apagada) en el editor SQL, cambiando el marcador:
+   `update xmoney.accounts set ai_enabled = true where email = '<CORREO_DE_XAVIEL>';`
+   Opcional, topes propios: `update xmoney.accounts set monthly_request_cap = 300, monthly_token_cap = 400000 where email = '<CORREO_DE_XAVIEL>';` (sin esto valen 300 solicitudes y 400.000 tokens al mes).
+7. **Confirma la URL en la app:** `src/shared/config/app-config.ts` ya apunta a `…/functions/v1/xmoney-api`; la de IA se deriva sola (`…/xmoney-ai`). No va ninguna key en la app.
+8. **Prueba:** Ajustes → Inteligencia artificial → enciende el interruptor → «Probar conexión» (muestra primero lo que se enviará: nada de tus datos) → debe decir «La conexión funciona». Revisa el uso del mes en esa misma tarjeta y, si quieres, en SQL: `select feature, model, input_tokens, output_tokens, est_cost_usd, status, latency_ms, created_at from xmoney.ai_usage order by created_at desc limit 20;`
+9. **Después del prompt 11 (2.17.0) vuelve a desplegar la función**: la lista blanca creció de 1 a 31 funciones, sin secretos ni SQL nuevos: `supabase functions deploy xmoney-ai --no-verify-jwt`. Sin ese redespliegue, «Probar conexión» sigue funcionando pero las funciones de los módulos responden `bad_request` y la app muestra su texto calculado.
+10. **Para apagarla del todo:** `update xmoney.accounts set ai_enabled = false where email = '<CORREO_DE_XAVIEL>';` o `supabase functions delete xmoney-ai`.
+
 ## Respaldos: dependes de más de una copia
 Este repo no puede ver el plan de Supabase de x-core. **Compruébalo tú** (Dashboard → Database → Backups): los planes
 gratuitos no incluyen respaldos automáticos descargables. Si no los hay, tu segunda copia es el respaldo JSON de la app
