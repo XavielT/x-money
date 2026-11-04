@@ -8,6 +8,7 @@ import { BudgetService } from '../../../shared/services/budget.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { SettingsService } from '../../../shared/services/settings.service';
+import { spentInCategory } from '../../../shared/domain/stats';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 interface BudgetRow {
@@ -37,10 +38,7 @@ export class BudgetsComponent {
 
   rows = computed<BudgetRow[]>(() =>
     this.budgetService.budgets().map((budget) => {
-      const spent = this.transactionService
-        .forMonth(this.year, this.month)
-        .filter((t) => t.type === 'expense' && t.categoryId === budget.categoryId)
-        .reduce((sum, t) => sum + t.amount, 0);
+      const spent = spentInCategory(this.transactionService.forMonth(this.year, this.month), budget.categoryId);
       const ratio = budget.monthlyLimit > 0 ? spent / budget.monthlyLimit : 0;
       return {
         budget,

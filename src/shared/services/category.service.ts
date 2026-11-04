@@ -9,8 +9,8 @@ export class CategoryService {
   private _categories = signal<CategoryModel[]>([]);
   categories = this._categories.asReadonly();
 
-  expenseCategories = computed(() => this._categories().filter((c) => c.type === 'expense'));
-  incomeCategories = computed(() => this._categories().filter((c) => c.type === 'income'));
+  expenseCategories = computed(() => this._categories().filter((c) => c.type === 'expense' && !c.system));
+  incomeCategories = computed(() => this._categories().filter((c) => c.type === 'income' && !c.system));
 
   constructor(private storage: StorageService) {
     const saved = this.storage.get<CategoryModel[]>('categories', []);
@@ -27,7 +27,7 @@ export class CategoryService {
   }
 
   ofType(type: TransactionType): CategoryModel[] {
-    return this._categories().filter((c) => c.type === type);
+    return this._categories().filter((c) => c.type === type && !c.system);
   }
 
   isCustom(id: string): boolean {

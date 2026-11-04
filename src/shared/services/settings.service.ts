@@ -1,13 +1,24 @@
 import { Injectable, signal } from '@angular/core';
+import { BACKUP_KEYS, BackupCounts, ImportError, buildBackup, parseBackup } from '../data-layer/backup';
+import { AuditLogService } from './audit-log.service';
 import { StorageService } from './storage.service';
+
+// Dismissed/confirmed suggestions (so they are not offered again). Synced with the settings.
+export interface SuggestionMemory {
+  transferDismissed: string[];
+  incomeDismissed: string[];
+  incomeConfirmed: string[];
+}
 
 interface SettingsState {
   currency: string;
   taxPercent?: number; // bank transfer tax (DGII), editable because it changes
+  suggestions?: SuggestionMemory;
 }
 
-// Keys that make up a full backup snapshot
-const DATA_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings'] as const;
+const NO_SUGGESTIONS: SuggestionMemory = { transferDismissed: [], incomeDismissed: [], incomeConfirmed: [] };
+
+export type ImportResult = { ok: true; counts: BackupCounts } | { ok: false; error: ImportError };
 
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
@@ -18,15 +29,21 @@ export class SettingsService {
   private _taxPercent = signal<number>(0.2);
   taxPercent = this._taxPercent.asReadonly();
 
-  constructor(private storage: StorageService) {
-    const saved = this.storage.get<SettingsState>('settings', { currency: '$' });
+  private _suggestions = signal<SuggestionMemory>(NO_SUGGESTIONS);
+  suggestions = this._suggestions.asReadonly();
+
+  constructor(
+    private storage: StorageService,
+    private audit: AuditLogService
+  ) {
+    this.load(this.storage.get<SettingsState>('settings', { currency: '$' }));
+    this.storage.watch('settings', (v) => this.load((v as SettingsState | undefined) ?? { currency: '$' }));
+  }
+
+  private load(saved: SettingsState): void {
     this._currency.set(saved.currency);
     this._taxPercent.set(saved.taxPercent ?? 0.2);
-    this.storage.watch('settings', (v) => {
-      const next = (v as SettingsState | undefined) ?? { currency: '$' };
-      this._currency.set(next.currency);
-      this._taxPercent.set(next.taxPercent ?? 0.2);
-    });
+    this._suggestions.set({ ...NO_SUGGESTIONS, ...(saved.suggestions ?? {}) });
   }
 
   setCurrency(symbol: string): void {
@@ -40,34 +57,59 @@ export class SettingsService {
     this.persist();
   }
 
+  dismissTransferSuggestion(key: string): void {
+    this.remember({ transferDismissed: [...this._suggestions().transferDismissed, key] });
+  }
+
+  dismissIncomeSuggestion(key: string): void {
+    this.remember({ incomeDismissed: [...this._suggestions().incomeDismissed, key] });
+  }
+
+  confirmIncomeSuggestion(key: string): void {
+    this.remember({ incomeConfirmed: [...this._suggestions().incomeConfirmed, key] });
+  }
+
+  private remember(patch: Partial<SuggestionMemory>): void {
+    this._suggestions.set({ ...this._suggestions(), ...patch });
+    this.persist();
+  }
+
   private persist(): void {
     this.storage.set<SettingsState>('settings', {
       currency: this._currency(),
       taxPercent: this._taxPercent(),
+      suggestions: this._suggestions(),
     });
   }
 
-  // Full backup as a JSON string (used for the export file)
+  // Full backup as a JSON string (used for the export file). Carries the schema version.
   exportData(): string {
-    const snapshot: Record<string, unknown> = { app: 'x-money', version: 1 };
-    for (const key of DATA_KEYS) {
-      snapshot[key] = this.storage.get<unknown>(key, null);
-    }
-    return JSON.stringify(snapshot, null, 2);
+    return buildBackup((key) => this.storage.get<unknown>(key, null));
   }
 
-  // Restores a backup. Returns false if the file is not a valid X Money backup.
-  importData(json: string): boolean {
-    try {
-      const snapshot = JSON.parse(json) as Record<string, unknown>;
-      if (snapshot['app'] !== 'x-money') return false;
-      for (const key of DATA_KEYS) {
-        if (snapshot[key] != null) this.storage.set(key, snapshot[key]);
-      }
-      return true;
-    } catch {
-      return false;
+  // Validates a backup and reports what it holds, without touching anything
+  previewImport(json: string): ImportResult {
+    const parsed = parseBackup(json);
+    return parsed.ok ? { ok: true, counts: parsed.counts } : parsed;
+  }
+
+  // Restores a backup. Old backups (no schema version) go through the migrations; anything
+  // malformed is rejected before a single key is written. Keys the backup does not contain
+  // keep their current data. Goes through the data layer, so it syncs like any write.
+  importData(json: string): ImportResult {
+    const parsed = parseBackup(json);
+    if (!parsed.ok) return parsed;
+    for (const key of BACKUP_KEYS) {
+      if (parsed.data[key] !== undefined) this.storage.set(key, parsed.data[key]);
     }
+    this.audit.log({
+      type: 'import',
+      entity: 'backup',
+      entityId: 'backup',
+      after: { ...parsed.counts, fromSchemaVersion: parsed.fromVersion },
+      origin: 'import',
+    });
+    return { ok: true, counts: parsed.counts };
   }
 
   wipeData(): void {

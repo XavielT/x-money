@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TransactionModel } from '../../../shared/models/transaction.model';
 import { TransactionItem } from '../../../shared/components/transaction-item/transaction-item';
+import { isCounted } from '../../../shared/domain/stats';
+import { addMoney, subMoney } from '../../../shared/utils/money';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { SettingsService } from '../../../shared/services/settings.service';
@@ -76,8 +78,9 @@ export class TransactionsComponent {
       label: this.dayLabel(date),
       // Transfers move money between accounts: excluded from the day net
       total: items.reduce((sum, t) => {
-        if (t.type === 'income') return sum + t.amount;
-        if (t.type === 'expense') return sum - t.amount;
+        if (!isCounted(t)) return sum; // reversed pairs and adjustments are not income/expense
+        if (t.type === 'income') return addMoney(sum, t.amount);
+        if (t.type === 'expense') return subMoney(sum, t.amount);
         return sum;
       }, 0),
       items,

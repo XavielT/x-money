@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { sumMoney } from '../utils/money';
 import { TransactionService } from './transaction.service';
 import { RecurringService } from './recurring.service';
 
@@ -35,14 +36,14 @@ export class InsightsService {
   // volume become a meaningful share of the month
   antExpenses(year: number, month: number): AntExpensesInsight {
     const expenses = this.transactionService
-      .forMonth(year, month)
+      .countedForMonth(year, month)
       .filter((t) => t.type === 'expense' && this.transactionService.currencyOf(t) === 'DOP');
-    const total = expenses.reduce((sum, t) => sum + t.amount, 0);
+    const total = sumMoney(expenses.map((t) => t.amount));
     if (!total) return { count: 0, total: 0, percent: 0, threshold: 0 };
 
     const threshold = Math.max(100, total * 0.02);
     const small = expenses.filter((t) => t.amount <= threshold);
-    const smallTotal = small.reduce((sum, t) => sum + t.amount, 0);
+    const smallTotal = sumMoney(small.map((t) => t.amount));
     return {
       count: small.length,
       total: smallTotal,

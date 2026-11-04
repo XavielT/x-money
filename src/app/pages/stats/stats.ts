@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TransactionType } from '../../../shared/models/transaction.model';
 import { CategoryModel } from '../../../shared/models/category.model';
+import { totalsByCategory } from '../../../shared/domain/stats';
+import { sumMoney } from '../../../shared/utils/money';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
@@ -67,22 +69,11 @@ export class StatsComponent {
   });
 
   private periodTotals = computed(() => {
-    const totals = new Map<string, number>();
-    for (const t of this.periodTransactions()) {
-      if (this.transactionService.currencyOf(t) !== 'DOP') continue;
-      // Bank fees of every movement count as Bank fees expenses
-      if (this.type() === 'expense' && t.fee) {
-        totals.set('cat-bank-fees', (totals.get('cat-bank-fees') ?? 0) + t.fee);
-      }
-      if (t.type !== this.type() || !t.categoryId) continue;
-      totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
-    }
-    return [...totals.entries()]
-      .map(([categoryId, total]) => ({ categoryId, total }))
-      .sort((a, b) => b.total - a.total);
+    // same rules as everywhere: RD$ only, fees as Bank fees, reversed pairs and adjustments out
+    return totalsByCategory(this.periodTransactions(), this.type());
   });
 
-  grandTotal = computed(() => this.periodTotals().reduce((sum, t) => sum + t.total, 0));
+  grandTotal = computed(() => sumMoney(this.periodTotals().map((t) => t.total)));
 
   // Donut slices: circle r=15.9155 → circumference = 100, so percents map directly
   slices = computed<StatSlice[]>(() => {

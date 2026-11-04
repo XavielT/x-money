@@ -2,6 +2,8 @@ import { Injectable, signal } from '@angular/core';
 import { RecurringFrequency, RecurringModel } from '../models/recurring.model';
 import { StorageService } from './storage.service';
 import { TransactionService } from './transaction.service';
+import { AuditLogService } from './audit-log.service';
+import { AccountService } from './account.service';
 
 @Injectable({ providedIn: 'root' })
 export class RecurringService {
@@ -10,7 +12,9 @@ export class RecurringService {
 
   constructor(
     private storage: StorageService,
-    private transactionService: TransactionService
+    private transactionService: TransactionService,
+    private audit: AuditLogService,
+    private accountService: AccountService
   ) {
     this._recurring.set(this.storage.get<RecurringModel[]>('recurring', []));
     this.storage.watch('recurring', (v) => this._recurring.set((v as RecurringModel[] | undefined) ?? []));
@@ -22,23 +26,31 @@ export class RecurringService {
   processDue(): void {
     const today = this.todayIso();
     let changed = false;
+    let posted = 0;
 
     const updated = this._recurring().map((rule) => {
       if (!rule.active) return rule;
       let next = rule.nextDate;
       let guard = 0; // safety cap if the phone was off for very long
       while (next <= today && guard < 500) {
-        this.transactionService.add({
+        const result = this.transactionService.add({
           id: `rec-${rule.id}-${next}`,
           type: rule.type,
           amount: rule.amount,
           categoryId: rule.categoryId,
           accountId: rule.accountId,
           toAccountId: rule.toAccountId,
+          // rules created before 2.7.0 have no currency: a US$ account posts in US$
+          currency: rule.currency ?? (this.accountService.byId(rule.accountId)?.currency === 'USD' ? 'USD' : undefined),
           fee: rule.fee,
           date: next,
           note: rule.note,
+          origin: 'recurring',
         });
+        // the account is gone or archived (or the rule is invalid): do not post and do not
+        // advance, the occurrence waits until the rule is fixed
+        if (!result.ok) break;
+        posted++;
         next = this.advance(next, rule.frequency, this.anchorDay(rule));
         changed = true;
         guard++;
@@ -49,6 +61,9 @@ export class RecurringService {
     if (changed) {
       this._recurring.set(updated);
       this.persist();
+    }
+    if (posted > 0) {
+      this.audit.log({ type: 'recurring-post', entity: 'transaction', entityId: 'recurring', after: { posted }, origin: 'recurring' });
     }
   }
 

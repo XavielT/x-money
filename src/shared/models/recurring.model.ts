@@ -1,4 +1,4 @@
-import { TransactionKind } from './transaction.model';
+import { TransactionCurrency, TransactionKind } from './transaction.model';
 
 export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -9,6 +9,7 @@ export interface RecurringModel {
   categoryId?: string; // absent on transfers
   accountId: string;
   toAccountId?: string; // transfers only
+  currency?: TransactionCurrency; // default: the account's own currency
   fee?: number; // bank commission/tax charged with each occurrence
   note?: string;
   frequency: RecurringFrequency;

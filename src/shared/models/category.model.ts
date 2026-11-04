@@ -6,4 +6,5 @@ export interface CategoryModel {
   icon: string; // emoji
   color: string;
   type: TransactionType;
+  system?: boolean; // app-managed (e.g. reconciliation adjustment): hidden from pickers
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TransactionItem } from '../../../shared/components/transaction-item/transaction-item';
 import { BankBadge } from '../../../shared/ui/bank-badge/bank-badge';
+import { spentInCategory } from '../../../shared/domain/stats';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
@@ -45,10 +46,7 @@ export class HomeComponent {
     this.budgetService
       .budgets()
       .map((budget) => {
-        const spent = this.transactionService
-          .forMonth(this.year, this.month)
-          .filter((t) => t.type === 'expense' && t.categoryId === budget.categoryId)
-          .reduce((sum, t) => sum + t.amount, 0);
+        const spent = spentInCategory(this.transactionService.forMonth(this.year, this.month), budget.categoryId);
         const percent = budget.monthlyLimit > 0 ? Math.round((spent / budget.monthlyLimit) * 100) : 0;
         return {
           category: this.categoryService.byId(budget.categoryId),

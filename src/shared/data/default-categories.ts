@@ -22,6 +22,7 @@ export const DEFAULT_CATEGORIES_MOCK: CategoryModel[] = [
   { id: 'cat-education', name: 'Education', icon: '📚', color: '#bcaaa4', type: 'expense' },
   { id: 'cat-gifts-expense', name: 'Gifts', icon: '🎁', color: '#ef5350', type: 'expense' },
   { id: 'cat-bank-fees', name: 'Bank fees', icon: '🏛️', color: '#90a4ae', type: 'expense' },
+  { id: 'cat-recon-adjustment', name: 'Reconciliation adjustment', icon: '⚖️', color: '#9e9e9e', type: 'expense', system: true },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },

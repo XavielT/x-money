@@ -1,4 +1,4 @@
-export type AccountType = 'cash' | 'bank' | 'card' | 'savings';
+export type AccountType = 'cash' | 'bank' | 'card' | 'savings' | 'other';
 export type CardKind = 'credit' | 'debit';
 
 // Subtype of a bank account, the way banks name them
@@ -20,4 +20,7 @@ export interface AccountModel {
   currency?: AccountCurrency; // default DOP
   linkedAccountId?: string; // debit cards: the bank account money comes from
   initialBalance: number;
+  liquid?: boolean; // counts in "liquid net worth" (schema v2: set explicitly by type)
+  archived?: boolean; // hidden from selectors and totals, history kept
+  reconciledAt?: string; // ISO date of the last reconciliation
 }

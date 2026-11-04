@@ -1,7 +1,7 @@
-// Characterization tests (prompt 00 / v2.5.2): they pin what the code does
-// TODAY for each integrity case in docs/AUDITORIA-2026-11.md §2 (C1-C9).
-// Tests named "KNOWN GAP:" document a violation of docs/INTEGRIDAD.md on
-// purpose; prompts 01/02 flip them into tests of the correct behavior.
+// Characterization tests (prompt 00 / v2.5.2) for the integrity cases of
+// docs/AUDITORIA-2026-11.md §2 (C1-C9). Prompt 01 (v2.7.0) flipped the gaps it fixes into
+// tests of the correct behavior; the ones still named "KNOWN GAP:" document a violation that a
+// later prompt owns (02: cards and dual accounts, 04: budgets/stats, recurring clock).
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { BudgetsComponent } from '../../app/pages/budgets/budgets';
@@ -168,7 +168,7 @@ describe('C4 recurring catch-up (R9)', () => {
     ]);
   });
 
-  it('KNOWN GAP: a rule keeps posting to an account that no longer exists (AUDITORIA §2/C5)', () => {
+  it('a rule does not post to an account that no longer exists, and waits (fixed in 2.7.0, was a KNOWN GAP)', () => {
     const s = session({ recurring: [] }, [bank]);
     s.recurring.add({
       type: 'expense',
@@ -178,8 +178,19 @@ describe('C4 recurring catch-up (R9)', () => {
       frequency: 'monthly',
       startDate: '2026-11-01',
     });
-    expect(s.transactions.transactions()).toHaveLength(1);
-    expect(s.accounts.byId('ghost')).toBeUndefined();
+    expect(s.transactions.transactions()).toHaveLength(0);
+    expect(s.recurring.recurring()[0].nextDate).toBe('2026-11-01'); // not advanced: nothing was lost
+  });
+
+  it('a rule does not post to an archived account either', () => {
+    const s = session({ recurring: [] }, [{ ...bank, archived: true }]);
+    s.recurring.add({ type: 'expense', amount: 50, categoryId: 'cat-bills', accountId: 'bank', frequency: 'monthly', startDate: '2026-11-01' });
+    expect(s.transactions.transactions()).toHaveLength(0);
+  });
+
+  it('recurring occurrences are traced as recurring', () => {
+    const s = session({ recurring: [rule] });
+    expect(s.transactions.transactions().every((t) => t.origin === 'recurring' && t.status === 'posted')).toBe(true);
   });
 });
 
@@ -203,22 +214,34 @@ describe('C5 deleting accounts (R9)', () => {
     expect(withActivity().transactions.totalBalance()).toBe(1400);
   });
 
-  it('KNOWN GAP: deleting an account with movements changes the total balance and orphans its history (AUDITORIA §2/C5)', () => {
+  it('an account with movements cannot be deleted; an empty one can (fixed in 2.7.0, was a KNOWN GAP)', () => {
     const s = withActivity();
-    s.accounts.remove('bank');
-    expect(s.transactions.totalBalance()).toBe(400); // lost the 1000 initial, still subtracts the 100
-    expect(s.transactions.transactions()).toHaveLength(2); // orphans kept, pointing to a missing account
-    expect(s.accounts.byId('bank')).toBeUndefined();
+    expect(s.transactions.canDeleteAccount('bank')).toBe(false);
+    expect(s.transactions.canDeleteAccount('cash')).toBe(false); // destination of a transfer
+    expect(session({}, [bank, cash]).transactions.canDeleteAccount('cash')).toBe(true);
   });
 
-  it('KNOWN GAP: deleting a transfer destination leaves the total and the account list disagreeing (AUDITORIA §2/C5)', () => {
+  it('archiving keeps the history and takes the account out of the totals consistently', () => {
     const s = withActivity();
-    s.accounts.remove('cash');
-    expect(s.transactions.totalBalance()).toBe(900);
-    expect(s.transactions.accountBalance('bank')).toBe(700); // the 200 left the bank and arrived nowhere
+    s.accounts.setArchived('bank', true);
+    expect(s.transactions.transactions()).toHaveLength(2);
+    expect(s.transactions.accountBalance('bank')).toBe(700); // balance kept
+    expect(s.transactions.accountBalance('cash')).toBe(700);
+    expect(s.transactions.totalBalance()).toBe(700); // only the active account counts
+    expect(s.accounts.activeAccounts().map((a) => a.id)).toEqual(['cash']);
+    s.accounts.setArchived('bank', false);
+    expect(s.transactions.totalBalance()).toBe(1400);
+  });
+
+  it('legacy removal through the service still keeps the old total (orphan net) and reports the orphans', () => {
+    const s = withActivity();
+    s.accounts.remove('bank');
+    expect(s.transactions.totalBalance()).toBe(400); // same number as before 2.7.0
+    expect(s.transactions.orphans()).toHaveLength(2);
   });
 
   it('KNOWN GAP: deleting the bank of a linked debit card silently moves its history onto the card (AUDITORIA §2/C5)', () => {
+    // The UI no longer deletes accounts with movements, but the service still allows it.
     const debit = account({ id: 'debit', type: 'card', cardKind: 'debit', linkedAccountId: 'bank' });
     const s = session({ transactions: [transaction({ accountId: 'debit', amount: 50 })] }, [bank, debit]);
     expect(s.transactions.accountBalance('debit')).toBe(0); // counted on the bank
@@ -260,23 +283,26 @@ describe('C6 editing and deleting a transfer (R1, R9)', () => {
     expect(s.transactions.monthSummary(2026, 11).expense).toBe(300);
   });
 
-  it('KNOWN GAP: the service accepts invalid movements, only the form validates (AUDITORIA §2/C6)', () => {
+  it('the service rejects invalid movements, not only the form (fixed in 2.7.0, was a KNOWN GAP)', () => {
     const s = session();
-    s.transactions.add(
-      transaction({ type: 'transfer', accountId: 'bank', toAccountId: 'bank', amount: 10, categoryId: undefined })
-    );
-    s.transactions.add(transaction({ accountId: 'bank', amount: -50 })); // negative expense = hidden income
-    s.transactions.add(transaction({ accountId: 'bank', currency: 'USD', amount: 5 })); // USD on a DOP-only account
-    expect(s.transactions.monthSummary(2026, 11).expense).toBe(-50);
-    expect(s.transactions.accountBalance('bank', 'USD')).toBe(-5);
+    const attempts = [
+      transaction({ type: 'transfer', accountId: 'bank', toAccountId: 'bank', amount: 10, categoryId: undefined }),
+      transaction({ accountId: 'bank', amount: -50 }),
+      transaction({ accountId: 'bank', amount: 0 }),
+      transaction({ accountId: 'bank', currency: 'USD', amount: 5 }),
+      transaction({ accountId: 'ghost', amount: 5 }),
+      transaction({ accountId: 'bank', amount: 5, date: '2026-02-30' }),
+    ].map((t) => s.transactions.add(t));
+    expect(attempts.map((r) => (r.ok ? 'ok' : r.error))).toEqual(['same-account', 'amount', 'amount', 'currency', 'account', 'date']);
+    expect(s.transactions.transactions()).toEqual([]);
+    expect(s.transactions.monthSummary(2026, 11)).toEqual({ income: 0, expense: 0 });
   });
 
-  it('KNOWN GAP: one NaN amount poisons every total (AUDITORIA §2/C6)', () => {
+  it('a NaN amount is rejected and never reaches any total (fixed in 2.7.0, was a KNOWN GAP)', () => {
     const s = session();
-    s.transactions.add(transaction({ accountId: 'bank', amount: NaN }));
-    expect(Number.isNaN(s.transactions.totalBalance())).toBe(true);
-    expect(Number.isNaN(s.transactions.accountBalance('bank'))).toBe(true);
-    expect(Number.isNaN(s.transactions.monthSummary(2026, 11).expense)).toBe(true);
+    expect(s.transactions.add(transaction({ accountId: 'bank', amount: NaN }))).toEqual({ ok: false, error: 'amount' });
+    expect(s.transactions.totalBalance()).toBe(10000);
+    expect(s.transactions.accountBalance('bank')).toBe(10000);
   });
 });
 
@@ -296,20 +322,22 @@ describe('C7 importing backups (R9)', () => {
   it('rejects invalid JSON, other apps and null without touching the data', () => {
     const s = session();
     const before = [...s.storage.data.entries()];
-    expect(s.settings.importData('{not json')).toBe(false);
-    expect(s.settings.importData('null')).toBe(false);
-    expect(s.settings.importData(JSON.stringify({ app: 'other' }))).toBe(false);
+    expect(s.settings.importData('{not json').ok).toBe(false);
+    expect(s.settings.importData('null').ok).toBe(false);
+    expect(s.settings.importData(JSON.stringify({ app: 'other' })).ok).toBe(false);
     expect([...s.storage.data.entries()]).toEqual(before);
   });
 
-  it('an old backup (no account type/currency/cardKind, no recurring) is migrated on load', () => {
+  it('an old backup (no schema version, no account type/currency/cardKind, no recurring) is migrated on import', () => {
     const s = session();
-    expect(s.settings.importData(JSON.stringify(oldBackup))).toBe(true);
+    const result = s.settings.importData(JSON.stringify(oldBackup));
+    expect(result).toEqual({ ok: true, counts: expect.objectContaining({ accounts: 2, transactions: 1 }) });
     const next = boot(s.storage);
-    expect(next.accounts.accounts().map((a) => [a.type, a.cardKind, a.currency])).toEqual([
-      ['cash', undefined, 'DOP'],
-      ['card', 'debit', 'DOP'],
+    expect(next.accounts.accounts().map((a) => [a.type, a.cardKind, a.currency, a.liquid])).toEqual([
+      ['cash', undefined, 'DOP', true],
+      ['card', 'debit', 'DOP', false],
     ]);
+    expect(next.transactions.transactions()[0]).toMatchObject({ origin: 'manual', status: 'posted' });
     expect(next.transactions.accountBalance('a1')).toBe(30);
     expect(next.recurring.recurring()).toEqual([]);
   });
@@ -317,9 +345,10 @@ describe('C7 importing backups (R9)', () => {
   it('export then import on a wiped device restores the same data', () => {
     const s = session({ transactions: [transaction({ accountId: 'bank', amount: 75 })] });
     const backup = s.settings.exportData();
+    expect(JSON.parse(backup).schemaVersion).toBe(2);
     s.settings.wipeData();
     expect(boot(s.storage).transactions.transactions()).toEqual([]);
-    expect(boot(s.storage).settings.importData(backup)).toBe(true);
+    expect(boot(s.storage).settings.importData(backup).ok).toBe(true);
     const restored = boot(s.storage);
     expect(restored.transactions.transactions()).toHaveLength(1);
     expect(restored.transactions.accountBalance('bank')).toBe(9925);
@@ -332,17 +361,33 @@ describe('C7 importing backups (R9)', () => {
     expect(exported).not.toHaveProperty('lang');
   });
 
-  it('KNOWN GAP: a backup with the wrong shape is accepted and breaks the app on the next load (AUDITORIA §2/C7)', () => {
-    const s = session();
-    expect(s.settings.importData(JSON.stringify({ app: 'x-money', transactions: [{ id: 'x' }] }))).toBe(true);
-    const next = boot(s.storage);
-    expect(() => next.transactions.forMonth(2026, 11)).toThrow(); // entries without date
+  it('a backup with the wrong shape is rejected before anything is written (fixed in 2.7.0, was a KNOWN GAP)', () => {
+    const s = session({ transactions: [transaction({ accountId: 'bank', amount: 1 })] });
+    const before = [...s.storage.data.entries()];
+    const result = s.settings.importData(JSON.stringify({ app: 'x-money', accounts: [bank], transactions: [{ id: 'x' }] }));
+    expect(result).toEqual({ ok: false, error: expect.objectContaining({ code: 'bad-shape', key: 'transactions', index: 0 }) });
+    expect([...s.storage.data.entries()]).toEqual(before); // not even the valid accounts were written
+    expect(s.settings.importData(JSON.stringify({ app: 'x-money', transactions: [{ ...transaction({}), amount: 'ten' }] })).ok).toBe(false);
   });
 
-  it('KNOWN GAP: the version is ignored and the import is a per-key merge, not a replacement (AUDITORIA §2/C7)', () => {
+  it('a backup from a newer schema is refused (fixed in 2.7.0, was a KNOWN GAP: the version was ignored)', () => {
+    const s = session();
+    expect(s.settings.importData(JSON.stringify({ app: 'x-money', schemaVersion: 99, accounts: [bank] }))).toEqual({
+      ok: false,
+      error: { code: 'newer-version', version: 99 },
+    });
+  });
+
+  it('collections missing from the backup keep the current data (decision, no longer a gap: nothing is lost)', () => {
     const s = session({ budgets: [{ id: 'b', categoryId: 'cat-food', monthlyLimit: 10 }] });
-    expect(s.settings.importData(JSON.stringify({ app: 'x-money', version: 99, accounts: [bank] }))).toBe(true);
-    expect(s.storage.get<unknown[]>('budgets', [])).toHaveLength(1); // old budgets survive next to restored accounts
+    expect(s.settings.importData(JSON.stringify({ app: 'x-money', accounts: [bank] })).ok).toBe(true);
+    expect(s.storage.get<unknown[]>('budgets', [])).toHaveLength(1);
+  });
+
+  it('importing is recorded in the audit log', () => {
+    const s = session();
+    s.settings.importData(JSON.stringify(oldBackup));
+    expect(s.storage.get<{ type: string }[]>('audit', []).map((e) => e.type)).toContain('import');
   });
 });
 
@@ -374,19 +419,21 @@ describe('C8 USD and DOP (no mixing)', () => {
 });
 
 describe('C9 float arithmetic (R9)', () => {
-  it('KNOWN GAP: sums leave ghost cents (AUDITORIA §2/C9)', () => {
+  it('sums are rounded: no ghost cents (fixed in 2.7.0, was a KNOWN GAP)', () => {
     const s = session({}, [account({ id: 'a', initialBalance: 0 })]);
     s.transactions.add(transaction({ type: 'income', accountId: 'a', amount: 0.1, categoryId: 'cat-salary' }));
     s.transactions.add(transaction({ type: 'income', accountId: 'a', amount: 0.2, categoryId: 'cat-salary' }));
-    expect(s.transactions.monthSummary(2026, 11).income).toBe(0.30000000000000004);
-    expect(s.transactions.accountBalance('a')).toBe(0.30000000000000004);
-    expect(s.transactions.totalBalance()).toBe(0.30000000000000004);
+    expect(s.transactions.monthSummary(2026, 11).income).toBe(0.3);
+    expect(s.transactions.accountBalance('a')).toBe(0.3);
+    expect(s.transactions.totalBalance()).toBe(0.3);
   });
 
-  it('KNOWN GAP: a budget of exactly 0.30 is flagged over after spending 0.10 + 0.20 (AUDITORIA §2/C9)', () => {
-    const s = session({ budgets: [{ id: 'b', categoryId: 'cat-food', monthlyLimit: 0.3 }] }, [account({ id: 'a' })]);
+  it('budget spending is rounded: 0.10 + 0.20 is exactly 0.30 (fixed in 2.7.0, was a KNOWN GAP)', () => {
+    const s = session({ budgets: [{ id: 'b', categoryId: 'cat-food', monthlyLimit: 0.31 }] }, [account({ id: 'a' })]);
     s.transactions.add(transaction({ accountId: 'a', amount: 0.1, categoryId: 'cat-food' }));
     s.transactions.add(transaction({ accountId: 'a', amount: 0.2, categoryId: 'cat-food' }));
-    expect(TestBed.createComponent(BudgetsComponent).componentInstance.rows()[0].status).toBe('over');
+    const row = TestBed.createComponent(BudgetsComponent).componentInstance.rows()[0];
+    expect(row.spent).toBe(0.3);
+    expect(row.status).toBe('warn'); // 97%, not over
   });
 });

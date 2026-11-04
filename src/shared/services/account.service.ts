@@ -1,13 +1,16 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
 import { AccountModel, AccountType } from '../models/account.model';
 import { DEFAULT_ACCOUNTS_MOCK } from '../data/default-accounts';
 import { StorageService } from './storage.service';
+import { AuditLogService } from './audit-log.service';
+import { defaultLiquid } from '../domain/networth';
 
 const TYPE_ICONS: Record<AccountType, string> = {
   cash: '💵',
   bank: '🏦',
   card: '💳',
   savings: '💰',
+  other: '🏷️',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -15,7 +18,13 @@ export class AccountService {
   private _accounts = signal<AccountModel[]>([]);
   accounts = this._accounts.asReadonly();
 
-  constructor(private storage: StorageService) {
+  // Not archived: what selectors and totals show
+  activeAccounts = computed(() => this._accounts().filter((a) => !a.archived));
+
+  constructor(
+    private storage: StorageService,
+    private audit: AuditLogService
+  ) {
     const saved = this.storage.get<AccountModel[]>('accounts', []);
     if (saved.length) {
       // Migrations: pre-v2.1 accounts have no type (infer from icon);
@@ -34,6 +43,10 @@ export class AccountService {
         if (!account.currency) {
           migrated = true;
           account = { ...account, currency: 'DOP' };
+        }
+        if (account.liquid === undefined) {
+          migrated = true;
+          account = { ...account, liquid: defaultLiquid(account.type) };
         }
         return account;
       });
@@ -61,26 +74,49 @@ export class AccountService {
 
   // Accounts a debit card can link to
   linkableAccounts(excludeId?: string): AccountModel[] {
-    return this._accounts().filter((a) => a.type === 'bank' && a.id !== excludeId);
+    return this._accounts().filter((a) => a.type === 'bank' && !a.archived && a.id !== excludeId);
   }
 
   iconForType(type: AccountType): string {
     return TYPE_ICONS[type];
   }
 
-  add(data: Omit<AccountModel, 'id' | 'icon'>): void {
+  add(data: Omit<AccountModel, 'id' | 'icon'> & { icon?: string }): void {
     const account: AccountModel = {
       ...data,
       id: crypto.randomUUID(),
-      icon: TYPE_ICONS[data.type],
+      // "other" accounts carry their own emoji; the rest get the icon of their type
+      icon: data.type === 'other' ? data.icon?.trim() || TYPE_ICONS.other : TYPE_ICONS[data.type],
+      liquid: data.liquid ?? defaultLiquid(data.type),
     };
     this._accounts.update((list) => [...list, account]);
     this.persist();
   }
 
   update(account: AccountModel): void {
-    const withIcon = { ...account, icon: TYPE_ICONS[account.type] ?? account.icon };
+    const withIcon = { ...account, icon: account.type === 'other' ? account.icon || TYPE_ICONS.other : TYPE_ICONS[account.type] ?? account.icon };
     this._accounts.update((list) => list.map((a) => (a.id === account.id ? withIcon : a)));
+    this.persist();
+  }
+
+  // Accounts with movements are archived instead of deleted: hidden from selectors and
+  // totals, history kept. Use TransactionService.canDeleteAccount before remove().
+  setArchived(id: string, archived: boolean): void {
+    const account = this.byId(id);
+    if (!account) return;
+    this._accounts.update((list) => list.map((a) => (a.id === id ? { ...a, archived: archived || undefined } : a)));
+    this.persist();
+    this.audit.log({
+      type: archived ? 'account-archive' : 'account-unarchive',
+      entity: 'account',
+      entityId: id,
+      accountId: id,
+      after: { name: account.name },
+    });
+  }
+
+  setReconciledAt(id: string, date: string): void {
+    this._accounts.update((list) => list.map((a) => (a.id === id ? { ...a, reconciledAt: date } : a)));
     this.persist();
   }
 
