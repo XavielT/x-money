@@ -1,6 +1,7 @@
 // The WHITELIST of AI features. The client names a feature; the instructions, the model tier, the
 // token ceiling and the input check all live here, so the function is not an open proxy: nobody
 // can send free system instructions. Prompt 11 adds the module features next to `ping`.
+import { CAPTURE_FEATURES } from './features-capture.ts';
 import { MODULE_FEATURES } from './features-modules.ts';
 
 export type Tier = 'fast' | 'smart';
@@ -16,6 +17,13 @@ export interface FeatureDef {
   checkInput(input: unknown): string | null;
   // the user turn sent to the model, built from the already-checked input
   toPrompt(input: unknown): string;
+  // smart capture: the document travelling with the turn (null = text only)
+  toAttachment?(input: unknown): { kind: 'image' | 'pdf'; mediaType: string; data: string } | null;
+  // the answer must have an agreed shape: returns the normalized text, or null (one retry, then a clear failure)
+  finalize?(text: string): string | null;
+  // caps on top of the monthly ones: calls per day and, once prices are known, estimated cost per month
+  dailyCap?: number;
+  monthlyCostCapUsd?: number;
 }
 
 // Every feature starts from these rules: the figures are written by the app, never by the model
@@ -37,7 +45,7 @@ const ping: FeatureDef = {
   toPrompt: () => 'ping',
 };
 
-export const FEATURES: Readonly<Record<string, FeatureDef>> = { ping, ...MODULE_FEATURES };
+export const FEATURES: Readonly<Record<string, FeatureDef>> = { ping, ...MODULE_FEATURES, ...CAPTURE_FEATURES };
 
 export const featureOf = (id: unknown, features: Readonly<Record<string, FeatureDef>> = FEATURES): FeatureDef | null =>
   typeof id === 'string' && Object.prototype.hasOwnProperty.call(features, id) ? features[id] : null;

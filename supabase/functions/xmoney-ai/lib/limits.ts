@@ -3,7 +3,9 @@ export const DEFAULT_MONTHLY_REQUESTS = 300;
 export const DEFAULT_MONTHLY_TOKENS = 400_000;
 export const RATE_PER_MINUTE = 10;
 export const RATE_WINDOW_MS = 60_000;
-export const MAX_BODY_BYTES = 32 * 1024;
+// Smart capture sends a document: the body may be large, but every feature still caps its OWN input
+// (maxInputChars), so only capture_parse can really use this room.
+export const MAX_BODY_BYTES = 8 * 1024 * 1024;
 export const REQUEST_TIMEOUT_MS = 20_000;
 export const MAX_REQUEST_ID_CHARS = 64;
 
@@ -24,6 +26,9 @@ export function monthStartUtc(nowMs: number): number {
   const d = new Date(nowMs);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
 }
+
+// First instant of the day in UTC (the window of the daily capture cap)
+export const dayStartUtc = (nowMs: number): number => Math.floor(nowMs / 86_400_000) * 86_400_000;
 
 export const monthKey = (nowMs: number): string => new Date(monthStartUtc(nowMs)).toISOString().slice(0, 7);
 

@@ -36,6 +36,7 @@ const ai =
         provider: providerFor(Deno.env.get('XMONEY_AI_PROVIDER') ?? 'anthropic'),
         models: { fast: Deno.env.get('XMONEY_MODEL_FAST') || null, smart: Deno.env.get('XMONEY_MODEL_SMART') || null },
         now: () => Date.now(),
+        costCapUsd: Number(Deno.env.get('XMONEY_CAPTURE_COST_CAP_USD')) || undefined, // optional override of the monthly capture cost cap
       })
     : null;
 

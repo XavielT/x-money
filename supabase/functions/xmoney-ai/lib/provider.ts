@@ -6,6 +6,8 @@ export interface ProviderRequest {
   user: string;
   maxTokens: number;
   signal: AbortSignal;
+  // a document of the user turn (smart capture): base64 of an image or a PDF, already checked by its bytes
+  attachment?: { kind: 'image' | 'pdf'; mediaType: string; data: string };
 }
 
 export interface ProviderResponse {

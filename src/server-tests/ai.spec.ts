@@ -58,9 +58,9 @@ describe('limits and costs (pure)', () => {
 });
 
 describe('the feature whitelist', () => {
-  it('only registered features exist (ping and the 30 of the modules); ping carries nothing from the user; inherited names are not features', () => {
+  it('only registered features exist (ping, the 30 of the modules and capture_parse); ping carries nothing from the user; inherited names are not features', () => {
     expect(Object.keys(FEATURES)[0]).toBe('ping');
-    expect(Object.keys(FEATURES)).toHaveLength(31);
+    expect(Object.keys(FEATURES)).toHaveLength(32);
     expect(featureOf('ping')).toBeTruthy();
     for (const bad of ['unknown', 'constructor', '__proto__', 'toString', '', 5, null, undefined]) expect(featureOf(bad)).toBeNull();
     const ping = FEATURES['ping'];

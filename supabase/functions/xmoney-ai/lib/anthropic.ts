@@ -5,6 +5,14 @@ import { ProviderError, type Provider, type ProviderRequest, type ProviderRespon
 const ENDPOINT = 'https://api.anthropic.com/v1/messages';
 const API_VERSION = '2023-06-01';
 
+// With an attachment the user turn is a list of blocks: the document first, then the text of the turn
+function userContent(req: ProviderRequest): string | unknown[] {
+  const a = req.attachment;
+  if (!a) return req.user;
+  const block = a.kind === 'pdf' ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.data } } : { type: 'image', source: { type: 'base64', media_type: a.mediaType, data: a.data } };
+  return [block, { type: 'text', text: req.user }];
+}
+
 export function createAnthropicProvider(apiKey: string, fetchFn: typeof fetch = (...a) => fetch(...a)): Provider {
   return {
     name: 'anthropic',
@@ -14,7 +22,7 @@ export function createAnthropicProvider(apiKey: string, fetchFn: typeof fetch = 
         res = await fetchFn(ENDPOINT, {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': API_VERSION },
-          body: JSON.stringify({ model: req.model, max_tokens: req.maxTokens, system: req.system, messages: [{ role: 'user', content: req.user }] }),
+          body: JSON.stringify({ model: req.model, max_tokens: req.maxTokens, system: req.system, messages: [{ role: 'user', content: userContent(req) }] }),
           signal: req.signal,
         });
       } catch (error) {

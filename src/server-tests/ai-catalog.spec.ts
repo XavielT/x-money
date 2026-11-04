@@ -21,7 +21,7 @@ const SAMPLES: Record<string, unknown> = {
 
 describe('the catalog of the app and the whitelist of the server agree', () => {
   it('every function of the app exists on the server, and the server has nothing the app does not know', () => {
-    const server = Object.keys(FEATURES).filter((id) => id !== 'ping').sort();
+    const server = Object.keys(FEATURES).filter((id) => id !== 'ping' && id !== 'capture_parse').sort(); // capture_parse: its own switch, see capture.spec.ts
     const app = AI_CATALOG.map((f) => f.id).sort();
     expect(app).toEqual(server);
     expect(new Set(app).size).toBe(app.length);
@@ -36,8 +36,8 @@ describe('the catalog of the app and the whitelist of the server agree', () => {
         expect(COMMON_RULES[locale]).toBeTruthy();
       }
       expect(f.maxOutputTokens).toBeGreaterThan(0);
-      expect(f.maxOutputTokens).toBeLessThanOrEqual(1000);
-      expect(f.maxInputChars).toBeLessThanOrEqual(6000);
+      expect(f.maxOutputTokens).toBeLessThanOrEqual(id === 'capture_parse' ? 2000 : 1000);
+      expect(f.maxInputChars).toBeLessThanOrEqual(id === 'capture_parse' ? 7_200_000 : 6000);
     }
     expect(new Set(Object.keys(FEATURES).map((id) => featureOf(id)!.instructions('en'))).size).toBe(Object.keys(FEATURES).length); // no two share the same text
   });
@@ -103,7 +103,7 @@ describe('input shapes: an accepted sample, and nothing free-form gets in', () =
     });
     const run = (feature: string, input: unknown, requestId: string) => ai.handle({ action: 'run', body: { feature, input, locale: 'en', requestId }, authorization: 'Bearer x' });
     let n = 0;
-    for (const id of Object.keys(FEATURES).filter((i) => i !== 'ping')) {
+    for (const id of Object.keys(FEATURES).filter((i) => i !== 'ping' && i !== 'capture_parse')) {
       n++;
       // rate limit is per minute: move the clock by using a fresh handler window through requestId only is not enough, so spread them
       const sample = NARRATE_FEATURES.some(([x]) => x === id) ? narration : SAMPLES[id];

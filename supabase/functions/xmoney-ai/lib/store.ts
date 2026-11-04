@@ -22,6 +22,9 @@ export interface AiStore {
   // requests and tokens used since an instant (every logged attempt counts as a request)
   usageSince(accountId: string, sinceMs: number): Promise<{ requests: number; tokens: number }>;
   record(row: Omit<UsageRow, 'createdAt'>, nowMs: number): Promise<void>;
+  // calls of ONE feature since an instant (the daily capture cap) and the estimated cost since an instant
+  featureCountSince(accountId: string, feature: string, sinceMs: number): Promise<number>;
+  costSince(accountId: string, sinceMs: number): Promise<number>;
   // fixed window counter per key (per minute rate limit)
   hit(key: string, nowMs: number, windowMs: number): Promise<{ count: number }>;
 }
@@ -37,6 +40,14 @@ export class MemoryAiStore implements AiStore {
 
   async record(row: Omit<UsageRow, 'createdAt'>, nowMs: number) {
     this.rows.push({ ...row, createdAt: nowMs });
+  }
+
+  async featureCountSince(accountId: string, feature: string, sinceMs: number) {
+    return this.rows.filter((r) => r.accountId === accountId && r.feature === feature && r.createdAt >= sinceMs).length;
+  }
+
+  async costSince(accountId: string, sinceMs: number) {
+    return this.rows.filter((r) => r.accountId === accountId && r.createdAt >= sinceMs).reduce((s, r) => s + (r.estCostUsd ?? 0), 0);
   }
 
   async hit(key: string, nowMs: number, windowMs: number) {
@@ -72,6 +83,22 @@ export class PgAiStore implements AiStore {
        values ($1::uuid, $2, $3, $4::int, $5::int, $6::numeric, $7, $8::int)`,
       [row.accountId, row.feature, row.model, row.inputTokens, row.outputTokens, row.estCostUsd, row.status, row.latencyMs]
     );
+  }
+
+  async featureCountSince(accountId: string, feature: string, sinceMs: number) {
+    const rows = await this.exec(
+      `select count(*)::int as n from xmoney.ai_usage where account_id = $1::uuid and feature = $2 and created_at >= to_timestamp($3::float8 / 1000.0)`,
+      [accountId, feature, sinceMs]
+    );
+    return Number(rows[0]?.['n'] ?? 0);
+  }
+
+  async costSince(accountId: string, sinceMs: number) {
+    const rows = await this.exec(
+      `select coalesce(sum(est_cost_usd), 0)::float8 as cost from xmoney.ai_usage where account_id = $1::uuid and created_at >= to_timestamp($2::float8 / 1000.0)`,
+      [accountId, sinceMs]
+    );
+    return Number(rows[0]?.['cost'] ?? 0);
   }
 
   async hit(key: string, nowMs: number, windowMs: number) {
