@@ -1,0 +1,137 @@
+<div class="x-page analysis">
+  <header class="an-header">
+    <button class="an-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Analysis' | t }}</h1>
+  </header>
+
+  <div class="an-tabs">
+    <button *ngFor="let t of tabs" [class.active]="tab() === t.key" (click)="tab.set(t.key)">{{ t.label | t }}</button>
+  </div>
+
+  <!-- ===== Evolution ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'evolution'">
+    <h2>{{ 'Income and expenses, last 12 months' | t }}</h2>
+    <svg class="an-bars" viewBox="0 0 244 88" role="img" [attr.aria-label]="'Income and expenses by month' | t">
+      <g *ngFor="let b of bars()">
+        <rect [attr.x]="b.x" [attr.y]="76 - b.incomeH" width="8" [attr.height]="b.incomeH" rx="1.5" fill="var(--income)" [attr.opacity]="b.partial ? 0.5 : 1"></rect>
+        <rect [attr.x]="b.x + 9" [attr.y]="76 - b.expenseH" width="8" [attr.height]="b.expenseH" rx="1.5" fill="var(--expense)" [attr.opacity]="b.partial ? 0.5 : 1"></rect>
+        <text [attr.x]="b.x + 8" y="86" text-anchor="middle" font-size="5.5" fill="currentColor">{{ b.label }}</text>
+      </g>
+    </svg>
+    <div class="an-legend"><span class="inc">■ {{ 'Income' | t }}</span><span class="exp">■ {{ 'Expenses' | t }}</span></div>
+    <small class="an-hint">{{ 'The lighter bars are the running month. Transfers and card payments are not income or expenses.' | t }}</small>
+    <table class="an-table">
+      <tr *ngFor="let b of bars().slice().reverse().slice(0, 6)">
+        <td>{{ b.label }}</td><td class="inc">{{ b.income | number:'1.0-0' }}</td><td class="exp">{{ b.expense | number:'1.0-0' }}</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ===== Categories ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'categories'">
+    <h2>{{ 'Spending by category' | t }}</h2>
+    <select class="x-input" [ngModel]="monthCat()" (ngModelChange)="monthCat.set($event)" name="monthCat"><option *ngFor="let m of months()" [value]="m">{{ m }}</option></select>
+    <p class="an-hint" *ngIf="!share().length">{{ 'No expenses in this month.' | t }}</p>
+    <svg *ngIf="share().length" class="an-donut" viewBox="0 0 36 36" role="img" [attr.aria-label]="'Spending by category' | t">
+      <circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--secondary)" stroke-width="5"></circle>
+      <circle *ngFor="let d of donut()" cx="18" cy="18" r="15.9155" fill="none" stroke-width="5" [attr.stroke]="d.category?.color || '#78909c'" [attr.stroke-dasharray]="d.dash" [attr.stroke-dashoffset]="d.offset"></circle>
+    </svg>
+    <div class="an-row" *ngFor="let s of share()">
+      <span><span class="an-dot" [style.background]="s.category?.color || '#78909c'"></span> {{ s.category?.name || categoryName(s.categoryId) }}</span>
+      <span>{{ settings.currency() }}{{ s.total | number:'1.0-0' }} · {{ s.percent | number:'1.0-1' }}%</span>
+    </div>
+  </section>
+
+  <!-- ===== Income sources ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'sources'">
+    <h2>{{ 'Most important income sources' | t }} <small class="an-tag">{{ 'Last 12 months' | t }}</small></h2>
+    <p class="an-hint" *ngIf="!topSources().length">{{ 'No income is linked to a source yet. Create your sources in Income and classify your income.' | t }}</p>
+    <div class="an-source" *ngFor="let s of topSources()">
+      <div class="an-row"><strong>{{ s.source.icon }} {{ s.source.name }}</strong><span>{{ settings.currency() }}{{ s.total | number:'1.0-0' }} · {{ s.percent | number:'1.0-1' }}%</span></div>
+      <div class="an-bar"><div class="an-bar-fill" [style.width.%]="s.percent" [style.background]="s.source.color"></div></div>
+      <small class="an-hint">
+        {{ 'Declared' | t }}: {{ (s.source.stability === 'recurring' ? 'Recurring' : s.source.stability === 'variable' ? 'Variable' : 'Occasional') | t }} ·
+        <ng-container *ngIf="s.stability.calculated === 'insufficient'">{{ 'Not enough history' | t }}</ng-container>
+        <ng-container *ngIf="s.stability.calculated !== 'insufficient'">{{ 'Calculated' | t }}: {{ (s.stability.calculated === 'stable' ? 'Stable' : 'Variable') | t }} ({{ s.stability.variationPercent }}%)</ng-container>
+      </small>
+    </div>
+  </section>
+
+  <!-- ===== Savings ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'savings'">
+    <h2>{{ 'Savings evolution' | t }}</h2>
+    <p class="an-hint" *ngIf="!savings().length">{{ 'You have no savings account yet. Add one in Accounts to see its history.' | t }}</p>
+    <ng-container *ngIf="savings().length">
+      <svg class="an-line" viewBox="0 0 100 40" preserveAspectRatio="none" role="img" [attr.aria-label]="'Savings evolution' | t"><polyline [attr.points]="savingsLine()" fill="none" stroke="var(--Hub)" stroke-width="1.5" vector-effect="non-scaling-stroke"></polyline></svg>
+      <div class="an-row" *ngFor="let p of savings().slice().reverse().slice(0, 6)"><span>{{ p.month }}</span><strong>{{ settings.currency() }}{{ p.total | number:'1.0-0' }}</strong></div>
+      <small class="an-hint">{{ 'Rebuilt from your movements: the balance of your savings accounts at the end of each month.' | t }}</small>
+    </ng-container>
+  </section>
+
+  <!-- ===== Compare ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'compare'">
+    <h2>{{ 'Compare two months' | t }}</h2>
+    <div class="an-pair">
+      <select class="x-input" [ngModel]="monthA()" (ngModelChange)="monthA.set($event)" name="cmpA"><option *ngFor="let m of months()" [value]="m">{{ m }}</option></select>
+      <select class="x-input" [ngModel]="monthB()" (ngModelChange)="monthB.set($event)" name="cmpB"><option *ngFor="let m of months()" [value]="m">{{ m }}</option></select>
+    </div>
+    <table class="an-table">
+      <tr><th></th><th>{{ monthA() }}</th><th>{{ monthB() }}</th><th>Δ</th></tr>
+      <tr *ngFor="let r of rows()">
+        <td>{{ rowLabel(r.id) | t }}</td>
+        <td>{{ r.a | number:'1.0-0' }}</td>
+        <td>{{ r.b | number:'1.0-0' }}</td>
+        <td [class.inc]="r.diff > 0" [class.exp]="r.diff < 0">{{ r.diff > 0 ? '+' : '' }}{{ r.diff | number:'1.0-0' }}<small *ngIf="r.percent !== null"> ({{ r.percent > 0 ? '+' : '' }}{{ r.percent | number:'1.0-1' }}%)</small></td>
+      </tr>
+    </table>
+    <small class="an-hint">{{ 'No percentage is shown when the first month is zero. A running month is partial.' | t }}</small>
+  </section>
+
+  <!-- ===== Cash flow ===== -->
+  <ng-container *ngIf="tab() === 'cashflow'">
+    <section class="x-card an-card" *ngIf="cashflow() as c">
+      <h2>{{ 'Cash flow projection' | t }} <small class="an-tag warn">{{ 'Estimate' | t }}</small></h2>
+      <svg class="an-line tall" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" [attr.aria-label]="'Cash flow projection' | t">
+        <line x1="0" x2="100" [attr.y1]="flowLines().zero" [attr.y2]="flowLines().zero" stroke="var(--expense)" stroke-width="0.6" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"></line>
+        <polyline [attr.points]="flowLines().high" fill="none" stroke="var(--income)" stroke-width="1" opacity="0.6" vector-effect="non-scaling-stroke"></polyline>
+        <polyline [attr.points]="flowLines().low" fill="none" stroke="var(--expense)" stroke-width="1" opacity="0.6" vector-effect="non-scaling-stroke"></polyline>
+        <polyline [attr.points]="flowLines().mid" fill="none" stroke="var(--Hub)" stroke-width="1.8" vector-effect="non-scaling-stroke"></polyline>
+      </svg>
+      <div class="an-legend"><span>— {{ 'Expected' | t }}</span><span class="inc">— {{ 'Best case' | t }}</span><span class="exp">— {{ 'Worst case' | t }}</span></div>
+
+      <table class="an-table">
+        <tr><th>{{ 'In' | t }}</th><th>{{ 'Worst' | t }}</th><th>{{ 'Expected' | t }}</th><th>{{ 'Best' | t }}</th></tr>
+        <tr *ngFor="let s of c.summaries"><td>{{ s.days }} {{ 'days' | t }}</td><td class="exp">{{ s.low | number:'1.0-0' }}</td><td>{{ s.mid | number:'1.0-0' }}</td><td class="inc">{{ s.high | number:'1.0-0' }}</td></tr>
+      </table>
+
+      <p class="an-warn" *ngIf="c.firstBelowZero.mid">⚠️ {{ 'The expected balance falls below zero on' | t }} {{ c.firstBelowZero.mid }}.</p>
+      <p class="an-warn" *ngIf="!c.firstBelowZero.mid && c.firstBelowZero.worst">⚠️ {{ 'In the worst case the balance falls below zero on' | t }} {{ c.firstBelowZero.worst }}.</p>
+      <p class="an-warn" *ngIf="c.firstBelowCushion.mid">⚠️ {{ 'The expected balance falls below your cushion on' | t }} {{ c.firstBelowCushion.mid }}.</p>
+      <p class="an-ok" *ngIf="!c.firstBelowZero.worst && !c.firstBelowCushion.mid">✓ {{ 'The balance does not fall below zero in the next 90 days, even in the worst case.' | t }}</p>
+
+      <label class="an-check"><input type="checkbox" [ngModel]="settings.dashboard().includeVariableIncome" (ngModelChange)="settings.setDashboard({ includeVariableIncome: $event })" name="incVar" /> {{ 'Include the average of variable income' | t }}</label>
+      <label class="an-field">{{ 'Cushion: warn below this balance (0 = off)' | t }}
+        <input class="x-input" type="number" inputmode="decimal" min="0" [ngModel]="settings.dashboard().cushion" (ngModelChange)="setCushion($event)" name="cushion" />
+      </label>
+
+      <h3>{{ 'Assumptions' | t }}</h3>
+      <ul class="an-list"><li *ngFor="let a of c.assumptions">{{ a | t }}</li></ul>
+    </section>
+  </ng-container>
+
+  <!-- ===== Unusual ===== -->
+  <section class="x-card an-card" *ngIf="tab() === 'unusual'">
+    <h2>{{ 'Unusual expenses' | t }}</h2>
+    <p class="an-warn" *ngIf="!unusual().sufficient">{{ 'Not enough history' | t }} ({{ unusual().monthsWithData }} {{ 'months, at least 3 needed' | t }}).</p>
+    <ng-container *ngIf="unusual().sufficient">
+      <p class="an-hint" *ngIf="!unusual().flags.length">{{ 'Nothing unusual this month.' | t }}</p>
+      <div class="an-flag" *ngFor="let f of unusual().flags">
+        <div class="an-row"><strong>{{ categoryName(f.categoryId) }}</strong><span>{{ settings.currency() }}{{ f.amount | number:'1.0-0' }} · {{ f.date }}</span></div>
+        <small class="an-hint">{{ why(f) }}</small>
+      </div>
+    </ng-container>
+    <label class="an-field">{{ 'Never flag below' | t }} ({{ settings.currency() }})
+      <input class="x-input" type="number" inputmode="decimal" min="0" [ngModel]="settings.dashboard().unusualMin" (ngModelChange)="setUnusualMin($event)" name="unusualMin" />
+    </label>
+  </section>
+</div>

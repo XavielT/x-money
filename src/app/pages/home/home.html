@@ -10,6 +10,11 @@
     </a>
   </header>
 
+  <!-- The ten indicators: available money first, the rest under "See more" -->
+  @defer (on idle) {
+    <app-dashboard-indicators></app-dashboard-indicators>
+  }
+
   <!-- Balance card (taps through to accounts) -->
   <section class="home-balance x-card" routerLink="/accounts">
     <span class="home-balance-label">{{ 'Total balance' | t }}</span>

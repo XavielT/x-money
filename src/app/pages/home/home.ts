@@ -17,11 +17,12 @@ import { CardAlert } from '../../../shared/domain/cards';
 import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
+import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent],
+  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })

@@ -1,0 +1,33 @@
+<section class="dash" *ngIf="main() as m">
+  <button class="dash-main x-card" (click)="open(m)">
+    <span class="dash-label">{{ m.label | t }} <small class="dash-info">ⓘ</small></span>
+    <span class="dash-main-value" [class.negative]="(m.value ?? 0) < 0">
+      {{ (m.value ?? 0) < 0 ? '-' : '' }}{{ settings.currency() }}{{ ((m.value ?? 0) < 0 ? -(m.value ?? 0) : (m.value ?? 0)) | number:'1.2-2' }}
+    </span>
+    <span class="dash-sub">{{ 'Liquid net worth' | t }}: {{ settings.currency() }}{{ liquid() | number:'1.2-2' }}</span>
+  </button>
+
+  <button class="dash-toggle" (click)="expanded.set(!expanded())" [attr.aria-expanded]="expanded()">
+    {{ (expanded() ? 'See less' : 'See more') | t }}
+  </button>
+
+  <div class="dash-grid" *ngIf="expanded()">
+    <button class="dash-tile x-card" *ngFor="let i of others()" (click)="open(i)">
+      <span class="dash-tile-label">{{ i.label | t }} <small class="dash-info">ⓘ</small></span>
+      <ng-container *ngIf="i.value !== null; else empty">
+        <strong class="dash-tile-value" [class.negative]="i.value < 0">
+          <ng-container *ngIf="i.display === 'money'">{{ i.value < 0 ? '-' : '' }}{{ settings.currency() }}{{ (i.value < 0 ? -i.value : i.value) | number:'1.0-0' }}</ng-container>
+          <ng-container *ngIf="i.display === 'percent'">{{ i.value | number:'1.0-1' }}%</ng-container>
+        </strong>
+        <small class="dash-tag" *ngIf="i.estimate">{{ 'Estimate' | t }}</small>
+      </ng-container>
+      <ng-template #empty>
+        <span class="dash-empty">{{ (i.missing || 'Not enough data yet') | t }}</span>
+      </ng-template>
+    </button>
+  </div>
+
+  <a routerLink="/analysis" class="dash-analysis x-card">📊 {{ 'Analysis' | t }} <small>{{ 'Trends, cash flow, comparisons and unusual expenses' | t }}</small></a>
+
+  <app-indicator-sheet *ngIf="selected() as s" [indicator]="s" (closed)="selected.set(null)"></app-indicator-sheet>
+</section>

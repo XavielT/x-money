@@ -15,6 +15,7 @@ export const routes: Routes = [
   { path: 'accounts', loadComponent: () => import('./pages/accounts/accounts').then((m) => m.AccountsComponent) },
   { path: 'reconcile/:id', loadComponent: () => import('./pages/reconcile/reconcile').then((m) => m.ReconcileComponent) },
   // heavier pages load on demand to keep the first screen light
+  { path: 'analysis', loadComponent: () => import('./pages/analysis/analysis').then((m) => m.AnalysisComponent) },
   { path: 'budgets/plan', loadComponent: () => import('./pages/budget-plan/budget-plan').then((m) => m.BudgetPlanComponent) },
   { path: 'fixed', loadComponent: () => import('./pages/fixed-expenses/fixed-expenses').then((m) => m.FixedExpensesComponent) },
   { path: 'income', loadComponent: () => import('./pages/income/income').then((m) => m.IncomeComponent) },

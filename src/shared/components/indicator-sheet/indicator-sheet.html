@@ -1,0 +1,35 @@
+<div class="sheet-backdrop" (click)="closed.emit()" role="presentation"></div>
+<div class="sheet" role="dialog" aria-modal="true" [attr.aria-label]="indicator.label | t">
+  <header class="sheet-head">
+    <h2>{{ indicator.label | t }}</h2>
+    <button class="sheet-close" (click)="closed.emit()" [attr.aria-label]="'Close' | t">✕</button>
+  </header>
+
+  <p class="sheet-value">
+    <ng-container *ngIf="indicator.value !== null">
+      <ng-container *ngIf="indicator.display === 'money'">{{ indicator.value < 0 ? '-' : '' }}{{ settings.currency() }}{{ (indicator.value < 0 ? -indicator.value : indicator.value) | number:'1.2-2' }}</ng-container>
+      <ng-container *ngIf="indicator.display === 'percent'">{{ indicator.value | number:'1.0-1' }}%</ng-container>
+    </ng-container>
+    <span class="sheet-tag" *ngIf="indicator.estimate">{{ 'Estimate' | t }}</span>
+  </p>
+  <p class="sheet-missing" *ngIf="indicator.missing">{{ indicator.missing | t }}</p>
+
+  <h3>{{ 'Formula' | t }}</h3>
+  <p class="sheet-text">{{ indicator.formula | t }}</p>
+
+  <h3>{{ 'Components' | t }}</h3>
+  <div class="sheet-row" *ngFor="let c of indicator.components" [class.excluded]="c.kind === 'excluded'">
+    <span>
+      {{ c.label | t }}
+      <small class="sheet-kind" [class.estimate]="c.kind === 'estimate'">{{ kindLabel(c.kind) | t }}</small>
+      <small class="sheet-note" *ngIf="c.note">{{ c.note | t }}</small>
+    </span>
+    <strong *ngIf="c.amount !== null">
+      <ng-container *ngIf="c.display === 'percent'">{{ c.amount | number:'1.0-1' }}%</ng-container>
+      <ng-container *ngIf="c.display !== 'percent'">{{ c.amount < 0 ? '-' : '' }}{{ settings.currency() }}{{ (c.amount < 0 ? -c.amount : c.amount) | number:'1.2-2' }}</ng-container>
+    </strong>
+  </div>
+
+  <h3>{{ 'Where it comes from' | t }}</h3>
+  <p class="sheet-text">{{ indicator.sources.join(' · ') }}</p>
+</div>
