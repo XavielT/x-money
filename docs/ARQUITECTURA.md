@@ -17,6 +17,8 @@ Registro único en `src/shared/data-layer/registry.ts`. **Toda colección nueva 
 | `budgets` | `BudgetModel` | `BudgetService` | **sincronizada** |
 | `recurring` | `RecurringModel` | `RecurringService` | **sincronizada** |
 | `audit` | `AuditEvent` (solo adición, máx. 2.000; cada evento nombra su dispositivo) | `AuditLogService` | **sincronizada** |
+| `incomeSources` | `IncomeSourceModel` (tipo, estabilidad, periodicidad, método, verificabilidad, montos esperados) | `IncomeSourceService` | **sincronizada** |
+| `benefits` | `BenefitModel` (beneficio no monetario con sus notas de uso embebidas; nunca es dinero) | `BenefitService` | **sincronizada** |
 | `statements` | `CardStatementModel` (periodos cerrados de tarjeta; id `stmt-<tarjeta>-<moneda>-<corte>`, igual en todos los dispositivos) | `CreditCardService` | **sincronizada** |
 | `conflicts` | `ConflictModel` (versiones que perdieron un conflicto; las escribe el servidor) | `ConflictService` | **sincronizada** |
 | `settings` | `{currency, taxPercent}` | `SettingsService` | **sincronizada** (documento) |
