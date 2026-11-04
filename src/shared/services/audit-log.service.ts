@@ -32,9 +32,11 @@ export type AuditType =
   | 'bucket'
   | 'business-operation'
   | 'business-sale'
-  | 'business-withdrawal';
+  | 'business-withdrawal'
+  | 'goal'
+  | 'goal-entry';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget' | 'business';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit' | 'category' | 'budget' | 'business' | 'goal';
 
 export interface AuditEvent {
   id: string;

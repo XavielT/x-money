@@ -5,7 +5,7 @@ import { CLIENT_SCHEMA_VERSION } from './registry';
 import { migrateSnapshot } from './migrations';
 
 // Collections that make up a backup (the PIN hash and the language are device matters)
-export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts'] as const;
+export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts', 'goals'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 
 export interface BackupCounts {
@@ -69,6 +69,7 @@ const CHECKS: Record<string, Check> = {
     : !Array.isArray(o['sales']) ? 'sales'
     : !Array.isArray(o['expenses']) ? 'expenses'
     : null,
+  goals: (g) => (!str(g['id']) ? 'id' : !str(g['name']) ? 'name' : !fin(g['target']) ? 'target' : !Array.isArray(g['entries']) ? 'entries' : null),
   businessWithdrawals: (w) => (!str(w['id']) ? 'id' : !fin(w['amount']) ? 'amount' : !isValidIsoDate(w['date']) ? 'date' : null),
   contacts: (c) => (!str(c['id']) ? 'id' : !str(c['name']) ? 'name' : null),
   buckets: (b) => (!str(b['id']) ? 'id' : !str(b['kind']) ? 'kind' : !fin(b['value']) ? 'value' : !Array.isArray(b['categoryIds']) ? 'categoryIds' : null),

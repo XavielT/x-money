@@ -38,6 +38,8 @@ const LABELS: Record<AuditType, string> = {
   'business-operation': 'Business operation changed',
   'business-sale': 'Business sale',
   'business-withdrawal': 'Profit withdrawn',
+  goal: 'Goal changed',
+  'goal-entry': 'Goal contribution or withdrawal',
 };
 
 // Settings -> Change history: read-only list of everything that changed money data
@@ -95,7 +97,7 @@ export class ChangeHistoryComponent {
     if (e.type === 'edit') return `${pick(e.before)} → ${pick(e.after)}`;
     if (e.type === 'convert-transfer') return `${this.accountName(e.accountId)} → ${this.accountName((e.after as { toAccountId?: string })?.toAccountId)}`;
     if (e.type === 'reconcile' || e.type === 'balance-adjustment') return JSON.stringify(e.after);
-    if (e.type === 'import' || e.type === 'migration' || e.type === 'recurring-post' || e.type === 'audit-trim' || e.type === 'card-config' || e.type === 'statement-bank-figures' || e.type === 'statement-interest' || e.type === 'income-source' || e.type === 'income-classify' || e.type === 'benefit' || e.type === 'category' || e.type === 'budget-move' || e.type === 'budget-move-undo' || e.type === 'bucket' || e.type === 'business-operation' || e.type === 'business-sale' || e.type === 'business-withdrawal') return JSON.stringify(e.after ?? e.before);
+    if (e.type === 'import' || e.type === 'migration' || e.type === 'recurring-post' || e.type === 'audit-trim' || e.type === 'card-config' || e.type === 'statement-bank-figures' || e.type === 'statement-interest' || e.type === 'income-source' || e.type === 'income-classify' || e.type === 'benefit' || e.type === 'category' || e.type === 'budget-move' || e.type === 'budget-move-undo' || e.type === 'bucket' || e.type === 'business-operation' || e.type === 'business-sale' || e.type === 'business-withdrawal' || e.type === 'goal' || e.type === 'goal-entry') return JSON.stringify(e.after ?? e.before);
     return pick(e.before) || pick(e.after);
   }
 

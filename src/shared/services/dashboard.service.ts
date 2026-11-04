@@ -27,6 +27,7 @@ import { addMoney, round2, sumMoney } from '../utils/money';
 import { AccountService } from './account.service';
 import { BudgetService } from './budget.service';
 import { BusinessService } from './business.service';
+import { GoalService } from './goal.service';
 import { CategoryService } from './category.service';
 import { CreditCardService } from './credit-card.service';
 import { FixedExpenseService } from './fixed-expense.service';
@@ -49,7 +50,7 @@ export class DashboardService {
   external = this._external.asReadonly();
 
   // what the modules hand over (provide) plus what the business module knows by itself
-  private figures = computed<ExternalFigures>(() => ({ ...this._external(), ...this.business.dashboardFigures() }));
+  private figures = computed<ExternalFigures>(() => ({ ...this._external(), ...this.business.dashboardFigures(), ...this.goals.dashboardFigures() }));
 
   constructor(
     private transactions: TransactionService,
@@ -62,7 +63,8 @@ export class DashboardService {
     private budget: BudgetService,
     private fixed: FixedExpenseService,
     private settings: SettingsService,
-    private business: BusinessService
+    private business: BusinessService,
+    private goals: GoalService
   ) {}
 
   // The contract for prompts 06 (business), 07 (savings goals) and 08 (loans): they hand over
@@ -245,7 +247,7 @@ export class DashboardService {
       currency: 'DOP',
       components: [
         ...accounts.map((a) => money(a.name, this.transactions.accountBalance(a.id, 'DOP'))),
-        ...(ext ? [money('Goal contributions outside savings accounts', ext.value)] : []),
+        ...(ext ? ext.components ?? [money('Goal contributions outside savings accounts', ext.value)] : []),
       ],
       formula: 'Balance of your savings accounts + goal contributions that are not already inside a savings account (never counted twice).',
       sources: ['TransactionService', 'Savings goals module'],
@@ -335,7 +337,7 @@ export class DashboardService {
 
   flow12 = computed<MonthFlow[]>(() => monthlyFlow(this.transactions.transactions(), this.today(), 12));
 
-  savings12 = computed<SavingsPoint[]>(() => savingsHistory(this.accounts.accounts(), this.transactions.transactions(), this.today(), 12));
+  savings12 = computed<SavingsPoint[]>(() => savingsHistory(this.accounts.accounts(), this.transactions.transactions(), this.today(), 12, this.goals.activeCount() ? (date) => this.goals.reservedOutsideAt(date) : undefined));
 
   // Income sources ranked by weight in the last 12 months, with their stability
   topSources = computed(() =>

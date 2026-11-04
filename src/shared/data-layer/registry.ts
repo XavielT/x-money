@@ -19,6 +19,7 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   audit: 'entities', // append-only change history (capped), each event names its device
   incomeSources: 'entities', // where income comes from (2.9.0)
   benefits: 'entities', // non-monetary work benefits with their usage notes (2.9.0): never money
+  goals: 'entities', // virtual set-asides with their contributions and withdrawals (2.13.0)
   businessOperations: 'entities', // inventory lots with their sales, expenses and reservation (2.12.0)
   businessWithdrawals: 'entities', // profit moved to personal use: a neutral note, no balance moves
   contacts: 'entities', // buyers and suppliers, reference only

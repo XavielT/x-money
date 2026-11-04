@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, Injector, computed, signal } from '@angular/core';
 import { BaseIncome, BucketKind, BudgetBucketModel, BudgetModel, BudgetMoveModel, MoveRef } from '../models/budget.model';
 import {
   BUCKET_KINDS,
@@ -19,6 +19,7 @@ import {
   isManualBucket,
   monthEndProjection,
   monthTotals,
+  median,
   recommend,
   reduceCandidates,
   trend,
@@ -33,6 +34,7 @@ import { natureOfCategory } from '../domain/categories';
 import { addMoney, round2, sumMoney } from '../utils/money';
 import { AuditLogService } from './audit-log.service';
 import { BusinessService } from './business.service';
+import { GoalService } from './goal.service';
 import { CategoryService } from './category.service';
 import { FixedExpenseService } from './fixed-expense.service';
 import { IncomeService } from './income.service';
@@ -101,7 +103,8 @@ export class BudgetService {
     private netWorth: NetWorthService,
     private fixed: FixedExpenseService,
     private audit: AuditLogService,
-    private business: BusinessService
+    private business: BusinessService,
+    private injector: Injector // GoalService is resolved lazily: it reads this service too
   ) {
     this._budgets.set(this.storage.get<BudgetModel[]>('budgets', []));
     this._buckets.set(this.storage.get<BudgetBucketModel[]>('buckets', []));
@@ -215,7 +218,12 @@ export class BudgetService {
     return all.map((bucket) => {
       const limit = adjustedLimit(bucketLimit(bucket, base), this._moves(), { type: 'bucket', id: bucket.kind }, key);
       // the business-capital block counts what was put into inventory this month, plus what was added by hand
-      const spent = bucketSpent(bucket, all, totals, key) + (bucket.kind === 'business-capital' ? this.business.purchasesInMonth(year, month) : 0);
+      const goalsMonth = this.injector.get(GoalService).monthContributions(year, month);
+      const spent =
+        bucketSpent(bucket, all, totals, key) +
+        (bucket.kind === 'business-capital' ? this.business.purchasesInMonth(year, month) : 0) +
+        (bucket.kind === 'savings' ? goalsMonth.savings : 0) +
+        (bucket.kind === 'emergency' ? goalsMonth.emergency : 0);
       return { bucket, limit, spent, remaining: round2(limit - spent), risk: budgetRisk(limit, spent, this.today(), year, month, this.settings.budget().riskAt) };
     });
   }
@@ -324,6 +332,24 @@ export class BudgetService {
   }
 
   // "Recommendation based on your history": median of the last 3 to 6 months, never an imposed percentage
+  // Monthly spending of the essential block over the last months (oldest first), for the emergency fund
+  essentialHistory(): number[] {
+    return this.history(this.monthsOfHistory).byBucket.get('essential') ?? [];
+  }
+
+  // Median of the monthly variable-nature spending of the last months (for the goals' viability)
+  variableMedian(): number {
+    const txs = this.transactions.transactions();
+    const firstMonth = txs.map((t) => t.date.slice(0, 7)).sort()[0];
+    const months = lastCompleteMonths(this.today(), this.monthsOfHistory).filter((m) => !!firstMonth && m >= firstMonth);
+    const values = months.map((key) => {
+      let sum = 0;
+      for (const [id, total] of monthTotals(txs, key)) if (natureOfCategory(this.categories.byId(id)) === 'variable') sum = addMoney(sum, total);
+      return sum;
+    });
+    return median(values);
+  }
+
   recommendation(): Recommendation {
     const { byBucket, fixedHistory } = this.history(this.monthsOfHistory);
     return recommend(this.baseIncome().amount, byBucket, fixedHistory);
