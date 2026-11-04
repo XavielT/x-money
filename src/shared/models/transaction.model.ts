@@ -1,3 +1,5 @@
+import { Deduction } from './income-source.model';
+
 export type TransactionType = 'income' | 'expense';
 
 // A transaction can also be a transfer between two accounts; transfers do not
@@ -47,5 +49,13 @@ export interface TransactionModel {
   createdAt?: string; // ISO timestamp, absent on movements that predate 2.7.0
   updatedAt?: string;
   reconciled?: boolean; // appeared on a bank statement
-  incomePattern?: string; // confirmed recurring-income pattern (prompt 03 links it to a source)
+  incomePattern?: string; // confirmed recurring-income pattern (the user can turn it into a source)
+
+  // Income (2.9.0). `amount` is always what reached the account (the net).
+  incomeSourceId?: string; // absent = unclassified
+  grossAmount?: number; // before deductions, optional
+  deductions?: Deduction[]; // free list of named deductions, no built-in rates
+  costBasis?: number; // commercial sales: what the goods cost
+  saleExpenses?: number; // commercial sales: declared expenses of that sale
+  businessOperationId?: string; // reserved for the business module (prompt 06)
 }

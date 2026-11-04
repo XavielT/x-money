@@ -37,6 +37,21 @@ export function addYears(iso: string, years: number): string {
   return `${String(y).padStart(4, '0')}-${m[2]}-${String(Math.min(Number(m[3]), lastDay)).padStart(2, '0')}`;
 }
 
+export const lastDayOfMonth = (year: number, month: number): number => new Date(Date.UTC(year, month, 0)).getUTCDate(); // month 1-12
+
+// 0 = Sunday ... 6 = Saturday
+export const weekdayOf = (iso: string): number => new Date(fromIso(iso)).getUTCDay();
+
+// Month arithmetic that keeps the intended day: Jan 31 + 1 month = Feb 28, + 2 = Mar 31 (with anchorDay 31)
+export function addMonthsKeepingDay(iso: string, months: number, anchorDay?: number): string {
+  const m = ISO_RE.exec(iso)!;
+  const idx = Number(m[1]) * 12 + (Number(m[2]) - 1) + months;
+  const y = Math.floor(idx / 12);
+  const mo = (idx % 12) + 1;
+  const day = Math.min(anchorDay ?? Number(m[3]), lastDayOfMonth(y, mo));
+  return `${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 // Today in the device's local calendar
 export function localIso(now: Date): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

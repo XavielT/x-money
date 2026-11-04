@@ -16,6 +16,9 @@ export type TxErrorCode =
   | 'to-account'
   | 'same-account'
   | 'cross-currency'
+  | 'gross' // gross below the net received, or not a number
+  | 'deductions'
+  | 'cost-basis'
   | 'partial-exceeds'
   | 'reconciled' // needs confirmation: the correction goes through a reversal
   | 'linked'
@@ -36,6 +39,10 @@ export interface TxInput {
   toAccountId?: string;
   fee?: number;
   date: string;
+  grossAmount?: number;
+  deductions?: { name: string; amount: number }[];
+  costBasis?: number;
+  saleExpenses?: number;
 }
 
 export interface ValidationOptions {
@@ -57,6 +64,16 @@ export function validateTransaction(
   if (typeof input.amount !== 'number' || !Number.isFinite(input.amount) || input.amount <= 0) return 'amount';
   if (input.fee !== undefined && input.fee !== null) {
     if (!Number.isFinite(input.fee) || (input.fee < 0 && !options.allowNegativeFee)) return 'fee';
+  }
+  if (input.grossAmount !== undefined && input.grossAmount !== null) {
+    // the net is what arrived: it cannot be more than the gross
+    if (!Number.isFinite(input.grossAmount) || input.grossAmount < input.amount) return 'gross';
+  }
+  if (input.deductions !== undefined && input.deductions !== null) {
+    if (!Array.isArray(input.deductions) || input.deductions.some((d) => !d || typeof d.name !== 'string' || !d.name.trim() || !Number.isFinite(d.amount) || d.amount < 0)) return 'deductions';
+  }
+  for (const v of [input.costBasis, input.saleExpenses]) {
+    if (v !== undefined && v !== null && (!Number.isFinite(v) || v < 0)) return 'cost-basis';
   }
   if (!isValidIsoDate(input.date)) return 'date';
   if (!options.confirmFarFuture && input.date > addYears(today, 1)) return 'date-far-future';

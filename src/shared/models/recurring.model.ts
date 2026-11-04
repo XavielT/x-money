@@ -16,4 +16,5 @@ export interface RecurringModel {
   startDate: string; // ISO yyyy-MM-dd, first occurrence (anchors the day of month)
   nextDate: string; // next occurrence still to be posted
   active: boolean;
+  incomeSourceId?: string; // income rules only: labels what the rule posts (2.9.0)
 }
