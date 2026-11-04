@@ -46,6 +46,7 @@ export class RecurringService {
           date: next,
           note: rule.note,
           origin: 'recurring',
+          incomeSourceId: rule.type === 'income' ? rule.incomeSourceId : undefined,
         });
         // the account is gone or archived (or the rule is invalid): do not post and do not
         // advance, the occurrence waits until the rule is fixed
@@ -84,6 +85,12 @@ export class RecurringService {
     this._recurring.update((list) =>
       list.map((r) => (r.id === id ? { ...r, amount, frequency } : r))
     );
+    this.persist();
+  }
+
+  // Links an income rule to a source (or unlinks it). The rule itself is not touched otherwise.
+  setIncomeSource(id: string, sourceId: string | undefined): void {
+    this._recurring.update((list) => list.map((r) => (r.id === id && r.type === 'income' ? { ...r, incomeSourceId: sourceId } : r)));
     this.persist();
   }
 

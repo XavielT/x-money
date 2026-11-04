@@ -21,9 +21,13 @@ export type AuditType =
   | 'card-config'
   | 'statement-bank-figures'
   | 'statement-interest'
-  | 'card-payment-convert';
+  | 'card-payment-convert'
+  | 'income-source'
+  | 'income-received'
+  | 'income-classify'
+  | 'benefit';
 
-export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement';
+export type AuditEntity = 'transaction' | 'account' | 'backup' | 'schema' | 'audit' | 'statement' | 'income-source' | 'benefit';
 
 export interface AuditEvent {
   id: string;

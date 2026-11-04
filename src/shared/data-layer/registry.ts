@@ -17,6 +17,8 @@ export const SYNCED_COLLECTIONS: Record<string, CollectionKind> = {
   recurring: 'entities',
   conflicts: 'entities', // losers of edit conflicts, written by the server
   audit: 'entities', // append-only change history (capped), each event names its device
+  incomeSources: 'entities', // where income comes from (2.9.0)
+  benefits: 'entities', // non-monetary work benefits with their usage notes (2.9.0): never money
   statements: 'entities', // closed credit-card billing periods (ids are the same on every device)
   settings: 'doc', // currency symbol, bank tax %
   lang: 'doc', // interface language

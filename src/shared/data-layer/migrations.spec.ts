@@ -246,3 +246,18 @@ describe('2.8.0 additions (credit cards): no migration needed, old shapes surviv
     expect(bad).toEqual({ ok: false, error: { code: 'bad-shape', key: 'statements', index: 0, field: 'cutDate' } });
   });
 });
+
+// 2.9.0 added optional income fields and two collections: nothing old needs rewriting.
+describe('2.9.0 additions (income sources, benefits): old shapes survive untouched', () => {
+  it('income recorded before sources exist keeps its shape: no source, gross or cost is invented', () => {
+    const income = { id: 'i', type: 'income', amount: 20000, categoryId: 'cat-salary', accountId: 'a', date: '2026-10-15', origin: 'manual', status: 'posted' };
+    const out = migrateSnapshot({ transactions: [income] }, 2) as { transactions: any[] };
+    expect(out.transactions[0]).toEqual(income);
+    for (const k of ['incomeSourceId', 'grossAmount', 'deductions', 'costBasis', 'saleExpenses']) expect(out.transactions[0]).not.toHaveProperty(k);
+  });
+
+  it('a recurring income rule from before keeps working shape (no incomeSourceId)', () => {
+    const rule = { id: 'r', type: 'income', amount: 100, accountId: 'a', frequency: 'monthly', startDate: '2026-01-01', nextDate: '2026-12-01', active: true };
+    expect((migrateSnapshot({ recurring: [rule] }, 1) as { recurring: any[] }).recurring[0]).toEqual(rule);
+  });
+});

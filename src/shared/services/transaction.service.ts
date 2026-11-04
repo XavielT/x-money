@@ -446,6 +446,23 @@ export class TransactionService {
     this.commit(this._transactions().map((t) => (set.has(t.id) ? { ...t, reconciled: value || undefined } : t)));
   }
 
+  // Points income movements to a source (or back to unclassified). Metadata only: no amount,
+  // account or date changes, so it is allowed on reconciled movements too.
+  tagIncomeSource(ids: readonly string[], sourceId: string | undefined): number {
+    if (this.storage.readOnly()) return 0;
+    const set = new Set(ids);
+    let changed = 0;
+    const next = this._transactions().map((t) => {
+      if (!set.has(t.id) || t.type !== 'income' || t.incomeSourceId === sourceId) return t;
+      changed++;
+      return { ...t, incomeSourceId: sourceId, updatedAt: this.nowIso() };
+    });
+    if (!changed) return 0;
+    this.commit(next);
+    this.audit.log({ type: 'income-classify', entity: 'transaction', entityId: sourceId ?? 'unclassified', after: { sourceId: sourceId ?? null, count: changed } });
+    return changed;
+  }
+
   // Confirmed recurring-income pattern (prompt 03 links it to an income source)
   tagIncomePattern(ids: readonly string[], key: string): void {
     const set = new Set(ids);
