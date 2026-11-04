@@ -5,7 +5,7 @@ import { CLIENT_SCHEMA_VERSION } from './registry';
 import { migrateSnapshot } from './migrations';
 
 // Collections that make up a backup (the PIN hash and the language are device matters)
-export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts', 'goals', 'loans', 'loanSimulations', 'loanSettings'] as const;
+export const BACKUP_KEYS = ['categories', 'accounts', 'transactions', 'budgets', 'recurring', 'settings', 'audit', 'statements', 'incomeSources', 'benefits', 'buckets', 'budgetMoves', 'businessOperations', 'businessWithdrawals', 'contacts', 'goals', 'loans', 'loanSimulations', 'loanSettings', 'insightStates', 'insightSettings'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 
 export interface BackupCounts {
@@ -69,6 +69,7 @@ const CHECKS: Record<string, Check> = {
     : !Array.isArray(o['sales']) ? 'sales'
     : !Array.isArray(o['expenses']) ? 'expenses'
     : null,
+  insightStates: (s) => (!str(s['id']) ? 'id' : !str(s['insightId']) ? 'insightId' : !str(s['fingerprint']) ? 'fingerprint' : null),
   loans: (l) => (!str(l['id']) ? 'id' : !str(l['name']) ? 'name' : !fin(l['amount']) ? 'amount' : !Array.isArray(l['schedule']) ? 'schedule' : !Array.isArray(l['payments']) ? 'payments' : null),
   loanSimulations: (l) => (!str(l['id']) ? 'id' : !str(l['name']) ? 'name' : !fin(l['amount']) ? 'amount' : null),
   goals: (g) => (!str(g['id']) ? 'id' : !str(g['name']) ? 'name' : !fin(g['target']) ? 'target' : !Array.isArray(g['entries']) ? 'entries' : null),
@@ -115,7 +116,7 @@ export function parseBackup(json: string): ParsedBackup {
       if (!isObj(value) || typeof value['currency'] !== 'string') return { ok: false, error: { code: 'bad-shape', key } };
       continue;
     }
-    if (key === 'loanSettings') {
+    if (key === 'loanSettings' || key === 'insightSettings') {
       if (!isObj(value)) return { ok: false, error: { code: 'bad-shape', key } };
       continue;
     }

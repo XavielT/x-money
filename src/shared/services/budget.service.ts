@@ -339,17 +339,21 @@ export class BudgetService {
     return this.history(this.monthsOfHistory).byBucket.get('essential') ?? [];
   }
 
-  // Median of the monthly variable-nature spending of the last months (for the goals' viability)
-  variableMedian(): number {
+  // Monthly variable-nature spending of the last months (oldest first), from the first month with data
+  variableHistory(): number[] {
     const txs = this.transactions.transactions();
     const firstMonth = txs.map((t) => t.date.slice(0, 7)).sort()[0];
     const months = lastCompleteMonths(this.today(), this.monthsOfHistory).filter((m) => !!firstMonth && m >= firstMonth);
-    const values = months.map((key) => {
+    return months.map((key) => {
       let sum = 0;
       for (const [id, total] of monthTotals(txs, key)) if (natureOfCategory(this.categories.byId(id)) === 'variable') sum = addMoney(sum, total);
       return sum;
     });
-    return median(values);
+  }
+
+  // Median of the monthly variable-nature spending of the last months (for the goals' viability)
+  variableMedian(): number {
+    return median(this.variableHistory());
   }
 
   // Months of expense history behind the variable median (fewer than 3 means "use what the user declared")

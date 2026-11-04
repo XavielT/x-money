@@ -390,7 +390,10 @@ export class DashboardService {
   }
 
   // Cash flow for 30, 60 and 90 days (an estimate)
-  cashflow = computed<Cashflow>(() => {
+  cashflow = computed<Cashflow>(() => this.buildCashflow(this.settings.dashboard().includeVariableIncome));
+
+  // The same projection with variable income on or off (the insights show both: "what if it does not arrive")
+  buildCashflow(includeVariableIncome: boolean): Cashflow {
     const today = this.today();
     const end = addDays(today, 90);
     const d = this.settings.dashboard();
@@ -409,13 +412,13 @@ export class DashboardService {
       today,
       income: this.income.guaranteedExpectedEvents(today, end),
       variableIncomeMonthly: this.income.capacity().variableAverage,
-      includeVariableIncome: d.includeVariableIncome,
+      includeVariableIncome,
       fixed,
       cards,
       rates,
       cushion: d.cushion,
     });
-  });
+  }
 
   unusual = computed<UnusualResult>(() => unusualExpenses(this.transactions.transactions(), this.today(), this.settings.dashboard().unusualMin));
 
