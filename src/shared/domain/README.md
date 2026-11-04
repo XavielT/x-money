@@ -15,6 +15,8 @@ or storage; it takes plain data in and returns plain data out.
 
 **Budgets (2.10.0):** `categories.ts` (naturaleza y árbol), `irregular.ts` (gasto irregular), `fixed.ts` (obligaciones), `budget.ts` (bloques, movimientos, riesgo, proyección, recomendaciones, tendencias).
 
+**Dashboard (2.11.0):** `dashboard.ts` (desglose fijo/variable, flujo mensual, historial de ahorros, comparación de meses, dinero disponible, flujo de efectivo 30/60/90, gastos inusuales).
+
 **Does not go here**
 - Signals, `StorageService`, HTTP/sync, `TranslateService`, components.
 - Formatting for display (pages and pipes do that).
