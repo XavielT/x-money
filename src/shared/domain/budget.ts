@@ -184,7 +184,7 @@ export interface VariableRates {
 
 export function variableRates(txs: readonly TransactionModel[], categories: readonly CategoryModel[], today: string): VariableRates {
   const variable = new Set(categories.filter((c) => c.type === 'expense' && !c.parentId && natureOfCategory(c) === 'variable').map((c) => c.id));
-  const counts = (t: TransactionModel) => t.type === 'expense' && !!t.categoryId && variable.has(t.categoryId) && t.status !== 'reversed' && t.origin !== 'adjustment' && (t.currency ?? 'DOP') === 'DOP';
+  const counts = (t: TransactionModel) => t.type === 'expense' && t.scope !== 'business' && !!t.categoryId && variable.has(t.categoryId) && t.status !== 'reversed' && t.origin !== 'adjustment' && (t.currency ?? 'DOP') === 'DOP';
   const weekly = [0, 0, 0, 0];
   const spans = Math.min(4, Math.floor((daysBetween(txs.map((t) => t.date).sort()[0] ?? today, today) + 1) / 7));
   for (const t of txs) {

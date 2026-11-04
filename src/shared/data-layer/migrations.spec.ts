@@ -24,16 +24,16 @@ function services(storage: StorageService) {
 
 describe('schema v2 migration (per record)', () => {
   it('gives movements an explicit origin and status, and nothing else', () => {
-    expect(migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5 }, 1)).toEqual({ id: 'a', type: 'expense', amount: 5, origin: 'manual', status: 'posted' });
-    expect(migrateRecord('transactions', { id: 'b', type: 'transfer', amount: 5 }, 1)).toMatchObject({ origin: 'transfer', status: 'posted' });
+    expect(migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5 }, 1, 2)).toEqual({ id: 'a', type: 'expense', amount: 5, origin: 'manual', status: 'posted' });
+    expect(migrateRecord('transactions', { id: 'b', type: 'transfer', amount: 5 }, 1, 2)).toMatchObject({ origin: 'transfer', status: 'posted' });
   });
 
   it('is idempotent and never overwrites existing values', () => {
-    const once = migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5, origin: 'recurring', status: 'reversed' }, 1);
+    const once = migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5, origin: 'recurring', status: 'reversed' }, 1, 2);
     expect(once).toMatchObject({ origin: 'recurring', status: 'reversed' });
-    const twice = migrateRecord('transactions', once, 1);
+    const twice = migrateRecord('transactions', once, 1, 2);
     expect(twice).toEqual(once);
-    expect(migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5 }, 2)).toEqual({ id: 'a', type: 'expense', amount: 5 }); // already v2: untouched
+    expect(migrateRecord('transactions', { id: 'a', type: 'expense', amount: 5 }, 2, 2)).toEqual({ id: 'a', type: 'expense', amount: 5 }); // already v2: untouched
   });
 
   it('sets the liquid flag of accounts by type, and leaves untyped legacy accounts to AccountService', () => {
@@ -80,10 +80,10 @@ describe('MigrationService', () => {
     await migration.run();
 
     expect(storage.get<any[]>('transactions', []).every((t) => t.origin === 'manual' || t.origin === 'transfer')).toBe(true);
-    expect(await local.get('device', 'schemaVersion')).toBe(3);
+    expect(await local.get('device', 'schemaVersion')).toBe(4);
     expect(await local.get('device', 'uploadAfterMigration')).toBe(true);
     const queue = (await local.get<any[]>('device', 'queue'))!;
-    expect(queue[0]).toMatchObject({ schemaVersion: 3, data: { origin: 'manual', status: 'posted' } });
+    expect(queue[0]).toMatchObject({ schemaVersion: 4, data: { origin: 'manual', status: 'posted', scope: 'personal' } });
 
     const snapshots = await migration.snapshots();
     expect(snapshots).toHaveLength(1);
@@ -97,14 +97,14 @@ describe('MigrationService', () => {
   it('keeps only the two most recent snapshots', async () => {
     const { storage, local } = await installed(FIXTURE_251_FULL);
     const { migration } = services(storage);
-    const second: Migration = { version: 4, name: 'noop', record: (_c, item) => item };
-    const third: Migration = { version: 5, name: 'noop', record: (_c, item) => item };
-    await migration.run(MIGRATIONS, 3);
-    await migration.run([...MIGRATIONS, second], 4);
-    await migration.run([...MIGRATIONS, second, third], 5);
+    const second: Migration = { version: 5, name: 'noop', record: (_c, item) => item };
+    const third: Migration = { version: 6, name: 'noop', record: (_c, item) => item };
+    await migration.run(MIGRATIONS, 4);
+    await migration.run([...MIGRATIONS, second], 5);
+    await migration.run([...MIGRATIONS, second, third], 6);
     const snaps = await migration.snapshots();
-    expect(snaps.map((s) => s.fromVersion)).toEqual([3, 4]);
-    expect(await local.get('device', 'schemaVersion')).toBe(5);
+    expect(snaps.map((s) => s.fromVersion)).toEqual([4, 5]);
+    expect(await local.get('device', 'schemaVersion')).toBe(6);
   });
 
   it('is idempotent: a second run does nothing', async () => {
@@ -115,7 +115,7 @@ describe('MigrationService', () => {
     await migration.run();
     expect(JSON.stringify(storage.snapshotAll())).toBe(after);
     expect(await migration.snapshots()).toHaveLength(1);
-    expect(await local.get('device', 'schemaVersion')).toBe(3);
+    expect(await local.get('device', 'schemaVersion')).toBe(4);
   });
 
   it('a fresh install is born current: no snapshot, no migration', async () => {
@@ -123,7 +123,7 @@ describe('MigrationService', () => {
     await storage.hydrate({ local: new MemoryLocalDb(), legacy: new FakeLegacy() });
     const { migration } = services(storage);
     await migration.run();
-    expect(await storage.localDb.get('device', 'schemaVersion')).toBe(3);
+    expect(await storage.localDb.get('device', 'schemaVersion')).toBe(4);
     expect(await migration.snapshots()).toEqual([]);
   });
 
@@ -251,7 +251,7 @@ describe('2.8.0 additions (credit cards): no migration needed, old shapes surviv
 describe('2.9.0 additions (income sources, benefits): old shapes survive untouched', () => {
   it('income recorded before sources exist keeps its shape: no source, gross or cost is invented', () => {
     const income = { id: 'i', type: 'income', amount: 20000, categoryId: 'cat-salary', accountId: 'a', date: '2026-10-15', origin: 'manual', status: 'posted' };
-    const out = migrateSnapshot({ transactions: [income] }, 2) as { transactions: any[] };
+    const out = migrateSnapshot({ transactions: [income] }, 2, 3) as { transactions: any[] };
     expect(out.transactions[0]).toEqual(income);
     for (const k of ['incomeSourceId', 'grossAmount', 'deductions', 'costBasis', 'saleExpenses']) expect(out.transactions[0]).not.toHaveProperty(k);
   });

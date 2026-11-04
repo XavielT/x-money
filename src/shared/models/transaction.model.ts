@@ -21,7 +21,13 @@ export type TransactionOrigin =
   | 'import'
   | 'loan-disbursement'
   | 'business-sale'
-  | 'business-purchase';
+  | 'business-purchase'
+  | 'business-expense'
+  | 'business-deposit'; // an advance from a buyer: not income, not profit until the sale
+
+// 'business' movements move real money (balances include them) but are NOT personal income,
+// personal expenses, personal budgets or personal statistics. Everything older is 'personal'.
+export type TransactionScope = 'personal' | 'business';
 
 // 'reversed' marks both halves of a reversed pair: balances keep both (they cancel),
 // statistics and budgets skip both
@@ -43,6 +49,7 @@ export interface TransactionModel {
 
   // Traceability (schema v2, all optional so v1 data stays valid)
   origin?: TransactionOrigin;
+  scope?: TransactionScope;
   linkedId?: string; // related pair / document: linked movements are one atomic unit
   groupTotal?: number; // declared total of a partial operation (parts share linkedId)
   reversalOf?: string; // set on the inverse movement: the original it cancels

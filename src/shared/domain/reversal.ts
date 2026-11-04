@@ -26,6 +26,8 @@ export function buildReversal(original: TransactionModel, date: string, id: stri
     date,
     note: original.note,
     origin: 'reversal',
+    scope: original.scope,
+    businessOperationId: original.businessOperationId,
     linkedId: original.linkedId,
     reversalOf: original.id,
     status: 'reversed',

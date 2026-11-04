@@ -23,6 +23,7 @@ const eligible = (t: TransactionModel) =>
   t.status !== 'reversed' &&
   !t.linkedId &&
   !t.reconciled &&
+  t.scope !== 'business' &&
   (t.origin === undefined || t.origin === 'manual' || t.origin === 'import' || t.origin === 'recurring');
 
 // The difference between what left and what arrived is accepted as a fee up to 1% of the

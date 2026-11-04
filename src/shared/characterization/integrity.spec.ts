@@ -346,7 +346,7 @@ describe('C7 importing backups (R9)', () => {
   it('export then import on a wiped device restores the same data', () => {
     const s = session({ transactions: [transaction({ accountId: 'bank', amount: 75 })] });
     const backup = s.settings.exportData();
-    expect(JSON.parse(backup).schemaVersion).toBe(3);
+    expect(JSON.parse(backup).schemaVersion).toBe(4);
     s.settings.wipeData();
     expect(boot(s.storage).transactions.transactions()).toEqual([]);
     expect(boot(s.storage).settings.importData(backup).ok).toBe(true);

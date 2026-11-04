@@ -52,6 +52,16 @@ export const MIGRATIONS: Migration[] = [
       return { ...item, nature: DEFAULT_NATURE[String(item['id'])] ?? 'variable' };
     },
   },
+  {
+    // 2.12.0: every movement says whether it is personal or business. Everything that exists is
+    // personal (nothing was ever business before), so no total changes.
+    version: 4,
+    name: 'movement-scope',
+    record(collection, item) {
+      if (!isObj(item) || collection !== 'transactions') return item;
+      return item['scope'] === undefined ? { ...item, scope: 'personal' } : item;
+    },
+  },
 ];
 
 export function migrateRecord(

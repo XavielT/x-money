@@ -8,13 +8,14 @@ import { txCurrency } from './ledger';
 export const BANK_FEES_CATEGORY = 'cat-bank-fees';
 
 // Does this movement take part in income/expense statistics and budgets?
-export function isCounted(t: Pick<TransactionModel, 'status' | 'origin'>): boolean {
-  return t.status !== 'reversed' && t.origin !== 'adjustment';
+export function isCounted(t: Pick<TransactionModel, 'status' | 'origin' | 'scope'>): boolean {
+  // business movements are not personal income or expense (working capital, sales and their costs live in the business module)
+  return t.status !== 'reversed' && t.origin !== 'adjustment' && t.scope !== 'business';
 }
 
 // A reversal gives the amount back but not the fee the bank already charged: the fee of
 // the original stays an expense even though the pair itself is skipped
-export const feeOnly = (t: TransactionModel): boolean => t.status === 'reversed' && !!t.reversedBy && !!t.fee;
+export const feeOnly = (t: TransactionModel): boolean => t.status === 'reversed' && t.scope !== 'business' && !!t.reversedBy && !!t.fee;
 
 export interface Summary {
   income: number;

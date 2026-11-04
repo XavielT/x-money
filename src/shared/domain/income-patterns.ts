@@ -77,6 +77,7 @@ export function detectRecurringIncomes(
       t.type === 'income' &&
       t.status !== 'reversed' &&
       t.origin !== 'adjustment' &&
+      t.scope !== 'business' &&
       t.origin !== 'reversal' &&
       txCurrency(t) === 'DOP' &&
       bankIds.has(t.accountId)
