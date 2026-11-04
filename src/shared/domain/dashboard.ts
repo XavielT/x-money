@@ -120,14 +120,15 @@ export interface SavingsPoint {
   total: number;
 }
 
-export function savingsHistory(accounts: readonly (LedgerAccount & { type?: string })[], txs: readonly TransactionModel[], today: string, n: number): SavingsPoint[] {
+// `extraAt`: set-asides in goals (virtual) that are NOT inside a savings account, as of a date
+export function savingsHistory(accounts: readonly (LedgerAccount & { type?: string })[], txs: readonly TransactionModel[], today: string, n: number, extraAt?: (date: string) => number): SavingsPoint[] {
   const savings = accounts.filter((a) => a.type === 'savings' && !a.archived);
-  if (!savings.length) return [];
+  if (!savings.length && !extraAt) return [];
   const months = [...lastCompleteMonths(today, n - 1), monthKey(today)];
   return months.map((month, i) => {
     const date = i === months.length - 1 ? today : `${month}-${String(lastDayOfMonth(Number(month.slice(0, 4)), Number(month.slice(5, 7)))).padStart(2, '0')}`;
     const b = balances(accounts, txs, 'DOP', date);
-    return { month, date, total: sumMoney(savings.map((a) => b.byAccount.get(a.id) ?? 0)) };
+    return { month, date, total: addMoney(sumMoney(savings.map((a) => b.byAccount.get(a.id) ?? 0)), extraAt ? extraAt(date) : 0) };
   });
 }
 
