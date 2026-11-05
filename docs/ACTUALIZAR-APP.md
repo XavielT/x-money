@@ -34,12 +34,12 @@ es la recomendada.)
 
 0. **Apunta cifras de la app vieja** para comprobar al final: saldo total y cuántas cuentas, movimientos, presupuestos y
    metas tiene (Cuentas y Ajustes).
-1. **Exporta el respaldo desde la app vieja:** Ajustes → «Export JSON backup» (guárdalo con «Compartir» en Drive o en
-   Descargas). Es el respaldo funcional; el `.tar` de arriba es la red de seguridad técnica. Las versiones nuevas importan
-   respaldos viejos (hay migraciones con pruebas).
-2. **Evita duplicados:** en la cuenta `xavieldev@gmail.com` (la de la copia de prueba) ya están creadas por captura 4
-   cuentas (Popular ×2, Banreservas ×2) con 0 movimientos. Si tu app vieja ya las tiene, al importar quedarían dobles.
-   Arréglalo **antes** archivándolas o borrándolas en la copia de prueba (Cuentas → menú de la cuenta).
+1. **El respaldo de la app vieja** (hecho el 05/11/2026): el botón «Export backup (JSON)» de la v1.0 no genera archivo en
+   este WebView, así que se reconstruyó leyendo su almacenamiento (la app es depurable): `x-money-respaldo-app-vieja.json`
+   (16 cuentas, 7 movimientos, 28 categorías), validado con el importador real de la app nueva, y copiado a Descargas del
+   teléfono. El `.tar` es la red de seguridad técnica.
+2. **Duplicados: no hay que hacer nada.** «Import backup» **reemplaza** los datos (en todos tus dispositivos si hay sesión)
+   y guarda antes un respaldo de los actuales; las 4 cuentas de prueba creadas por captura se sustituyen por las del respaldo.
 3. **Desinstala la app vieja:** `adb uninstall com.xaviel.xmoney` (o desde Ajustes del teléfono). Desde aquí los datos
    locales solo existen en los respaldos del paso 1 y del `.tar`.
 4. **Instala la nueva:**
