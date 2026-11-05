@@ -94,10 +94,10 @@ La llave de release vive en **tres sitios**; cada uno cumple una función distin
 ```
 Lee los dos archivos locales y los sube con `gh secret set`, sin imprimir nada sensible. Requiere `gh auth status` activo.
 
-### Lanzar una versión desde la nube
+### Lanzar una versión (automático)
 1. Subir `versionCode` y `versionName` en `android/app/build.gradle`, commit y push a `main`.
-2. Crear la etiqueta: `git tag v2.19.6 && git push origin v2.19.6` (o *Actions → Android release → Run workflow*).
-3. El flujo `.github/workflows/android-release.yml` corre las pruebas, compila, **firma** y deja el APK como *artifact* (30 días) en la pestaña Actions. Imprime el certificado: debe coincidir con la app instalada (`SHA-256 a20e7249…`), si no, Android no la instalará encima.
-4. Descargar el APK e instalarlo con `adb install -r` (mismos datos conservados).
+2. El flujo `.github/workflows/android-release.yml` detecta la versión nueva, corre las pruebas, compila, **firma**, **falla si el certificado no es `SHA-256 a20e7249…`** (con otro, Android no actualizaría encima) y publica el *release* `vX.Y.Z` con `x-money.apk` (nombre fijo) y `x-money-X.Y.Z-release.apk`.
+3. Instalar con `adb install -r` (mismos datos conservados). Un push con la misma versión no publica nada; *Actions → Run workflow* solo deja el APK como *artifact* (30 días).
+4. Reflejarlo en el portafolio (ver «Lanzamiento» en `CLAUDE.md`).
 
-Solo corre con etiquetas o a mano por el dueño: las solicitudes de cambios (forks) nunca reciben los secretos.
+Las solicitudes de cambios (forks) nunca corren el flujo ni reciben los secretos.

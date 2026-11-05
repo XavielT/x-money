@@ -51,6 +51,14 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 ## Versión
 No vive en `package.json` (0.0.0): `android/app/build.gradle` (`versionName`, `versionCode`) y mensaje de commit `vX.Y.Z: resumen`. El número visible está en Ajustes (`settings.html`).
 
+## Lanzamiento (norma del dueño, 05/11/2026): cada versión nueva en `main` se publica y se refleja en el portafolio
+Cuando se suben a `main` cambios con **versión nueva** (`versionName`/`versionCode` en `android/app/build.gradle`, mensaje `vX.Y.Z: …`; el dueño ya autorizó que el APK sea **público**):
+1. `git push`. El flujo `.github/workflows/android-release.yml` corre solo: pruebas, compilación, **firma con la llave de release**, y publica el *release* `vX.Y.Z` con `x-money.apk` y `x-money-X.Y.Z-release.apk`. Un push con la misma versión (p. ej. solo docs) no publica nada. Comprobar: `gh run list --workflow "Android release"` y `gh release view vX.Y.Z`.
+2. La web (proyecto Vercel `x-money`) se despliega sola desde `main`; comprobar que quede READY.
+3. **Portafolio** (`C:\dev\portfolio-v2`, tarjeta «X Money» en `src/app/app.ts`): actualizar versión/descripción si cambiaron funciones. Los enlaces son estables y no se tocan: web `https://x-money-xavielts-projects.vercel.app`, APK `https://github.com/XavielT/x-money/releases/latest`, descarga directa `…/releases/latest/download/x-money.apk`. Commit + push y comprobar su despliegue (`xaviel-web-v2` y `xaviel-web-v2-edh4`).
+4. Instalar en el teléfono con `adb install -r` (la nube y este equipo firman con el mismo certificado `a20e7249…`).
+La llave **nunca** va al repositorio (es público): vive en `android/` (ignorada) y en los secretos de GitHub (`docs/ACTUALIZAR-APP.md`).
+
 ## Fin de línea
 El árbol suele mostrar ~100 archivos "modificados" solo por CRLF/LF. No normalizar, no commitear, no "arreglar": usar `git diff --ignore-space-at-eol`.
 

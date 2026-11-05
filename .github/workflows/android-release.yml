@@ -1,6 +1,10 @@
-# Builds the SIGNED release APK of X Money. It runs only when the owner pushes a version tag (v2.19.6 ...)
-# or starts it by hand (Actions -> "Android release" -> Run workflow). Pull requests never run it, so a fork
-# cannot reach the signing secrets. Setup and recovery: docs/ACTUALIZAR-APP.md ("Llave en GitHub").
+# Builds, signs and PUBLISHES the Android release of X Money.
+#
+# Rule: every push to main that brings a NEW versionName (android/app/build.gradle) becomes a GitHub release
+# (tag vX.Y.Z, assets x-money.apk + x-money-X.Y.Z-release.apk) with no manual step. A push with the same version
+# does nothing. "Run workflow" (manual) only builds the APK as a downloadable artifact.
+# Pull requests never run it, so a fork cannot reach the signing secrets.
+# Setup and recovery: docs/ACTUALIZAR-APP.md ("Llave en GitHub").
 #
 # Secrets (set once with scripts/set-release-secrets.ps1; GitHub never shows them again):
 #   ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
@@ -8,14 +12,37 @@ name: Android release
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write # only to attach the APK to a release when a v* tag is pushed
+  contents: write # to create the release and its tag
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          V=$(grep -m1 versionName android/app/build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"; echo "v$V already released: nothing to publish"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"; echo "v$V is new: it will be released"
+          fi
+
   apk:
+    needs: check
+    if: needs.check.outputs.release == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -68,7 +95,7 @@ jobs:
       - name: Name the APK after the version
         id: apk
         run: |
-          V=$(grep -m1 versionName android/app/build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
+          V="${{ needs.check.outputs.version }}"
           cp android/app/build/outputs/apk/release/app-release.apk "x-money-$V-release.apk"
           echo "name=x-money-$V-release.apk" >> "$GITHUB_OUTPUT"
           echo "SHA-256 of the APK:" && sha256sum "x-money-$V-release.apk"
@@ -79,17 +106,14 @@ jobs:
           "$APKSIGNER" verify --print-certs "${{ steps.apk.outputs.name }}" | tee cert.txt
           grep -q "SHA-256 digest: a20e724910b3a8739c99d2fab0a7bbe5feefcf013f0a9a95254a4748a211d3fe" cert.txt
 
-      - name: Publish a release with the APK (only for a v* tag)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish the release (new version on main)
+        if: needs.check.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp "${{ steps.apk.outputs.name }}" x-money.apk # stable name: .../releases/latest/download/x-money.apk
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" x-money.apk "${{ steps.apk.outputs.name }}" --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" x-money.apk "${{ steps.apk.outputs.name }}" --title "X Money $GITHUB_REF_NAME" --generate-notes
-          fi
+          gh release create "v${{ needs.check.outputs.version }}" x-money.apk "${{ steps.apk.outputs.name }}" \
+            --target "$GITHUB_SHA" --title "X Money ${{ needs.check.outputs.version }}" --generate-notes
 
       - uses: actions/upload-artifact@v4
         with:
