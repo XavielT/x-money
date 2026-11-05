@@ -44,6 +44,7 @@
 // Account cards
 .accounts-card {
   display: flex;
+  flex-wrap: wrap; // name + balance on the first line, the buttons on their own line below
   align-items: center;
   gap: 12px;
   padding: 14px;
@@ -83,10 +84,13 @@
   font-size: 0.95rem;
 }
 
-.accounts-card-right {
+.accounts-card-actions {
+  flex: 1 1 100%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .accounts-card-balances {

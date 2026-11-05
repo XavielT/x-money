@@ -94,15 +94,15 @@
       </small>
       <small class="accounts-card-linked" *ngIf="linkedName(acc)">→ {{ linkedName(acc) }}</small>
     </div>
-    <div class="accounts-card-right">
-      <div class="accounts-card-balances">
+    <div class="accounts-card-balances">
         <strong *ngIf="showDop(acc)" [class.negative]="balanceOf(acc) < 0">
           <ng-container *ngIf="isCreditCard(acc) && balanceOf(acc) < 0">{{ 'Owed' | t }} </ng-container>{{ balanceOf(acc) < 0 && !isCreditCard(acc) ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc)) | number:'1.2-2' }}
         </strong>
         <strong *ngIf="showUsd(acc)" class="usd" [class.negative]="usdBalanceOf(acc) < 0">
           <ng-container *ngIf="isCreditCard(acc) && usdBalanceOf(acc) < 0">{{ 'Owed' | t }} </ng-container>{{ usdBalanceOf(acc) < 0 && !isCreditCard(acc) ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
         </strong>
-      </div>
+    </div>
+    <div class="accounts-card-actions">
       <button class="accounts-card-reconcile" *ngIf="isCreditCard(acc)" (click)="openCard(acc, $event)">{{ 'Card' | t }}</button>
       <button class="accounts-card-reconcile" (click)="edit(acc, $event)">{{ 'Edit' | t }}</button>
       <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Reconcile' | t }}</button>
