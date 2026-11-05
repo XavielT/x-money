@@ -46,6 +46,17 @@
       <button class="x-btn" [disabled]="busy() || !recoveryPassword" (click)="regenerateCode()">{{ 'Regenerate recovery code' | t }}</button>
     </details>
 
+    <details class="acct-card x-card">
+      <summary>{{ 'Invite someone' | t }}</summary>
+      <p class="acct-hint">{{ 'Make a code for another person to create their own account. Each code works once and expires in 7 days. Only the first (owner) account can make them.' | t }}</p>
+      <button class="x-btn" [disabled]="busy()" (click)="makeInvite()">{{ 'Create invite code' | t }}</button>
+      <ng-container *ngIf="invite() as i">
+        <p class="acct-code">{{ i.code }}</p>
+        <p class="acct-hint">{{ 'Shown only now. Expires on' | t }} {{ when(i.expiresAt) }}</p>
+        <button class="x-btn" (click)="copyInvite()">{{ 'Copy' | t }}</button>
+      </ng-container>
+    </details>
+
     <details class="acct-card x-card" (toggle)="loadSessions()">
       <summary>{{ 'Devices' | t }}</summary>
       <div class="acct-row" *ngFor="let s of sessions()">

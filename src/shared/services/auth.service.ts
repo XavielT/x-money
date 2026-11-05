@@ -81,6 +81,11 @@ export class AuthService {
     this.recoveryCode.set(res.recoveryCode ?? null);
   }
 
+  // A one-time invite code for someone else to create an account (only the owner account can make them)
+  async createInvite(): Promise<{ code: string; expiresAt: number }> {
+    return this.api.client.call<{ code: string; expiresAt: number }>('auth/invite/create');
+  }
+
   async acknowledgeRecoveryCode(): Promise<void> {
     this.recoveryCode.set(null);
     const res = this.pendingSignup;

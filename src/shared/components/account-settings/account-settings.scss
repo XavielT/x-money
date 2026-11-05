@@ -91,3 +91,11 @@
   display: flex;
   gap: 8px;
 }
+
+.acct-code {
+  font-family: monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  margin: 8px 0 2px;
+  user-select: all;
+}

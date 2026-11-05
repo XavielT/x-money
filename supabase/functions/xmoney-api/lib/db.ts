@@ -58,6 +58,15 @@ export interface Db {
   insertAccount(row: AccountRow): Promise<boolean>;
   // how many accounts exist (the very first one needs no invite code)
   countAccounts(): Promise<number>;
+  // the owner is the account that was created first
+  ownerAccountId(): Promise<string | null>;
+  // One-time invite codes (only their hash is stored)
+  insertInvite(row: { codeHash: string; createdBy: string; createdAt: number; expiresAt: number }): Promise<void>;
+  countActiveInvites(createdBy: string, now: number): Promise<number>;
+  // atomically takes a valid, unused invite; false when it does not exist, was used or has expired
+  claimInvite(codeHash: string, now: number): Promise<boolean>;
+  // gives it back (the signup that claimed it did not finish)
+  releaseInvite(codeHash: string): Promise<void>;
   updateAccount(id: string, patch: Partial<Omit<AccountRow, 'id'>>): Promise<void>;
 
   insertSession(row: SessionRow): Promise<void>;

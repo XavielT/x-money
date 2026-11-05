@@ -35,6 +35,33 @@ export class MemoryDb implements Db {
     return this.accounts.size;
   }
 
+  invites = new Map<string, { createdBy: string; createdAt: number; expiresAt: number; usedAt: number | null }>();
+
+  async ownerAccountId() {
+    const oldest = [...this.accounts.values()].sort((a, b) => a.createdAt - b.createdAt)[0];
+    return oldest?.id ?? null;
+  }
+
+  async insertInvite(row: { codeHash: string; createdBy: string; createdAt: number; expiresAt: number }) {
+    this.invites.set(row.codeHash, { createdBy: row.createdBy, createdAt: row.createdAt, expiresAt: row.expiresAt, usedAt: null });
+  }
+
+  async countActiveInvites(createdBy: string, now: number) {
+    return [...this.invites.values()].filter((i) => i.createdBy === createdBy && i.usedAt === null && i.expiresAt > now).length;
+  }
+
+  async claimInvite(codeHash: string, now: number) {
+    const i = this.invites.get(codeHash);
+    if (!i || i.usedAt !== null || i.expiresAt <= now) return false;
+    i.usedAt = now;
+    return true;
+  }
+
+  async releaseInvite(codeHash: string) {
+    const i = this.invites.get(codeHash);
+    if (i) i.usedAt = null;
+  }
+
   async insertAccount(row: AccountRow) {
     if ([...this.accounts.values()].some((a) => a.email === row.email)) return false;
     this.accounts.set(row.id, { ...row });

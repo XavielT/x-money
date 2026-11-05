@@ -133,6 +133,39 @@ export class PgDb implements Db {
     return rows[0] ? toAccount(rows[0]) : null;
   }
 
+  async ownerAccountId() {
+    const rows = await this.exec(`select id::text as id from xmoney.accounts order by created_at asc, id asc limit 1`, []);
+    return rows[0] ? String(rows[0]['id']) : null;
+  }
+
+  async insertInvite(row: { codeHash: string; createdBy: string; createdAt: number; expiresAt: number }) {
+    await this.exec(
+      `insert into xmoney.invites (code_hash, created_by, created_at, expires_at)
+       values ($1, $2::uuid, ${ts('$3')}, ${ts('$4')})`,
+      [row.codeHash, row.createdBy, row.createdAt, row.expiresAt]
+    );
+  }
+
+  async countActiveInvites(createdBy: string, now: number) {
+    const rows = await this.exec(
+      `select count(*)::int as n from xmoney.invites where created_by = $1::uuid and used_at is null and expires_at > ${ts('$2')}`,
+      [createdBy, now]
+    );
+    return Number(rows[0]?.['n'] ?? 0);
+  }
+
+  async claimInvite(codeHash: string, now: number) {
+    const rows = await this.exec(
+      `update xmoney.invites set used_at = ${ts('$2')} where code_hash = $1 and used_at is null and expires_at > ${ts('$2')} returning code_hash`,
+      [codeHash, now]
+    );
+    return rows.length > 0;
+  }
+
+  async releaseInvite(codeHash: string) {
+    await this.exec(`update xmoney.invites set used_at = null where code_hash = $1`, [codeHash]);
+  }
+
   async countAccounts() {
     const rows = await this.exec(`select count(*)::int as n from xmoney.accounts`, []);
     return Number(rows[0]?.['n'] ?? 0);

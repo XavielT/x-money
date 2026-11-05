@@ -8,7 +8,7 @@ do $$
 declare
   r text;
   t text;
-  tables text[] := array['accounts', 'sessions', 'rate_limits', 'records', 'meta', 'ai_usage', 'mail_connections'];
+  tables text[] := array['accounts', 'sessions', 'rate_limits', 'records', 'meta', 'ai_usage', 'mail_connections', 'invites'];
 begin
   foreach r in array array['anon', 'authenticated'] loop
     foreach t in array tables loop

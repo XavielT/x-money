@@ -459,3 +459,66 @@ describe('sync', () => {
     expect((await call('sync/push', { ops: [] }, 'bogus')).status).toBe(401);
   });
 });
+
+describe('invite codes (2.18.5)', () => {
+  const invite = (token: string) => call('auth/invite/create', {}, token);
+  const plain = async () => {
+    const owner = await newUser('owner@example.com');
+    const r = await invite(owner.accessToken);
+    return { owner, code: (r.body as { code: string }).code, r };
+  };
+
+  it('the owner makes a readable one-time code that expires in 7 days, and only its hash is stored', async () => {
+    const { r, code } = await plain();
+    expect(r.status).toBe(200);
+    expect(code).toMatch(/^[A-HJKMNP-Z2-9]{5}-[A-HJKMNP-Z2-9]{5}$/);
+    expect((r.body as { expiresAt: number }).expiresAt).toBe(t + 7 * 24 * 60 * 60 * 1000);
+    expect(JSON.stringify([...db.invites.entries()])).not.toContain(code.replace('-', ''));
+    expect([...db.invites.keys()][0]).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('only the owner (the first account) can invite, and it needs a session', async () => {
+    const { code } = await plain();
+    const guest = await call('auth/signup', { email: 'guest@example.com', password: PW, inviteCode: code, deviceId: 'device-gggg' });
+    expect(guest.status).toBe(200);
+    const denied = await invite((guest.body as { accessToken: string }).accessToken);
+    expect(denied).toMatchObject({ status: 403, body: { error: 'not_owner' } });
+    expect((await call('auth/invite/create', {})).status).toBe(401);
+  });
+
+  it('a code works once: it signs one person up, and then it is spent', async () => {
+    const { code } = await plain();
+    const used = await call('auth/signup', { email: 'one@example.com', password: PW, inviteCode: code, deviceId: 'device-1111' });
+    expect(used.status).toBe(200);
+    const again = await call('auth/signup', { email: 'two@example.com', password: PW, inviteCode: code, deviceId: 'device-2222' });
+    expect(again.body['error']).toBe('signup_failed');
+    expect(db.accounts.size).toBe(2);
+  });
+
+  it('the code does not care about case, spaces or the hyphen; a wrong one fails like any other', async () => {
+    const { code } = await plain();
+    const typed = ` ${code.toLowerCase().replace('-', ' ')} `;
+    expect((await call('auth/signup', { email: 'x@example.com', password: PW, inviteCode: 'ZZZZZ-ZZZZZ', deviceId: 'device-xxxx' })).body['error']).toBe('signup_failed');
+    expect((await call('auth/signup', { email: 'x@example.com', password: PW, inviteCode: typed, deviceId: 'device-xxxx' })).status).toBe(200);
+  });
+
+  it('an expired code does not work', async () => {
+    const { code } = await plain();
+    t += 7 * 24 * 60 * 60 * 1000 + 1000;
+    expect((await call('auth/signup', { email: 'late@example.com', password: PW, inviteCode: code, deviceId: 'device-late' })).body['error']).toBe('signup_failed');
+  });
+
+  it('if the email is already taken the code is not spent', async () => {
+    const { code } = await plain();
+    const taken = await call('auth/signup', { email: 'owner@example.com', password: PW, inviteCode: code, deviceId: 'device-dupe' });
+    expect(taken.body['error']).toBe('signup_failed');
+    expect((await call('auth/signup', { email: 'fresh@example.com', password: PW, inviteCode: code, deviceId: 'device-fresh' })).status).toBe(200);
+  });
+
+  it('at most 5 active codes at a time; the shared secret of the server keeps working', async () => {
+    const owner = await newUser('owner@example.com');
+    for (let i = 0; i < 5; i++) expect((await invite(owner.accessToken)).status).toBe(200);
+    expect(await invite(owner.accessToken)).toMatchObject({ status: 429, body: { error: 'too_many_invites' } });
+    expect((await signup('viasecret@example.com', 'device-sec1')).status).toBe(200);
+  });
+});

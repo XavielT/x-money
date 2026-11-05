@@ -25,6 +25,21 @@ import {
   normalizeRecoveryCode,
 } from './validate.ts';
 
+const MAX_ACTIVE_INVITES = 5;
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// no 0/O/1/I/L: a code is read aloud and typed on a phone
+const INVITE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+// "ABCDE-FGHJK": 10 characters from 31 symbols (about 49 bits), single use, expires in 7 days
+export function newInviteCode(bytes: Uint8Array): string {
+  const chars = [...bytes.slice(0, 10)].map((b) => INVITE_ALPHABET[b % INVITE_ALPHABET.length]);
+  while (chars.length < 10) chars.push(INVITE_ALPHABET[0]);
+  return `${chars.slice(0, 5).join('')}-${chars.slice(5).join('')}`;
+}
+
+// Case, spaces and the hyphen do not matter when typing a code
+const inviteHash = (code: string): Promise<string> => sha256Hex('invite:' + code.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+
 export interface ApiDeps {
   db: Db;
   tokenSecret: string;
@@ -158,8 +173,15 @@ export function createApi(deps: ApiDeps) {
     const generic = fail(400, 'signup_failed');
     // The invite code keeps strangers out of a personal backend. The very FIRST account (the owner's)
     // needs none: while no account exists there is nobody to protect and no code to have shared yet.
-    const codeOk = !!deps.signupCode && typeof b['inviteCode'] === 'string' && timingSafeEqualText(b['inviteCode'], deps.signupCode);
-    if (!codeOk && (await db.countAccounts()) > 0) return generic;
+    // Codes that work: the shared secret of the server, or a one-time invite made by the owner in Settings.
+    const code = typeof b['inviteCode'] === 'string' ? b['inviteCode'] : '';
+    const secretOk = !!deps.signupCode && !!code && timingSafeEqualText(code, deps.signupCode);
+    let claimed: string | null = null; // the invite taken by this signup, given back if the signup does not finish
+    if (!secretOk && (await db.countAccounts()) > 0) {
+      const hash = await inviteHash(code);
+      if (!code || !(await db.claimInvite(hash, now()))) return generic;
+      claimed = hash;
+    }
 
     const pw = await hashPassword(b['password'], kdf);
     const recovery = newRecoveryCode(randomBytes(32));
@@ -178,9 +200,24 @@ export function createApi(deps: ApiDeps) {
       createdAt: t,
       lastLoginAt: t,
     };
-    if (!(await db.insertAccount(account))) return generic;
+    if (!(await db.insertAccount(account))) {
+      if (claimed) await db.releaseInvite(claimed); // the email was taken: the invite is not spent
+      return generic;
+    }
     const session = await startSession(account, b['deviceId'], cleanLabel(b['deviceLabel']));
     return reply(200, { ...session, recoveryCode: recovery.display });
+  }
+
+  // ---------------------------------------------------------------- invites
+
+  // Only the owner (the first account) can invite. The code is shown ONCE: only its hash is stored.
+  async function createInvite(auth: Auth): Promise<ApiResponse> {
+    if ((await db.ownerAccountId()) !== auth.account.id) return fail(403, 'not_owner');
+    const t = now();
+    if ((await db.countActiveInvites(auth.account.id, t)) >= MAX_ACTIVE_INVITES) return fail(429, 'too_many_invites');
+    const code = newInviteCode(randomBytes(8));
+    await db.insertInvite({ codeHash: await inviteHash(code), createdBy: auth.account.id, createdAt: t, expiresAt: t + INVITE_TTL_MS });
+    return reply(200, { code, expiresAt: t + INVITE_TTL_MS });
   }
 
   async function login(req: ApiRequest): Promise<ApiResponse> {
@@ -535,6 +572,8 @@ export function createApi(deps: ApiDeps) {
           return await changePassword(auth, req.body);
         case 'auth/regenerate-recovery':
           return await regenerateRecovery(auth, req.body);
+        case 'auth/invite/create':
+          return await createInvite(auth);
         case 'auth/sessions':
           return await sessions(auth);
         case 'auth/revoke':

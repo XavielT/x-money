@@ -28,6 +28,7 @@ export class AccountSettingsComponent {
   newPassword = '';
   recoveryPassword = '';
   reminderDays = 30;
+  invite = signal<{ code: string; expiresAt: number } | null>(null);
 
   // iOS Safari has no install prompt: hint only when it can be installed and is not yet
   showIosHint = computed(() => 'standalone' in navigator && !(navigator as { standalone?: boolean }).standalone);
@@ -48,6 +49,33 @@ export class AccountSettingsComponent {
         return this.sync.pending() ? 'Waiting to sync' : 'Synced';
     }
   });
+
+  async makeInvite(): Promise<void> {
+    this.busy.set(true);
+    this.message.set(null);
+    try {
+      this.invite.set(await this.auth.createInvite());
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : '';
+      this.message.set({
+        ok: false,
+        text: this.translate.instant(code === 'not_owner' ? 'Only the first (owner) account can create invite codes.' : code === 'too_many_invites' ? 'You already have 5 unused codes. Wait for one to be used or to expire.' : 'The code could not be created. Try again.'),
+      });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async copyInvite(): Promise<void> {
+    const code = this.invite()?.code;
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      this.message.set({ ok: true, text: this.translate.instant('Copied.') });
+    } catch {
+      this.message.set({ ok: false, text: this.translate.instant('It could not be copied: write it down.') });
+    }
+  }
 
   constructor(
     public auth: AuthService,
