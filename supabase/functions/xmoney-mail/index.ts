@@ -16,6 +16,8 @@ const clientId = Deno.env.get('GOOGLE_CLIENT_ID') ?? '';
 const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET') ?? '';
 const redirectUri = Deno.env.get('XMONEY_MAIL_REDIRECT') ?? '';
 const origins = allowedOrigins(Deno.env.get('XMONEY_ALLOWED_ORIGINS'));
+// where the person lands after Google: pages of the X Money site (docs/SETUP-CAPTURA.md); override with XMONEY_MAIL_DONE_URL
+const doneBase = (Deno.env.get('XMONEY_MAIL_DONE_URL') ?? 'https://x-money-site-xavielts-projects.vercel.app').replace(/\/+$/, '');
 
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL') ?? '', { max: 2, prepare: false, idle_timeout: 20, connect_timeout: 10 });
 const exec: Exec = (text, params) => sql.unsafe(text, params as never[]) as unknown as Promise<Row[]>;
@@ -60,6 +62,7 @@ Deno.serve(async (req) => {
   const result = await mail.handle({ action, body, query: url.searchParams, authorization: req.headers.get('authorization') });
   // the log keeps the action and the outcome only: never a message, a token or a key
   console.log(`xmoney-mail ${action} ${result.status} ${String(result.body?.['code'] ?? 'ok')}`);
+  if (result.outcome) return new Response(null, { status: 302, headers: { Location: `${doneBase}/mail-${result.outcome}`, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
   if (result.html) return new Response(result.html, { status: result.status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'", 'Referrer-Policy': 'no-referrer' } });
   return new Response(JSON.stringify(result.body), { status: result.status, headers });
 });

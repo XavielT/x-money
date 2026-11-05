@@ -159,6 +159,7 @@ describe('the connection flow', () => {
     const page = await connect(s);
     expect(page.status).toBe(200);
     expect(page.html).toMatch(/Connected/);
+    expect(page.outcome).toBe('connected'); // the function turns this into a redirect to the site's page
     expect(s.provider.exchanged[0].verifier.length).toBeGreaterThan(40);
     const row = (await s.store.get('acc-1'))!;
     expect(row.refreshTokenEnc).not.toContain('REFRESH-SECRET');
@@ -178,8 +179,10 @@ describe('the connection flow', () => {
     const st2 = new URL(String(fresh.body?.['url'])).searchParams.get('state')!;
     expect((await s.call('callback', {}, null, `code=good&state=${encodeURIComponent(st2.slice(0, -3) + 'AAA')}`)).html).toMatch(/Link expired/);
     expect((await s.call('callback', {}, null, 'code=good')).html).toMatch(/Link expired/);
+    expect((await s.call('callback', {}, null, 'code=good')).outcome).toBe('expired');
     expect((await s.call('callback', {}, null, `code=bad&state=${encodeURIComponent(st2)}`)).html).toMatch(/Not connected/);
     expect((await s.call('callback', {}, null, 'error=access_denied')).html).toMatch(/Access was not granted/);
+    expect((await s.call('callback', {}, null, 'error=access_denied')).outcome).toBe('failed');
     expect(await s.store.get('acc-1')).toBeNull();
   });
 });

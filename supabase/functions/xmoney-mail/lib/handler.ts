@@ -34,10 +34,15 @@ export interface MailRequest {
   authorization: string | null;
 }
 
+export type CallbackOutcome = 'connected' | 'expired' | 'failed';
+
 export interface MailResponse {
   status: number;
   body?: Record<string, unknown>;
   html?: string;
+  // the callback is seen by a person in a browser: it ends on a page of the X Money site, not on raw HTML
+  // (Supabase serves function HTML as plain text, which showed the markup on the phone)
+  outcome?: CallbackOutcome;
 }
 
 export const MAX_SCAN = 30;
@@ -45,8 +50,9 @@ export const STATE_TTL_MS = 10 * 60 * 1000;
 
 const fail = (status: number, code: string): MailResponse => ({ status, body: { ok: false, code } });
 
-const page = (title: string, text: string): MailResponse => ({
+const page = (title: string, text: string, outcome: CallbackOutcome): MailResponse => ({
   status: 200,
+  outcome,
   html: `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><body style="font-family:system-ui;max-width:28rem;margin:3rem auto;padding:0 1rem"><h1 style="font-size:1.2rem">${title}</h1><p>${text}</p></body>`,
 });
 
@@ -59,8 +65,8 @@ export function createMail(deps: MailDeps) {
   }
 
   async function callback(query: URLSearchParams): Promise<MailResponse> {
-    if (!deps.provider) return page('Not configured', 'Mail reading is not configured on the server.');
-    if (query.get('error')) return page('Not connected', 'Access was not granted. You can close this page and go back to X Money.');
+    if (!deps.provider) return page('Not configured', 'Mail reading is not configured on the server.', 'failed');
+    if (query.get('error')) return page('Not connected', 'Access was not granted. You can close this page and go back to X Money.', 'failed');
     const code = query.get('code') ?? '';
     const raw = await open(query.get('state') ?? '', deps.mailKey);
     let state: { a?: string; v?: string; e?: number } = {};
@@ -69,11 +75,11 @@ export function createMail(deps: MailDeps) {
     } catch {
       state = {};
     }
-    if (!code || !state.a || !state.v || !state.e || state.e < deps.now()) return page('Link expired', 'This link is not valid anymore. Go back to X Money and connect again.');
+    if (!code || !state.a || !state.v || !state.e || state.e < deps.now()) return page('Link expired', 'This link is not valid anymore. Go back to X Money and connect again.', 'expired');
     const got = await deps.provider.exchange({ code, verifier: state.v, redirectUri: deps.redirectUri });
-    if (!got) return page('Not connected', 'Google did not accept the connection. Go back to X Money and try again.');
+    if (!got) return page('Not connected', 'Google did not accept the connection. Go back to X Money and try again.', 'failed');
     await deps.store.upsert({ accountId: state.a, provider: 'gmail', email: got.email ?? null, refreshTokenEnc: await seal(got.refreshToken, deps.mailKey) }, deps.now());
-    return page('Connected', 'Your mail is connected (read only). You can close this page and go back to X Money.');
+    return page('Connected', 'Your mail is connected (read only). You can close this page and go back to X Money.', 'connected');
   }
 
   async function status(p: MailPrincipal): Promise<MailResponse> {
