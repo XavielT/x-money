@@ -22,6 +22,10 @@ poseen prompts posteriores), `src/shared/services/integrity-2-7.spec.ts` (prompt
 - Dónde se aplica (archivo): `services/transaction.service.ts` (`defaultOrigin`: una transferencia a una tarjeta de crédito es `card-payment`); el formulario avisa «¿Pagas una tarjeta? Usa Transferencia» cuando hay una tarjeta de crédito.
 - Prueba que la protege: `integrity-2-7.spec.ts`; `credit-card.spec.ts` («rule 3 for payments that were typed as a plain expense», pago como liquidación, reverso de un pago); `domain/cards.spec.ts` (estados, pagado derivado) y la prueba de caracterización C1.
 - Estado: **cumple, con una salvedad.** La pantalla «Pagar tarjeta» registra el pago como transferencia `card-payment` (baja la deuda y la cuenta pagadora, nunca es gasto) y lo aplica al estado de cuenta abierto más antiguo; qué se pagó se **deriva** de los pagos (revertir un pago devuelve el estado). Si el usuario lo registra igual como gasto, la app lo detecta (gasto en una cuenta que no es tarjeta, igual al balance, al mínimo o a lo pendiente de un estado de cuenta, después del corte y hasta 10 días tras el vencimiento) y **sugiere** convertirlo; nunca lo convierte sola, así que hasta que se confirme sigue duplicando.
+- Comisión o impuesto bancario (`fee`, 2.19.3): en un pago de tarjeta o una transferencia sale de la cuenta que paga además del monto, no se
+  abona a la tarjeta y es el único gasto de la operación (`ledger.ts` ya descuenta `fee` del origen). Prueba: `capture.spec.ts`
+  «the tax a bank prints on a card payment…».
+- La tarjeta con deuda se muestra como «Owed X» (2.19.4), no como saldo negativo; el saldo guardado sigue siendo menos lo que se debe.
 
 ### 4. Los beneficios laborales no monetarios no se consideran efectivo disponible.
 - Dónde se aplica (archivo): `services/benefit.service.ts` depende **solo** de `StorageService` y `AuditLogService`: no tiene camino hacia cuentas, movimientos, ingreso ni patrimonio. `domain/benefits.ts` es puro y aislado. Un «uso» es una nota, no un movimiento. Toda cifra de beneficios se rotula «Estimación · no es dinero disponible» y nunca se muestra junto a saldos sin esa etiqueta.

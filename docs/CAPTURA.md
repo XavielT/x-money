@@ -65,6 +65,11 @@ saldos siguientes siguen saliendo de los movimientos (regla 9). En una tarjeta d
 - Si ya tienes una cuenta con esos últimos 4 dígitos y el mismo banco, el borrador queda como «posible duplicado» y no
   se sobrescribe nada sin tu decisión.
 - Sin un saldo explícito (0 vale) o sin tipo o moneda, no se puede aprobar: la app no lo supone.
+- En la bandeja, cada borrador de cuenta muestra **banco · últimos 4 · tipo** bajo el nombre, para distinguir dos cuentas del
+  mismo banco. Una tarjeta de crédito pide además el **límite** (la captura del banco suele traer solo el crédito
+  disponible: deuda = límite − disponible; la app no lo calcula por ti sin el límite).
+- Probado con el teléfono real el 05/11/2026: cuatro cuentas de Banreservas y Popular y una Visa, con saldos que
+  coinciden con el banco al centavo.
 
 ## La bandeja «Revisar capturas»
 
@@ -75,6 +80,13 @@ saldos siguientes siguen saliendo de los movimientos (regla 9). En una tarjeta d
 - Aprobar crea: gasto, ingreso, pago de tarjeta (transferencia `card-payment`, **no** gasto), transferencia entre
   tus cuentas (no es ingreso ni gasto), aporte a una meta, pago de un préstamo, o compra con factura (**un** gasto
   por el total; el ITBIS queda como dato; si marcas «de mi negocio», pasa por la compra de inventario del negocio).
+- **Impuesto o comisión del banco** (p. ej. el 0.15 % que cobra el banco en una transferencia): en un pago de tarjeta o una
+  transferencia el modelo lee `bankFeeText` del comprobante y el borrador lo muestra editable. Al aprobar, el impuesto
+  sale de la cuenta que paga **además** del monto y **no** se paga a la tarjeta; es lo único que cuenta como gasto del mes
+  (categoría «Bank fees»), el pago en sí sigue siendo una transferencia (regla 3). «Pagar tarjeta» tiene el mismo campo.
+- **Tapar partes de la imagen** antes de enviarla: botón «Tapar partes» → pantalla completa donde arrastras el dedo
+  (Deshacer / Quitar cuadros / Listo). Ya no se dibuja sobre la miniatura para que un deslizamiento de la lista no
+  oculte nada sin querer.
 - Procedencia: la auditoría registra `capture:<fuente>` y el id del borrador; el movimiento se revierte como
   cualquier otro. Los borradores aprobados quedan en el historial («registrado desde captura»).
 - Pendientes de más de 7 días: aviso; **nunca** se aprueban ni se borran solos.

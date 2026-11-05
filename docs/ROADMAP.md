@@ -21,3 +21,14 @@ Regla: **ningún prompt se corre sin que el anterior esté commiteado y probado 
 
 Prioridad de fondo: P0 integridad → P1 control → P2 negocios → P3 planificación → P4 inteligencia (`docs/VISION.md`).
 La versión vive en `android/app/build.gradle` (`versionName`/`versionCode`) y en el mensaje de commit `vX.Y.Z: …`.
+
+## Después de la ronda 12 (05/11/2026): versiones 2.19.x
+- **2.19.1–2.19.5**: app real en el teléfono con llave de release; cuentas creadas desde capturas de Banreservas y Popular; arreglos
+  de campos de monto que perdían el foco, editor «Tapar partes», banco + últimos 4 en los borradores, impuesto bancario en pagos y
+  transferencias, detalle de cuenta (tocar una cuenta ya no abre la edición), tarjeta mostrada como deuda, filas de cuentas sin
+  texto apretado.
+- **Infraestructura**: web/PWA en Vercel (`x-money`), sitio de privacidad y condiciones (`x-money-site`, `site/`), Gmail conectado
+  en modo solo lectura (app publicada en Google), y lanzamiento automático: cada `versionName` nuevo en `main` publica un release
+  firmado en GitHub (`CLAUDE.md` → «Lanzamiento»).
+- **Pendiente**: probar la lectura del correo con un aviso bancario nuevo; confirmar que el token de Gmail ya no caduca a los 7 días;
+  copia fuera de línea de la llave de firma; tilde en la categoría «Pastelería» (estético).

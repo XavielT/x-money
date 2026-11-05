@@ -57,6 +57,9 @@ El código está completo y **apagado**. Para encenderlo:
    **Si pierdes o cambias esta clave** los tokens guardados ya no se pueden abrir: solo hay que reconectar.
 3. Despliega: `supabase functions deploy xmoney-mail --no-verify-jwt` (X Money tiene sus propias cuentas y tokens,
    igual que `xmoney-api`).
+   Al terminar en Google, la función **redirige** a una página del sitio de X Money (`/mail-connected`, `/mail-expired`,
+   `/mail-failed`; carpeta `site/`, proyecto Vercel `x-money-site`). No sirve HTML propio: Supabase lo entrega como texto plano.
+   La dirección base se cambia con el secreto opcional `XMONEY_MAIL_DONE_URL`.
 4. En la app: Ajustes → «Captura inteligente» → «Leer mi correo (Gmail)» → lista los remitentes de **tus**
    bancos (la app **no** inventa direcciones; la lista empieza vacía) → «Conectar Gmail» → «Buscar en mi correo».
 
