@@ -22,7 +22,7 @@
     <div class="review-row" (click)="toggleOpen(d.id)">
       <input type="checkbox" [checked]="marked().has(d.id)" (click)="$event.stopPropagation()" (change)="toggleMark(d.id)" [disabled]="d.status === 'duplicate'" [attr.aria-label]="'Mark' | t" />
       <div class="review-main">
-        <b>{{ d.counterparty || d.accountName || d.description || (kindLabel(d.kind) | t) }}</b>
+        <b>{{ d.counterparty || d.accountName || d.description || (d.status === 'duplicate' && d.kind === 'unknown' ? ('Same file as an earlier capture' | t) : (kindLabel(d.kind) | t)) }}</b>
         <small>{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
       </div>
       <strong class="review-amount" [class.doubt]="!d.amountMinor || d.doubts.includes('amount-unverified')">{{ amountLabel(d) }}</strong>

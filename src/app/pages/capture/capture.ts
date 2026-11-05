@@ -99,8 +99,13 @@ export class CaptureComponent implements OnInit, OnDestroy {
   async onFiles(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
+    // The picker only grants access to the files while the input holds them: read every one NOW (the reads start
+    // together), and only then clear the input. Reading them one by one made the second image fail (NotReadableError).
+    const reads = files.map((f) => f.arrayBuffer().then((b) => new File([b], f.name, { type: f.type })).catch(() => null));
     input.value = '';
-    await this.addMany(files);
+    const copies = (await Promise.all(reads)).filter((f): f is File => f !== null);
+    if (copies.length < files.length) this.message.set(this.translate.instant('Some files could not be read. Pick them again.'));
+    await this.addMany(copies);
   }
 
   @HostListener('document:paste', ['$event'])

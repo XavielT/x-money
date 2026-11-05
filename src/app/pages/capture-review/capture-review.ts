@@ -213,7 +213,7 @@ export class CaptureReviewComponent {
     this.notice.set('');
     const r = this.capture.approve(d.id, { confirmLarge: this.confirmLarge().has(d.id) });
     if (r.ok) {
-      this.notice.set(this.t('Registered. You can reverse it from the history like any movement.'));
+      this.notice.set(this.t(d.kind === 'account_setup' ? 'Account created. Its balance is the opening balance: you can edit or archive it in Accounts.' : 'Registered. You can reverse it from the history like any movement.'));
       this.open.set(null);
     } else if ('missing' in r) this.message.set(r.missing.map((m) => this.t(MISSING_LABELS[m])).join(' '));
     else this.message.set(this.t(r.error === 'duplicate-decision' ? 'Decide first about the possible duplicate.' : 'It could not be registered: check the fields.'));

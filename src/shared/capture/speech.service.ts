@@ -34,14 +34,15 @@ export class SpeechService {
   private web: WebRecognition | null = null;
   private stopped = false;
 
+  // The plugin proxy travels inside an object: returned bare from a promise, JS would call .then() on it and fail
   private async plugin() {
-    return (await import('@capacitor-community/speech-recognition')).SpeechRecognition;
+    return { p: (await import('@capacitor-community/speech-recognition')).SpeechRecognition };
   }
 
   async available(): Promise<boolean> {
     if (Capacitor.isNativePlatform()) {
       try {
-        return (await (await this.plugin()).available()).available;
+        return (await (await this.plugin()).p.available()).available;
       } catch {
         return false;
       }
@@ -67,11 +68,11 @@ export class SpeechService {
   stop(): void {
     this.stopped = true;
     this.web?.stop();
-    if (Capacitor.isNativePlatform()) void this.plugin().then((p) => p.stop()).catch(() => undefined);
+    if (Capacitor.isNativePlatform()) void this.plugin().then((h) => h.p.stop()).catch(() => undefined);
   }
 
   private async listenNative(language: string): Promise<string> {
-    const p = await this.plugin();
+    const { p } = await this.plugin();
     let status = await p.checkPermissions();
     // the permission is asked only now, at the first use
     if (status.speechRecognition !== 'granted') status = await p.requestPermissions();

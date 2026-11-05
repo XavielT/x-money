@@ -1817,4 +1817,7 @@ export const ES: Record<string, string> = {
   'Amount owed today (opening balance)': 'Monto adeudado hoy (saldo de apertura)',
   'Current balance (opening balance)': 'Saldo actual (saldo de apertura)',
   'Only the last 4 digits are kept. The balance becomes the opening balance: no movement is created.': 'Solo se guardan los últimos 4 dígitos. El saldo pasa a ser el saldo de apertura: no se crea ningún movimiento.',
+  'Some files could not be read. Pick them again.': 'Algunos archivos no se pudieron leer. Elígelos de nuevo.',
+  'Account created. Its balance is the opening balance: you can edit or archive it in Accounts.': 'Cuenta creada. Su saldo es el saldo de apertura: puedes editarla o archivarla en Cuentas.',
+  'Same file as an earlier capture': 'El mismo archivo de una captura anterior',
 };
