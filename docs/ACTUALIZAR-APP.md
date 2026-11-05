@@ -75,3 +75,29 @@ adb install -r app\build\outputs\apk\release\app-release.apk
 
 Es una copia aparte que usé para probar; no comparte datos con la app real, pero entra a **la misma cuenta del servidor**.
 Cuando termines la migración, desinstálala: `adb uninstall com.xaviel.xmoney.t12`.
+
+## Llave en GitHub: lanzar versiones sin tener la llave a mano
+
+La llave de release vive en **tres sitios**; cada uno cumple una función distinta:
+
+| Dónde | Para qué |
+|---|---|
+| `android/x-money-release.jks` + `android/keystore.properties` (esta carpeta, **ignoradas por git**) | Compilar en este equipo (`gradlew assembleRelease`). Claude Code siempre sabe dónde están. |
+| **Secretos del repositorio en GitHub** (`ANDROID_KEYSTORE_B64`, `…_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) | Compilar y firmar **desde la nube**, sin este equipo. Están cifrados y **GitHub no los devuelve nunca**. |
+| **Una copia fuera de línea** (USB o gestor de contraseñas) | La única forma de recuperarla si se pierde el equipo. Los secretos de GitHub no sirven como respaldo. |
+
+**Nunca** se sube la llave al repositorio, ni cifrada: el repositorio es **público**.
+
+### Cargar los secretos (una sola vez, en su terminal, desde la carpeta del proyecto)
+```
+.\scripts\set-release-secrets.ps1
+```
+Lee los dos archivos locales y los sube con `gh secret set`, sin imprimir nada sensible. Requiere `gh auth status` activo.
+
+### Lanzar una versión desde la nube
+1. Subir `versionCode` y `versionName` en `android/app/build.gradle`, commit y push a `main`.
+2. Crear la etiqueta: `git tag v2.19.6 && git push origin v2.19.6` (o *Actions → Android release → Run workflow*).
+3. El flujo `.github/workflows/android-release.yml` corre las pruebas, compila, **firma** y deja el APK como *artifact* (30 días) en la pestaña Actions. Imprime el certificado: debe coincidir con la app instalada (`SHA-256 a20e7249…`), si no, Android no la instalará encima.
+4. Descargar el APK e instalarlo con `adb install -r` (mismos datos conservados).
+
+Solo corre con etiquetas o a mano por el dueño: las solicitudes de cambios (forks) nunca reciben los secretos.

@@ -1,0 +1,85 @@
+# Builds the SIGNED release APK of X Money. It runs only when the owner pushes a version tag (v2.19.6 ...)
+# or starts it by hand (Actions -> "Android release" -> Run workflow). Pull requests never run it, so a fork
+# cannot reach the signing secrets. Setup and recovery: docs/ACTUALIZAR-APP.md ("Llave en GitHub").
+#
+# Secrets (set once with scripts/set-release-secrets.ps1; GitHub never shows them again):
+#   ANDROID_KEYSTORE_B64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+name: Android release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Check the signing secrets exist
+        env:
+          B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$B64" ] || [ -z "$PASS" ]; then echo "::error::Signing secrets are missing. Run scripts/set-release-secrets.ps1 once."; exit 1; fi
+
+      - run: npm ci
+      - run: npm test -- --no-watch
+      - run: npm run build
+      - run: npx cap sync android
+
+      - name: Write the signing files (only on this runner, never uploaded)
+        working-directory: android
+        env:
+          B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$B64" | base64 -d > x-money-release.jks
+          {
+            echo "storeFile=x-money-release.jks"
+            echo "storePassword=$STORE_PASS"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASS"
+          } > keystore.properties
+
+      - name: Build the signed release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Name the APK after the version
+        id: apk
+        run: |
+          V=$(grep -m1 versionName android/app/build.gradle | sed -E 's/.*"([^"]+)".*/\1/')
+          cp android/app/build/outputs/apk/release/app-release.apk "x-money-$V-release.apk"
+          echo "name=x-money-$V-release.apk" >> "$GITHUB_OUTPUT"
+          echo "SHA-256 of the APK:" && sha256sum "x-money-$V-release.apk"
+
+      - name: Show the signing certificate (it must match the installed app)
+        run: |
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "${{ steps.apk.outputs.name }}" | grep -E "SHA-256|Signer #1" | head -3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.name }}
+          retention-days: 30
+          if-no-files-found: error
