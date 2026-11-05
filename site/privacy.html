@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X Money · Política de privacidad / Privacy policy</title>
+<meta name="description" content="Política de privacidad de X Money, una app personal de finanzas.">
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1b1b1b; --mut:#5b5b5b; --acc:#b87800; --line:#e3e3e3; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121212; --fg:#ececec; --mut:#a8a8a8; --acc:#ffb000; --line:#2b2b2b; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:44rem; margin:0 auto; padding:1.5rem 1rem 4rem; }
+  h1 { font-size:1.6rem; margin:.2rem 0 .3rem; }
+  h2 { font-size:1.15rem; margin:2rem 0 .4rem; padding-top:1rem; border-top:1px solid var(--line); }
+  a { color:var(--acc); }
+  .mut { color:var(--mut); font-size:.9rem; }
+  ul { padding-left:1.2rem; }
+  nav a { margin-right:1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="/">X Money</a><a href="#en">English</a></nav>
+<h1>Política de privacidad de X Money</h1>
+<p class="mut">Última actualización: 5 de noviembre de 2026</p>
+
+<p>X Money es una aplicación personal de finanzas (Android y web) para llevar cuentas, movimientos, tarjetas y presupuestos. Esta página explica qué datos usa, para qué y cómo los protege. La app es de uso personal: no vende datos, no muestra publicidad y no comparte información con terceros salvo los proveedores técnicos que se indican abajo.</p>
+
+<h2>1. Qué datos se guardan</h2>
+<ul>
+  <li><strong>Sus datos financieros</strong> (cuentas, saldos de apertura, movimientos, categorías, presupuestos, metas): se guardan en su dispositivo y se sincronizan con una base de datos privada (Supabase) asociada a su cuenta. Solo usted los ve.</li>
+  <li><strong>Su cuenta</strong>: correo y una contraseña almacenada de forma cifrada (no reversible).</li>
+  <li>Los <strong>saldos de las cuentas nunca se guardan</strong>: se calculan a partir de los movimientos.</li>
+</ul>
+
+<h2>2. Lectura opcional del correo (Gmail)</h2>
+<p>Es una función <strong>opcional y apagada por defecto</strong>. Si usted la activa y conecta su Gmail:</p>
+<ul>
+  <li>La app pide un único permiso, <strong>solo lectura</strong> (<code>https://www.googleapis.com/auth/gmail.readonly</code>). No puede enviar, modificar, archivar ni borrar nada.</li>
+  <li>Solo se leen los mensajes de los <strong>remitentes que usted escribe</strong> en Ajustes (por ejemplo, las notificaciones de su banco), posteriores a la fecha de conexión. Nunca se recorre el resto del buzón. Si el remitente real no coincide con su lista, el mensaje se descarta.</li>
+  <li>El texto del mensaje se reduce (sin HTML, firmas, pies legales, enlaces ni correos) y <strong>el servidor no lo guarda</strong>. Con ese texto la app propone un <strong>borrador</strong> de movimiento que usted revisa y aprueba: nada se registra solo.</li>
+  <li>Para guardar la conexión se almacena un <strong>token de acceso cifrado</strong> en el servidor. Puede desconectarse en cualquier momento desde Ajustes: el token se borra y se revoca en Google. También puede revocar el acceso desde su cuenta de Google.</li>
+</ul>
+
+<h2>3. Uso de inteligencia artificial</h2>
+<p>La IA es opcional y también nace apagada. Cuando usted la usa para leer una captura, un PDF, un texto o un aviso de correo, se envía <strong>solo el contenido de esa captura</strong> (sin metadatos, con las firmas y números largos eliminados) a un proveedor de IA para extraer los campos del movimiento. Los resultados son <strong>sugerencias</strong>; las cifras las calcula la propia app y la IA no cambia datos por sí sola. No se envían sus saldos ni su historial completo.</p>
+
+<h2>4. Datos de Google: uso limitado</h2>
+<p>El uso que X Money hace de la información recibida de las API de Google cumple la <a href="https://developers.google.com/terms/api-services-user-data-policy">Política de datos de usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado. En concreto, los datos de Gmail:</p>
+<ul>
+  <li>se usan <strong>únicamente</strong> para proponerle borradores de movimientos dentro de la app;</li>
+  <li><strong>no se transfieren</strong> a terceros, salvo al proveedor de IA descrito en la sección 3 para procesar el texto de ese mensaje a petición suya, y lo exigido por la ley;</li>
+  <li><strong>no se usan</strong> para publicidad, ni para crear perfiles, ni para entrenar modelos de IA generalizados;</li>
+  <li><strong>no los lee ninguna persona</strong>, salvo con su consentimiento expreso, por seguridad o por obligación legal.</li>
+</ul>
+
+<h2>5. Proveedores técnicos</h2>
+<ul>
+  <li><strong>Supabase</strong>: base de datos y funciones del servidor.</li>
+  <li><strong>Proveedor de IA</strong> (solo si usted activa la función): procesa el contenido de la captura que usted envía.</li>
+  <li><strong>Google</strong>: solo para conectar Gmail, si usted lo decide.</li>
+</ul>
+
+<h2>6. Sus derechos y control</h2>
+<ul>
+  <li>Puede <strong>exportar</strong> sus datos (respaldo JSON) y <strong>borrarlos</strong> desde la app.</li>
+  <li>Puede <strong>apagar</strong> la IA y la lectura del correo en cualquier momento, y <strong>desconectar Gmail</strong>.</li>
+  <li>Puede pedir la eliminación de su cuenta y de sus datos escribiendo al contacto indicado abajo.</li>
+</ul>
+
+<h2>7. Seguridad</h2>
+<p>Las comunicaciones usan HTTPS. Los tokens del correo y las claves de los proveedores viven solo en el servidor, cifrados, y nunca en el dispositivo ni en el código de la app. Los datos de cada cuenta están aislados de los demás.</p>
+
+<h2>8. Cambios y contacto</h2>
+<p>Si esta política cambia, se actualizará la fecha de arriba. Contacto: <a href="mailto:xavieljoseterrerocuevas9@gmail.com">xavieljoseterrerocuevas9@gmail.com</a>.</p>
+
+<hr id="en">
+
+<h1>X Money privacy policy (English)</h1>
+<p class="mut">Last updated: November 5, 2026</p>
+<p>X Money is a personal finance app (Android and web). It does not sell data, show ads, or share information with third parties other than the technical providers listed below.</p>
+<ul>
+  <li><strong>What is stored:</strong> your financial data (accounts, opening balances, transactions, categories, budgets, goals) on your device and in a private database (Supabase) tied to your account, plus your account email and a hashed password. Balances are never stored; they are computed from transactions.</li>
+  <li><strong>Optional Gmail reading (off by default):</strong> if you turn it on, the app requests one <strong>read-only</strong> scope (<code>gmail.readonly</code>). It cannot send, modify or delete anything. It reads only messages from the senders you list (for example, your bank's notifications) received after you connect; the rest of the mailbox is never scanned. The text is reduced (no HTML, signatures, footers, links) and <strong>is not stored by the server</strong>; it is used to propose a <strong>draft</strong> you review and approve. An encrypted access token is stored server-side; you can disconnect at any time (the token is deleted and revoked at Google) or revoke access from your Google account.</li>
+  <li><strong>AI (optional, off by default):</strong> when you use it on a capture, only that capture's content (metadata stripped, signatures and long numbers removed) is sent to an AI provider to extract the transaction fields. Results are suggestions; the app computes the numbers itself and the AI never changes data on its own.</li>
+  <li><strong>Google user data (Limited Use):</strong> X Money's use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Gmail data is used only to propose transaction drafts inside the app; it is not transferred to third parties except to the AI provider described above to process that message at your request, or as required by law; it is not used for advertising, profiling or training generalized AI models; and no human reads it except with your explicit consent, for security, or to comply with the law.</li>
+  <li><strong>Your controls:</strong> export and delete your data from the app, turn off AI and email reading, disconnect Gmail, or request account deletion at <a href="mailto:xavieljoseterrerocuevas9@gmail.com">xavieljoseterrerocuevas9@gmail.com</a>.</li>
+</ul>
+</main>
+</body>
+</html>
