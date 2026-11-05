@@ -11,7 +11,7 @@ const ACCOUNT_TYPES = ['checking', 'savings', 'payroll', 'credit_card', 'debit_c
 
 const STRING_FIELDS: readonly [string, number][] = [
   ['amountText', 40], ['dateText', 60], ['counterparty', 80], ['description', 160], ['bankName', 40], ['accountHint', 60], ['toAccountHint', 60],
-  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
+  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['bankFeeText', 40], ['subtotalText', 40], ['notes', 240],
 ];
 
 const isRec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -106,6 +106,7 @@ const INSTRUCTIONS =
   '"amountText" (the amount EXACTLY as printed or said, as text, for example "RD$ 1,250.50"; never convert it, never add or compute), "currencyHint" ("DOP" or "USD" only if the document shows it), ' +
   '"dateText" (as shown, with the time if shown), "counterparty" (the merchant, or whoever deposited), "description", "bankName", "accountLast4" (the last 4 digits of the account or card the document is about, digits only), ' +
   '"accountHint" and "toAccountHint" (short words naming the main account and, for a transfer or a card payment, the other one, as they appear), "targetName" (the goal or the loan named), "reference" (approval or reference number), "categoryCandidate" (a short guess such as groceries), ' +
+  'for a transfer or a card payment receipt also "bankFeeText" (the tax or commission the bank charged on it, exactly as printed, for example "DOP 1.50"; it is NOT part of the amount), ' +
   'for invoices also "invoiceNumber", "taxId" (RNC), "fiscalNumber" (NCF), "taxAmountText" (ITBIS), "subtotalText" and up to 30 "lines" ({"description","quantity","amountText"}), ' +
   'and "confidence" (an object with a number from 0 to 1 for each field you filled). ' +
   'A screenshot of a BANK ACCOUNT or CARD (the app of a bank, a statement header, a card page) is not a transaction: answer one entry per account with kind "account_setup", "bankName", "accountName" (the product name as shown), "accountType" (checking | savings | payroll | credit_card | debit_card | other), "accountLast4" (ONLY the last 4 digits; never write the full number), "balanceText" (the current or available balance exactly as printed; for a credit card the amount OWED), "creditLimitText" for credit cards, and "currencyHint". Never include the holder\'s name. ' +

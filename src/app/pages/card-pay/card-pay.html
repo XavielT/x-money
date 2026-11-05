@@ -38,6 +38,10 @@
     <label>{{ 'Date' | t }}</label>
     <input class="x-input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event)" name="date" />
 
+    <label>{{ 'Bank tax or fee (optional)' | t }}</label>
+    <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="fee()" (ngModelChange)="fee.set($event)" name="fee" />
+    <p class="pay-hint" *ngIf="fee()">{{ 'It leaves the paying account together with the payment. It is not paid to the card.' | t }}</p>
+
     <label>{{ 'Note (optional)' | t }}</label>
     <input class="x-input" type="text" maxlength="80" [ngModel]="note()" (ngModelChange)="note.set($event)" name="note" />
 

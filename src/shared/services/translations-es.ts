@@ -1823,4 +1823,6 @@ export const ES: Record<string, string> = {
   'Cover parts': 'Tapar partes',
   'Drag a finger over what you do not want to send.': 'Arrastra el dedo sobre lo que no quieres enviar.',
   'Done': 'Listo',
+  'Bank tax or fee (optional)': 'Impuesto o comisión del banco (opcional)',
+  'It leaves the paying account together with the payment. It is not paid to the card.': 'Sale de la cuenta que paga junto con el pago. No se paga a la tarjeta.',
 };

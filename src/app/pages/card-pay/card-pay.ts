@@ -34,6 +34,7 @@ export class CardPayComponent {
   other = signal<number | null>(null);
   date = signal(localIso(new Date()));
   note = signal('');
+  fee = signal<number | null>(null);
   error = signal('');
   saved = signal(false);
   private statementId = '';
@@ -130,6 +131,7 @@ export class CardPayComponent {
       date: this.date(),
       currency: this.currency(),
       note: this.note().trim() || undefined,
+      fee: this.fee() && Number(this.fee()) > 0 ? round2(Number(this.fee())) : undefined,
     });
     if (!result.ok) {
       this.error.set(this.translate.instant(TX_ERROR_TEXT[result.error]));

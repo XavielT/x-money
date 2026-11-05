@@ -209,6 +209,11 @@ export class CaptureReviewComponent {
     this.capture.edit(d.id, { amountMinor: Number.isFinite(n) && n > 0 ? minorOf(n) : undefined });
   }
 
+  setBankFee(d: CaptureDraft, value: number | string | null): void {
+    const n = Number(value);
+    this.capture.edit(d.id, { bankFeeMinor: value !== null && value !== '' && Number.isFinite(n) && n > 0 ? minorOf(n) : undefined });
+  }
+
   setField(d: CaptureDraft, patch: Partial<CaptureDraft>): void {
     this.capture.edit(d.id, patch);
   }

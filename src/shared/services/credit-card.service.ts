@@ -302,7 +302,8 @@ export class CreditCardService {
 
   // Paying a card: a transfer from the paying account to the card (origin 'card-payment').
   // Partial payments are fine; paying more than owed leaves a balance in the user's favor.
-  pay(input: { cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string }): TxResult {
+  // fee: the bank's tax or commission on the payment; it leaves the paying account on top of the amount and is not paid to the card.
+  pay(input: { cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string; fee?: number }): TxResult {
     const card = this.accounts.byId(input.cardId);
     if (!card || !isCreditCard(card)) return { ok: false, error: 'to-account' };
     return this.transactions.add({
@@ -313,6 +314,7 @@ export class CreditCardService {
       currency: input.currency,
       date: input.date,
       note: input.note,
+      fee: input.fee && input.fee > 0 ? input.fee : undefined,
       origin: 'card-payment',
     });
   }

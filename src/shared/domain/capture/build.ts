@@ -165,6 +165,7 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   });
   const tax = raw.taxAmountText ? parseAmount(raw.taxAmountText, currency) : null;
   const sub = raw.subtotalText ? parseAmount(raw.subtotalText, currency) : null;
+  const fee = (kind === 'internal_transfer' || kind === 'card_payment') && raw.bankFeeText ? parseAmount(raw.bankFeeText, currency) : null;
 
   const draft: CaptureDraft = {
     id: ctx.newId(),
@@ -186,6 +187,7 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
     taxId: raw.taxId,
     fiscalNumber: raw.fiscalNumber,
     taxAmountMinor: tax && tax.ok ? tax.minor : undefined,
+    bankFeeMinor: fee && fee.ok && fee.minor > 0 ? fee.minor : undefined,
     subtotalMinor: sub && sub.ok ? sub.minor : undefined,
     lines: lines?.length ? lines : undefined,
     confidence,

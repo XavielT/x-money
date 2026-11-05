@@ -33,6 +33,7 @@ export interface RawTransaction {
   taxId?: string;
   fiscalNumber?: string;
   taxAmountText?: string;
+  bankFeeText?: string; // transfer or card payment receipts: the tax or commission the bank charged, as printed
   subtotalText?: string;
   lines?: RawLine[];
   confidence: Record<string, number>;
@@ -56,7 +57,7 @@ const clean = (v: unknown, max: number): string | undefined => {
 
 const STRING_FIELDS: readonly [keyof RawTransaction, number][] = [
   ['amountText', 40], ['dateText', 60], ['counterparty', 80], ['description', 160], ['bankName', 40], ['accountHint', 60], ['toAccountHint', 60],
-  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
+  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['bankFeeText', 40], ['subtotalText', 40], ['notes', 240],
 ];
 
 function digits4(v: unknown): string | undefined {

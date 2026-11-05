@@ -253,6 +253,13 @@ describe('buildDraft: the model reads, the code decides', () => {
     expect(buildDraft({ kind: 'expense', amountText: '100', confidence: {} }, ctx({ source: 'voice', text: '100' })).doubts).not.toContain('date-assumed');
   });
 
+  it('the bank tax is kept only for a transfer or a card payment, never for an expense', () => {
+    expect(buildDraft({ kind: 'card_payment', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', accountLast4: '4242', confidence: {} }, ctx()).bankFeeMinor).toBe(150);
+    expect(buildDraft({ kind: 'internal_transfer', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBe(150);
+    expect(buildDraft({ kind: 'expense', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined();
+    expect(buildDraft({ kind: 'card_payment', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 0.00', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined();
+  });
+
   it('a card payment names the card; an income finds its source by who paid', () => {
     const pay = buildDraft({ kind: 'card_payment', amountText: 'RD$ 5,000.00', accountLast4: '4242', confidence: {} }, ctx());
     expect(pay).toMatchObject({ kind: 'card_payment', resolvedToAccountId: 'c1' });

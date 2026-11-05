@@ -64,8 +64,8 @@ export function accountSpecOf(d: CaptureDraft): NewAccountSpec {
 
 export type CaptureOp =
   | { t: 'new-account'; account: NewAccountSpec }
-  | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string } }
-  | { t: 'card-payment'; cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string }
+  | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string; fee?: number } }
+  | { t: 'card-payment'; cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string; fee?: number }
   | { t: 'goal-entry'; goalId: string; amount: number; date: string; note?: string }
   | { t: 'loan-payment'; loanId: string; accountId: string; amount: number; date: string; note?: string }
   | { t: 'business-purchase'; name: string; totalCost: number; date: string; accountId: string; supplier?: string; notes?: string };
@@ -135,6 +135,7 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
   const date = d.occurredAt!;
   const note = noteOf(d);
   const accountId = d.resolvedAccountId!;
+  const fee = d.bankFeeMinor ? majorOf(d.bankFeeMinor) : undefined;
 
   switch (d.kind) {
     case 'expense':
@@ -145,9 +146,9 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
         ops: [{ t: 'transaction', tx: { type: 'income', amount, accountId, currency, date, categoryId: d.resolvedCategoryId ?? ctx.defaultIncomeCategory(d.resolvedIncomeSourceId), incomeSourceId: d.resolvedIncomeSourceId, note } }],
       };
     case 'internal_transfer':
-      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'transfer', amount, accountId, toAccountId: d.resolvedToAccountId, currency, date, note } }] };
+      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'transfer', amount, accountId, toAccountId: d.resolvedToAccountId, currency, date, note, fee } }] };
     case 'card_payment':
-      return { ok: true, ops: [{ t: 'card-payment', cardId: d.resolvedToAccountId!, fromAccountId: accountId, amount, date, currency, note }] };
+      return { ok: true, ops: [{ t: 'card-payment', cardId: d.resolvedToAccountId!, fromAccountId: accountId, amount, date, currency, note, fee }] };
     case 'goal_contribution':
       return { ok: true, ops: [{ t: 'goal-entry', goalId: d.resolvedGoalId!, amount, date, note }] };
     case 'loan_payment':

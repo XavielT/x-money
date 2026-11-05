@@ -427,7 +427,7 @@ export class CaptureService {
         return r.ok ? { ok: true, id: r.id } : { ok: false, error: r.error };
       }
       case 'card-payment': {
-        const r = this.cards.pay({ cardId: op.cardId, fromAccountId: op.fromAccountId, amount: op.amount, date: op.date, currency: op.currency, note: op.note });
+        const r = this.cards.pay({ cardId: op.cardId, fromAccountId: op.fromAccountId, amount: op.amount, date: op.date, currency: op.currency, note: op.note, fee: op.fee });
         return r.ok ? { ok: true, id: r.id } : { ok: false, error: r.error };
       }
       case 'goal-entry': {

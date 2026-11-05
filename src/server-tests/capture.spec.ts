@@ -272,4 +272,10 @@ describe('account screenshots on the server (account_setup)', () => {
     expect(out.transactions[1].accountType).toBeUndefined();
     expect(JSON.stringify(out)).not.toContain('9999000011112222');
   });
+
+  it('the answer keeps the bank tax of a transfer receipt, and the instructions ask for it', () => {
+    const out = JSON.parse(finalizeCapture(JSON.stringify({ transactions: [{ kind: 'card_payment', amountText: 'DOP 750.00', bankFeeText: 'DOP 1.50' }] }))!);
+    expect(out.transactions[0]).toMatchObject({ kind: 'card_payment', bankFeeText: 'DOP 1.50' });
+    expect(CAPTURE_FEATURES['capture_parse'].instructions('en')).toMatch(/bankFeeText/);
+  });
 });

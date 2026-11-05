@@ -58,6 +58,7 @@ export interface CaptureDraft {
   taxId?: string; // RNC
   fiscalNumber?: string; // NCF
   taxAmountMinor?: number; // ITBIS: data, not another expense
+  bankFeeMinor?: number; // transfer / card payment: the bank's tax or commission, charged to the paying account on top of the amount
   subtotalMinor?: number;
   lines?: CaptureLine[]; // at most 30
   // account_setup: a screenshot of a bank account or card creates the account (nothing is written until approved).

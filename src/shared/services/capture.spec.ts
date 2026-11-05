@@ -304,6 +304,32 @@ describe('approving writes through the same services (and rules 1, 2, 3, 9)', ()
     expect(balance(s, 'k1')).toBe(96000);
   });
 
+  it('the tax a bank prints on a card payment leaves the paying account on top; the card is paid only the amount, and only the tax counts as an expense', async () => {
+    const s = session();
+    on(s.ai);
+    const [purchase] = await draftOf(s, item({ amountText: 'RD$ 1,000.00', counterparty: 'Tienda X', accountLast4: '4242', categoryCandidate: 'shopping', dateText: '04/11/2026' }));
+    s.capture.edit(purchase.id, { resolvedCategoryId: 'cat-shopping' });
+    expect(s.capture.approve(purchase.id).ok).toBe(true);
+    const month = s.tx.monthSummary(2026, 11).expense;
+
+    const [pay] = await draftOf(s, item({ kind: 'card_payment', amountText: 'DOP 750.00', bankFeeText: 'DOP 1.50', accountLast4: '7788', toAccountLast4: '4242', dateText: '05/11/2026' }));
+    expect(s.drafts.byId(pay.id)).toMatchObject({ amountMinor: 75000, bankFeeMinor: 150 });
+    const r = s.capture.approve(pay.id);
+    expect(r.ok).toBe(true);
+    expect(s.tx.byId((r as { movementIds: string[] }).movementIds[0])).toMatchObject({ type: 'transfer', origin: 'card-payment', amount: 750, fee: 1.5 });
+    expect(balance(s, 'c1')).toBe(-250); // owed 1,000 - 750: the fee did not go to the card
+    expect(balance(s, 'k1')).toBe(100000 - 751.5); // the amount AND the tax left the paying account
+    expect(s.tx.monthSummary(2026, 11).expense).toBe(month + 1.5); // only the tax is a cost; the 750 is a settlement, never an expense (rule 3)
+  });
+
+  it('a fee typed by hand while paying a card works the same', () => {
+    const s = session();
+    const r = s.cards.pay({ cardId: 'c1', fromAccountId: 'k1', amount: 500, date: '2026-11-05', currency: 'DOP', fee: 1 });
+    expect(r.ok).toBe(true);
+    expect(balance(s, 'k1')).toBe(100000 - 501);
+    expect(balance(s, 'c1')).toBe(500);
+  });
+
   it('an income lands with its source and is not an expense; a transfer between my accounts is neither (rule 1)', async () => {
     const s = session();
     on(s.ai);
