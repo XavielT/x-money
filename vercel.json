@@ -3,7 +3,7 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/x-money/browser",
-  "rewrites": [{ "source": "/((?!.*\.).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!.*\\.).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/(.*)",
