@@ -112,6 +112,11 @@ export class CaptureReviewComponent {
     return this.translate.instant(key);
   }
 
+  // keep each card's DOM while its draft is edited (every edit makes a new object): the field being typed in keeps its focus
+  trackById(_: number, d: CaptureDraft): string {
+    return d.id;
+  }
+
   kindLabel(k: CaptureKind): string {
     return KIND_LABELS[k];
   }
@@ -128,6 +133,12 @@ export class CaptureReviewComponent {
   // the amount as shown in the list: the symbol only when the currency is known, a question mark when there is no amount
   accountTypeLabel(t: AccountSetupType): string {
     return ACCOUNT_TYPE_LABELS[t];
+  }
+
+  // "Banreservas · ····7107 · Checking account": enough to tell two accounts of the same bank apart
+  accountSub(d: CaptureDraft): string {
+    const bank = d.resolvedBankId ? this.banks.find((b) => b.id === d.resolvedBankId)?.name : undefined;
+    return [bank, d.accountLast4 ? '····' + d.accountLast4 : undefined, d.accountType ? this.t(ACCOUNT_TYPE_LABELS[d.accountType]) : this.t('New account')].filter(Boolean).join(' · ');
   }
 
   // the balance of an account, in major units for the input

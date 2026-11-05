@@ -32,12 +32,13 @@
     <h2>{{ 'What will be sent' | t }}</h2>
     <p class="capture-note">{{ 'Each image is reduced to 1600 px and its metadata is removed. Draw a black box over anything you do not want to send.' | t }}</p>
     <div class="capture-item" *ngFor="let item of items()">
-      <div class="capture-thumb" *ngIf="item.kind === 'image' && item.preview" (pointerdown)="startBox($event, item)" (pointerup)="endBox($event, item)">
+      <div class="capture-thumb" *ngIf="item.kind === 'image' && item.preview">
         <img [src]="item.preview" [alt]="item.name" draggable="false" />
         <span class="capture-box" *ngFor="let r of item.redactions" [style.left.%]="r.x * 100" [style.top.%]="r.y * 100" [style.width.%]="r.w * 100" [style.height.%]="r.h * 100"></span>
       </div>
       <div class="capture-pdf" *ngIf="item.kind === 'pdf'">📄 {{ item.name }}</div>
       <div class="capture-item-actions">
+        <button class="x-btn" *ngIf="item.kind === 'image' && item.preview" (click)="openCover(item)">{{ 'Cover parts' | t }}</button>
         <button class="x-btn" *ngIf="item.redactions.length" (click)="clearBoxes(item)">{{ 'Remove boxes' | t }}</button>
         <button class="x-btn x-btn-danger" (click)="remove(item)">{{ 'Remove' | t }}</button>
       </div>
@@ -53,6 +54,20 @@
   <button class="x-btn capture-send" [disabled]="sending() || (!items().length && !text().trim())" (click)="sendAll()">
     {{ sending() ? ('Reading…' | t) : (documentsOn() ? ('Send to read' | t) : ('Read on this device' | t)) }}
   </button>
+
+  <div class="cover" *ngIf="coverItem() as c">
+    <p class="cover-help">{{ 'Drag a finger over what you do not want to send.' | t }}</p>
+    <div class="cover-stage" (pointerdown)="startBox($event, c)" (pointermove)="moveBox($event)" (pointerup)="endBox($event, c)" (pointercancel)="cancelBox()">
+      <img [src]="c.preview" [alt]="c.name" draggable="false" />
+      <span class="capture-box" *ngFor="let r of c.redactions" [style.left.%]="r.x * 100" [style.top.%]="r.y * 100" [style.width.%]="r.w * 100" [style.height.%]="r.h * 100"></span>
+      <span class="capture-box live" *ngIf="live() as r" [style.left.%]="r.x * 100" [style.top.%]="r.y * 100" [style.width.%]="r.w * 100" [style.height.%]="r.h * 100"></span>
+    </div>
+    <div class="cover-actions">
+      <button class="x-btn" [disabled]="!c.redactions.length" (click)="undoBox(c)">{{ 'Undo' | t }}</button>
+      <button class="x-btn" [disabled]="!c.redactions.length" (click)="clearBoxes(c)">{{ 'Remove boxes' | t }}</button>
+      <button class="x-btn" (click)="closeCover()">{{ 'Done' | t }}</button>
+    </div>
+  </div>
 
   <label class="capture-skip" *ngIf="documentsOn()">
     <input type="checkbox" [ngModel]="ai.prefs().skipPreview" (ngModelChange)="setSkipPreview($event)" name="skip-preview" />

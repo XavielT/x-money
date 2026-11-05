@@ -155,7 +155,21 @@ export class CaptureComponent implements OnInit, OnDestroy {
 
   // ----- redaction: draw black boxes on the preview before sending
 
+  // Drawing only happens inside the full-screen cover editor, never on the thumbnail: dragging on the list
+  // has to scroll the page, and a stray swipe must not hide part of the image.
+  covering = signal<number | null>(null);
+  live = signal<Redaction | null>(null); // the box being dragged, shown while the finger moves
+  coverItem = computed(() => this.items().find((i) => i.id === this.covering()) ?? null);
   private drag: { id: number; x: number; y: number; box: DOMRect } | null = null;
+
+  openCover(item: Item): void {
+    this.covering.set(item.id);
+  }
+
+  closeCover(): void {
+    this.cancelBox();
+    this.covering.set(null);
+  }
 
   startBox(event: PointerEvent, item: Item): void {
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
@@ -163,14 +177,32 @@ export class CaptureComponent implements OnInit, OnDestroy {
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   }
 
-  endBox(event: PointerEvent, item: Item): void {
+  private rectTo(event: PointerEvent): Redaction | null {
     const d = this.drag;
-    this.drag = null;
-    if (!d || d.id !== item.id) return;
+    if (!d) return null;
     const x2 = (event.clientX - d.box.left) / d.box.width;
     const y2 = (event.clientY - d.box.top) / d.box.height;
-    const r = clampRedaction({ x: Math.min(d.x, x2), y: Math.min(d.y, y2), w: Math.abs(x2 - d.x), h: Math.abs(y2 - d.y) });
+    return clampRedaction({ x: Math.min(d.x, x2), y: Math.min(d.y, y2), w: Math.abs(x2 - d.x), h: Math.abs(y2 - d.y) });
+  }
+
+  moveBox(event: PointerEvent): void {
+    if (this.drag) this.live.set(this.rectTo(event));
+  }
+
+  cancelBox(): void {
+    this.drag = null;
+    this.live.set(null);
+  }
+
+  endBox(event: PointerEvent, item: Item): void {
+    const d = this.drag;
+    const r = d && d.id === item.id ? this.rectTo(event) : null;
+    this.cancelBox();
     if (r) this.items.update((l) => l.map((i) => (i.id === item.id ? { ...i, redactions: [...i.redactions, r] } : i)));
+  }
+
+  undoBox(item: Item): void {
+    this.items.update((l) => l.map((i) => (i.id === item.id ? { ...i, redactions: i.redactions.slice(0, -1) } : i)));
   }
 
   clearBoxes(item: Item): void {

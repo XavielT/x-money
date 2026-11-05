@@ -1820,4 +1820,7 @@ export const ES: Record<string, string> = {
   'Some files could not be read. Pick them again.': 'Algunos archivos no se pudieron leer. Elígelos de nuevo.',
   'Account created. Its balance is the opening balance: you can edit or archive it in Accounts.': 'Cuenta creada. Su saldo es el saldo de apertura: puedes editarla o archivarla en Cuentas.',
   'Same file as an earlier capture': 'El mismo archivo de una captura anterior',
+  'Cover parts': 'Tapar partes',
+  'Drag a finger over what you do not want to send.': 'Arrastra el dedo sobre lo que no quieres enviar.',
+  'Done': 'Listo',
 };
