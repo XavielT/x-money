@@ -36,7 +36,7 @@ describe('trace fields (schema v2)', () => {
   it('stamps origin, status and timestamps on every new movement', () => {
     const s = session();
     const id = idOf(s.transactions.add({ type: 'expense', amount: 10, accountId: 'cash', date: '2026-11-03', categoryId: 'cat-food' }));
-    expect(s.transactions.byId(id)).toMatchObject({ origin: 'manual', status: 'posted', createdAt: '2026-11-03T16:00:00.000Z', updatedAt: '2026-11-03T16:00:00.000Z' });
+    expect(s.transactions.byId(id)).toMatchObject({ origin: 'manual', status: 'posted', createdAt: new Date(NOW).toISOString(), updatedAt: new Date(NOW).toISOString() });
     const t = idOf(s.transactions.add({ type: 'transfer', amount: 10, accountId: 'bank', toAccountId: 'cash', date: '2026-11-03' }));
     expect(s.transactions.byId(t)?.origin).toBe('transfer');
   });
@@ -54,7 +54,7 @@ describe('trace fields (schema v2)', () => {
     const created = s.transactions.byId(id)!;
     idOf(s.transactions.update({ ...created, amount: 12, createdAt: 'forged', origin: 'manual', linkedId: 'x' }));
     const edited = s.transactions.byId(id)!;
-    expect(edited).toMatchObject({ amount: 12, origin: 'import', createdAt: created.createdAt, updatedAt: '2026-11-03T19:00:00.000Z' });
+    expect(edited).toMatchObject({ amount: 12, origin: 'import', createdAt: created.createdAt, updatedAt: new Date('2026-11-03T15:00:00').toISOString() });
     expect(edited.linkedId).toBeUndefined();
   });
 });
