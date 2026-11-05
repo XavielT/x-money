@@ -1825,4 +1825,8 @@ export const ES: Record<string, string> = {
   'Done': 'Listo',
   'Bank tax or fee (optional)': 'Impuesto o comisión del banco (opcional)',
   'It leaves the paying account together with the payment. It is not paid to the card.': 'Sale de la cuenta que paga junto con el pago. No se paga a la tarjeta.',
+  'Owed': 'Debes',
+  'Latest movements': 'Últimos movimientos',
+  'No movements in this account yet.': 'Esta cuenta todavía no tiene movimientos.',
+  'Show all': 'Ver todos',
 };

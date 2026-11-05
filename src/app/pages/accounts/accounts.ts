@@ -1,7 +1,7 @@
 import { Component, Signal, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   AccountCurrency,
   AccountModel,
@@ -74,6 +74,7 @@ export class AccountsComponent {
   cardPaymentSuggestions: Signal<CardPaymentSuggestion[]>;
 
   constructor(
+    route: ActivatedRoute,
     private router: Router,
     private translate: TranslateService,
     public accountService: AccountService,
@@ -87,6 +88,9 @@ export class AccountsComponent {
     this.transferSuggestions = suggestions.transfers;
     this.incomeSuggestions = suggestions.incomes;
     this.cardPaymentSuggestions = suggestions.cardPayments;
+    // the account detail sends the user here to edit: /accounts?edit=<id>
+    const toEdit = this.accountService.byId(route.snapshot.queryParamMap.get('edit') ?? '');
+    if (toEdit) this.openEdit(toEdit);
   }
 
   abs(value: number): number {
@@ -204,6 +208,16 @@ export class AccountsComponent {
     this.formLiquid = true;
     this.bankSearch.set('');
     this.showForm.set(true);
+  }
+
+  // tapping a row: the account's detail (balance, latest movements); a credit card has its own page
+  openDetail(account: AccountModel): void {
+    void this.router.navigate([isCreditCard(account) ? '/card' : '/account', account.id]);
+  }
+
+  edit(account: AccountModel, event: Event): void {
+    event.stopPropagation();
+    this.openEdit(account);
   }
 
   openEdit(account: AccountModel): void {

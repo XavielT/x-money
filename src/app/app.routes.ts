@@ -28,6 +28,7 @@ export const routes: Routes = [
   { path: 'fixed', loadComponent: () => import('./pages/fixed-expenses/fixed-expenses').then((m) => m.FixedExpensesComponent) },
   { path: 'income', loadComponent: () => import('./pages/income/income').then((m) => m.IncomeComponent) },
   { path: 'benefits', loadComponent: () => import('./pages/benefits/benefits').then((m) => m.BenefitsComponent) },
+  { path: 'account/:id', loadComponent: () => import('./pages/account-detail/account-detail').then((m) => m.AccountDetailComponent) },
   { path: 'card/:id', loadComponent: () => import('./pages/card/card').then((m) => m.CardComponent) },
   { path: 'card/:id/pay', loadComponent: () => import('./pages/card-pay/card-pay').then((m) => m.CardPayComponent) },
   { path: '**', redirectTo: '' },

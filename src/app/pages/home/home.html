@@ -74,12 +74,12 @@
 
   <!-- Accounts strip (capped; full list lives on the Accounts page) -->
   <section class="home-accounts">
-    <a routerLink="/accounts" class="home-account x-card" *ngFor="let acc of visibleAccounts()">
+    <a [routerLink]="detailLink(acc)" class="home-account x-card" *ngFor="let acc of visibleAccounts()">
       <app-bank-badge [account]="acc"></app-bank-badge>
       <div class="home-account-info">
         <small>{{ acc.name }}</small>
         <strong [class.negative]="transactionService.accountBalance(acc.id) < 0">
-          {{ transactionService.accountBalance(acc.id) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.0-0' }}
+          <ng-container *ngIf="isDebt(acc)">{{ 'Owed' | t }} </ng-container>{{ transactionService.accountBalance(acc.id) < 0 && !isDebt(acc) ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.accountBalance(acc.id)) | number:'1.0-0' }}
         </strong>
       </div>
     </a>

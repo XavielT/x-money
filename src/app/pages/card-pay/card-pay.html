@@ -19,7 +19,7 @@
 
     <label>{{ 'Pay from' | t }}</label>
     <select class="x-input" [ngModel]="fromId()" (ngModelChange)="fromId.set($event)" name="from">
-      <option *ngFor="let a of payers()" [value]="a.id">{{ a.name }}</option>
+      <option *ngFor="let a of payers()" [value]="a.id">{{ a.name }}{{ a.last4 ? ' ••' + a.last4 : '' }}</option>
     </select>
     <p class="pay-hint" *ngIf="!payers().length">{{ 'There is no account that can pay in this currency.' | t }}</p>
 

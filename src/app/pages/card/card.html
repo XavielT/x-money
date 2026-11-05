@@ -177,6 +177,12 @@
       </div>
     </section>
 
+    <!-- Latest movements -->
+    <section class="card-statements" *ngIf="recentMovements().length">
+      <h2>{{ 'Latest movements' | t }}</h2>
+      <app-transaction-item *ngFor="let t of recentMovements()" [transaction]="t"></app-transaction-item>
+    </section>
+
     <!-- Payment history -->
     <section class="card-statements" *ngIf="payments().length">
       <h2>{{ 'Payments to this card' | t }}</h2>

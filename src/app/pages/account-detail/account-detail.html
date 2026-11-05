@@ -1,0 +1,43 @@
+<div class="x-page detail">
+  <header class="detail-header">
+    <button class="detail-back" (click)="back()" aria-label="Back">←</button>
+    <h1 class="x-page-title">{{ 'Account' | t }}</h1>
+  </header>
+
+  <p *ngIf="!account()">{{ 'Account not found.' | t }}</p>
+
+  <ng-container *ngIf="account() as a">
+    <div class="detail-title x-card">
+      <app-bank-badge [account]="a"></app-bank-badge>
+      <div>
+        <strong>{{ a.name }}</strong>
+        <small><ng-container *ngIf="bankName()">{{ bankName() }}<ng-container *ngIf="a.last4"> · </ng-container></ng-container><ng-container *ngIf="a.last4">•••• {{ a.last4 }}</ng-container></small>
+      </div>
+    </div>
+
+    <div class="detail-balance x-card">
+      <span>{{ 'Balance' | t }}</span>
+      <div>
+        <strong *ngIf="hasDop()" [class.negative]="balance('DOP') < 0">{{ balance('DOP') < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(balance('DOP')) | number:'1.2-2' }}</strong>
+        <strong *ngIf="hasUsd()" class="usd" [class.negative]="balance('USD') < 0">{{ balance('USD') < 0 ? '-' : '' }}US${{ abs(balance('USD')) | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <a class="x-btn" routerLink="/add">{{ 'Add transaction' | t }}</a>
+      <a class="x-btn detail-ghost" [routerLink]="['/reconcile', a.id]">{{ 'Reconcile' | t }}</a>
+      <a class="x-btn detail-ghost" routerLink="/accounts" [queryParams]="{ edit: a.id }">{{ 'Edit' | t }}</a>
+    </div>
+
+    <h2 class="detail-subtitle">{{ 'Latest movements' | t }}</h2>
+    <div class="x-card detail-empty" *ngIf="!movements().length">
+      <p>{{ 'No movements in this account yet.' | t }}</p>
+    </div>
+    <div class="detail-list" *ngIf="movements().length">
+      <app-transaction-item *ngFor="let t of recent()" [transaction]="t"></app-transaction-item>
+    </div>
+    <button class="x-btn detail-ghost" *ngIf="!showAll() && movements().length > recent().length" (click)="showAll.set(true)">
+      {{ 'Show all' | t }} ({{ movements().length }})
+    </button>
+  </ng-container>
+</div>

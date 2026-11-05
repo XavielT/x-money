@@ -81,6 +81,13 @@ export class CardComponent {
     return this.card && view ? this.cards.movementsIn(this.card.id, this.currency(), view.period.start, view.period.end) : [];
   });
 
+  // Everything that touched the card (purchases, payments, interest), newest first
+  recentMovements = computed(() =>
+    this.card
+      ? [...this.cards.movementsIn(this.card.id, this.currency(), '0000-01-01', '9999-12-31')].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15)
+      : []
+  );
+
   // Payments made to this card (not reversed), newest first
   payments = computed(() =>
     this.card

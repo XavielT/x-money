@@ -13,7 +13,8 @@ import { AccountService } from '../../../shared/services/account.service';
 import { InsightsService } from '../../../shared/services/insights.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { CreditCardService } from '../../../shared/services/credit-card.service';
-import { CardAlert } from '../../../shared/domain/cards';
+import { CardAlert, isCreditCard } from '../../../shared/domain/cards';
+import { AccountModel } from '../../../shared/models/account.model';
 import { BUCKET_LABELS } from '../../../shared/data/bucket-labels';
 import { GoalService } from '../../../shared/services/goal.service';
 import { LoanService } from '../../../shared/services/loan.service';
@@ -156,5 +157,15 @@ export class HomeComponent {
 
   abs(value: number): number {
     return Math.abs(value);
+  }
+
+  // a tile opens the account's detail (a credit card, its own page)
+  detailLink(acc: AccountModel): string[] {
+    return [isCreditCard(acc) ? '/card' : '/account', acc.id];
+  }
+
+  // a credit card with a debt: the tile says what is owed instead of showing a negative balance
+  isDebt(acc: AccountModel): boolean {
+    return isCreditCard(acc) && this.transactionService.accountBalance(acc.id) < 0;
   }
 }

@@ -84,7 +84,7 @@
   <div
     class="accounts-card x-card"
     *ngFor="let acc of sortedAccounts()"
-    (click)="openEdit(acc)"
+    (click)="openDetail(acc)"
   >
     <app-bank-badge [account]="acc"></app-bank-badge>
     <div class="accounts-card-info">
@@ -97,13 +97,14 @@
     <div class="accounts-card-right">
       <div class="accounts-card-balances">
         <strong *ngIf="showDop(acc)" [class.negative]="balanceOf(acc) < 0">
-          {{ balanceOf(acc) < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc)) | number:'1.2-2' }}
+          <ng-container *ngIf="isCreditCard(acc) && balanceOf(acc) < 0">{{ 'Owed' | t }} </ng-container>{{ balanceOf(acc) < 0 && !isCreditCard(acc) ? '-' : '' }}{{ settings.currency() }}{{ abs(balanceOf(acc)) | number:'1.2-2' }}
         </strong>
         <strong *ngIf="showUsd(acc)" class="usd" [class.negative]="usdBalanceOf(acc) < 0">
-          {{ usdBalanceOf(acc) < 0 ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
+          <ng-container *ngIf="isCreditCard(acc) && usdBalanceOf(acc) < 0">{{ 'Owed' | t }} </ng-container>{{ usdBalanceOf(acc) < 0 && !isCreditCard(acc) ? '-' : '' }}US${{ abs(usdBalanceOf(acc)) | number:'1.2-2' }}
         </strong>
       </div>
       <button class="accounts-card-reconcile" *ngIf="isCreditCard(acc)" (click)="openCard(acc, $event)">{{ 'Card' | t }}</button>
+      <button class="accounts-card-reconcile" (click)="edit(acc, $event)">{{ 'Edit' | t }}</button>
       <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Reconcile' | t }}</button>
       <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
