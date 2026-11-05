@@ -26,7 +26,7 @@
 
   <label class="capture-label" for="capture-text">{{ 'Type, paste or dictate' | t }}</label>
   <textarea id="capture-text" class="x-input capture-text" rows="4" [maxlength]="maxChars" [ngModel]="text()" (ngModelChange)="text.set($event)" name="capture-text" [placeholder]="'e.g. I spent 1,500 pesos at the corner shop with the Popular card' | t"></textarea>
-  <p class="capture-note" *ngIf="!voiceAvailable()">{{ 'Voice is not available in this browser: use the microphone of your keyboard.' | t }}</p>
+  <p class="capture-note" *ngIf="!voiceAvailable()">{{ 'Voice is not available here: use the microphone of your keyboard.' | t }}</p>
 
   <section class="x-card capture-items" *ngIf="items().length">
     <h2>{{ 'What will be sent' | t }}</h2>

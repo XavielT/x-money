@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'X Money',
   webDir: 'dist/x-money/browser',
   backgroundColor: '#121212',
+  // The debug build of Capacitor prints every plugin call to the system log, session tokens included: keep it silent
+  loggingBehavior: 'none',
 };
 
 export default config;

@@ -27,13 +27,20 @@ export function dedupeKey(d: Pick<CaptureDraft, 'currency' | 'amountMinor' | 'oc
   return [d.currency ?? '?', d.amountMinor, d.occurredAt, tail, normalizeMerchant(d.counterparty)].join('|');
 }
 
-export type DuplicateMatch = { why: 'same-file' | 'same-transaction' | 'manual-entry'; of: { type: 'draft' | 'transaction'; id: string } };
+export type DuplicateMatch = { why: 'same-file' | 'same-transaction' | 'manual-entry' | 'existing-account'; of: { type: 'draft' | 'transaction' | 'account'; id: string } };
 
 const WEIGHTLESS: ReadonlySet<string> = new Set(['rejected', 'failed']);
 
 // 1) the same file, 2) the same transaction seen twice (also from two sources: they share the key),
 // 3) a movement the user already wrote by hand (same amount and currency, within one day).
-export function findDuplicate(draft: CaptureDraft, drafts: readonly CaptureDraft[], transactions: readonly TransactionModel[]): DuplicateMatch | null {
+export function findDuplicate(draft: CaptureDraft, drafts: readonly CaptureDraft[], transactions: readonly TransactionModel[], accounts: readonly { id: string; last4?: string; bankId?: string; archived?: boolean }[] = []): DuplicateMatch | null {
+  if (draft.kind === 'account_setup') {
+    // the same bank account seen twice is not a second account: the twin (the same 4 digits, a compatible bank) must be decided
+    const twin = draft.accountLast4 ? accounts.find((a) => !a.archived && a.last4 === draft.accountLast4 && (!draft.resolvedBankId || !a.bankId || a.bankId === draft.resolvedBankId)) : undefined;
+    if (twin) return { why: 'existing-account', of: { type: 'account', id: twin.id } };
+    const same = drafts.find((d) => d.id !== draft.id && d.kind === 'account_setup' && d.status !== 'rejected' && d.status !== 'failed' && d.status !== 'approved' && !!draft.accountLast4 && d.accountLast4 === draft.accountLast4 && d.resolvedBankId === draft.resolvedBankId);
+    return same ? { why: 'same-transaction', of: { type: 'draft', id: same.id } } : null;
+  }
   const others = drafts.filter((d) => d.id !== draft.id && !WEIGHTLESS.has(d.status));
   if (draft.fileFingerprint) {
     const same = others.find((d) => d.fileFingerprint === draft.fileFingerprint);

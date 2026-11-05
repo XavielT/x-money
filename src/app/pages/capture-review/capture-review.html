@@ -22,7 +22,7 @@
     <div class="review-row" (click)="toggleOpen(d.id)">
       <input type="checkbox" [checked]="marked().has(d.id)" (click)="$event.stopPropagation()" (change)="toggleMark(d.id)" [disabled]="d.status === 'duplicate'" [attr.aria-label]="'Mark' | t" />
       <div class="review-main">
-        <b>{{ d.counterparty || d.description || (kindLabel(d.kind) | t) }}</b>
+        <b>{{ d.counterparty || d.accountName || d.description || (kindLabel(d.kind) | t) }}</b>
         <small>{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
       </div>
       <strong class="review-amount" [class.doubt]="!d.amountMinor || d.doubts.includes('amount-unverified')">{{ amountLabel(d) }}</strong>
@@ -51,6 +51,45 @@
         </select>
       </label>
 
+      <!-- a screenshot of a bank account or card: the account itself -->
+      <ng-container *ngIf="d.kind === 'account_setup'">
+        <label>{{ 'Type of account' | t }}
+          <select class="x-input" [ngModel]="d.accountType || ''" (ngModelChange)="setField(d, { accountType: $event || undefined })" [name]="'atype-' + d.id" [class.hl]="!d.accountType">
+            <option value="" disabled>{{ 'Choose' | t }}</option>
+            <option *ngFor="let t of accountTypes" [value]="t">{{ accountTypeLabel(t) | t }}</option>
+          </select>
+        </label>
+        <label>{{ 'Name of the account' | t }}
+          <input class="x-input" type="text" maxlength="40" [ngModel]="d.accountName" (ngModelChange)="setField(d, { accountName: $event })" [name]="'aname-' + d.id" />
+        </label>
+        <label>{{ 'Bank' | t }}
+          <select class="x-input" [ngModel]="d.resolvedBankId || ''" (ngModelChange)="setField(d, { resolvedBankId: $event || undefined })" [name]="'abank-' + d.id">
+            <option value="">{{ d.bankName || ('Other' | t) }}</option>
+            <option *ngFor="let b of banks" [value]="b.id">{{ b.name }}</option>
+          </select>
+        </label>
+        <div class="review-two">
+          <label>{{ 'Last 4 digits' | t }}
+            <input class="x-input" type="text" inputmode="numeric" maxlength="4" [ngModel]="d.accountLast4" (ngModelChange)="setLast4(d, $event)" [name]="'al4-' + d.id" />
+          </label>
+          <label>{{ 'Currency' | t }}
+            <select class="x-input" [ngModel]="d.currency || ''" (ngModelChange)="setCurrency(d, $event)" [name]="'acur-' + d.id" [class.hl]="!d.currency">
+              <option value="" disabled>{{ 'Choose' | t }}</option>
+              <option value="DOP">RD$</option>
+              <option value="USD">US$</option>
+            </select>
+          </label>
+        </div>
+        <label>{{ (d.accountType === 'credit_card' ? 'Amount owed today (opening balance)' : 'Current balance (opening balance)') | t }}
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="balanceOf(d)" (ngModelChange)="setBalance(d, $event)" [name]="'abal-' + d.id" [class.hl]="d.balanceMinor === undefined" />
+        </label>
+        <label *ngIf="d.accountType === 'credit_card'">{{ 'Credit limit' | t }}
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="d.creditLimitMinor ? d.creditLimitMinor / 100 : null" (ngModelChange)="setLimit(d, $event)" [name]="'alim-' + d.id" />
+        </label>
+        <small class="review-note">{{ 'Only the last 4 digits are kept. The balance becomes the opening balance: no movement is created.' | t }}</small>
+      </ng-container>
+
+      <ng-container *ngIf="d.kind !== 'account_setup'">
       <div class="review-two">
         <label>{{ 'Amount' | t }}
           <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="amountOf(d)" (ngModelChange)="setAmount(d, $event)" [name]="'amount-' + d.id" [class.hl]="!d.amountMinor || d.doubts.includes('amount-unverified')" />
@@ -130,6 +169,8 @@
       <label>{{ 'Reference' | t }}
         <input class="x-input" type="text" maxlength="40" [ngModel]="d.reference" (ngModelChange)="setField(d, { reference: $event })" [name]="'ref-' + d.id" />
       </label>
+
+      </ng-container>
 
       <label class="review-check" *ngIf="isLarge(d)">
         <input type="checkbox" [ngModel]="confirmLarge().has(d.id)" (ngModelChange)="setLargeConfirmed(d.id, $event)" [name]="'large-' + d.id" />

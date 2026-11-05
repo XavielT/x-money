@@ -125,6 +125,10 @@ Para el correo y la voz en navegador, ver `CAPTURA.md` (el reconocimiento de voz
 
 ### Funciones de captura
 
+(2.19.0: `capture_parse` también lee capturas de cuentas bancarias y tarjetas y propone la cuenta nueva con su saldo como
+apertura; ver `docs/CAPTURA.md`. El modelo no recibe ni devuelve el número completo ni el nombre del titular.)
+
+
 | Función | Problema que resuelve | Alternativa determinística | Decisión y criterio | Cómo saber si sirve |
 |---|---|---|---|---|
 | `capture_parse` · imagen/PDF (`captura_imagen_pdf`) | Registrar un consumo, depósito o factura desde una captura sin teclear | El formulario manual de movimientos | **Útil, con consentimiento propio**: lee y propone; tú apruebas (regla 11) | Qué % de borradores apruebas sin editar el monto (si <70 %, no vale la pena) |

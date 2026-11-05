@@ -3,7 +3,7 @@
   <p class="ai-note">{{ 'Register expenses and deposits from a screenshot of a bank notice, an invoice (image or PDF), your voice, pasted text or your email. Each capture becomes a draft that you approve: nothing is registered on its own.' | t }}</p>
 
   <label class="ai-row">
-    <input type="checkbox" [ngModel]="ai.prefs().documentsEnabled" (ngModelChange)="toggle($event)" name="capture-enabled" />
+    <input type="checkbox" [checked]="ai.prefs().documentsEnabled" (change)="toggle($any($event.target).checked, $any($event.target))" name="capture-enabled" />
     <span><b>{{ 'Use smart capture' | t }}</b><small>{{ captureStatusKey() | t }} {{ 'Independent from the general AI switch.' | t }}</small></span>
   </label>
 

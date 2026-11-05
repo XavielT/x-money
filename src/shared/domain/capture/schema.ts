@@ -2,7 +2,7 @@
 // Everything the model says is untrusted text: lengths are cut, control characters are removed, only
 // known keys survive, and no number comes back as a number: amounts arrive as the text on the document
 // and are converted by the code (amount.ts).
-import { CAPTURE_KINDS, CaptureKind } from '../../models/capture-draft.model';
+import { ACCOUNT_SETUP_TYPES, AccountSetupType, CAPTURE_KINDS, CaptureKind } from '../../models/capture-draft.model';
 
 export interface RawLine {
   description: string;
@@ -24,6 +24,10 @@ export interface RawTransaction {
   toAccountHint?: string; // the other account: destination of a transfer, the card of a card payment
   targetName?: string; // goal or loan named in the sentence
   categoryCandidate?: string;
+  accountType?: AccountSetupType; // account_setup: what kind of product the screenshot shows
+  accountName?: string;
+  balanceText?: string; // the current balance as printed (for a credit card: what is owed)
+  creditLimitText?: string;
   reference?: string;
   invoiceNumber?: string;
   taxId?: string;
@@ -52,7 +56,7 @@ const clean = (v: unknown, max: number): string | undefined => {
 
 const STRING_FIELDS: readonly [keyof RawTransaction, number][] = [
   ['amountText', 40], ['dateText', 60], ['counterparty', 80], ['description', 160], ['bankName', 40], ['accountHint', 60], ['toAccountHint', 60],
-  ['targetName', 60], ['categoryCandidate', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
+  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
 ];
 
 function digits4(v: unknown): string | undefined {
@@ -70,6 +74,7 @@ function item(raw: unknown): RawTransaction | null {
     if (s) (out as unknown as Record<string, unknown>)[k] = s;
   }
   if (r['currencyHint'] === 'DOP' || r['currencyHint'] === 'USD') out.currencyHint = r['currencyHint'];
+  if (ACCOUNT_SETUP_TYPES.includes(r['accountType'] as AccountSetupType)) out.accountType = r['accountType'] as AccountSetupType;
   const l4 = digits4(r['accountLast4']);
   if (l4) out.accountLast4 = l4;
   const t4 = digits4(r['toAccountLast4']);

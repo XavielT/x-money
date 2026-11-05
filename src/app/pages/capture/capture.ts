@@ -2,6 +2,7 @@ import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
 import { AiService } from '../../../shared/ai/ai.service';
 import { AiFailure } from '../../../shared/ai/ai.types';
 import { SpeechService } from '../../../shared/capture/speech.service';
@@ -67,7 +68,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.voiceAvailable.set(await this.speech.available());
+    this.voiceAvailable.set(Capacitor.isNativePlatform() || (await this.speech.available()));
     await this.takeShared();
     this.unsubscribe = this.share.onShared(() => void this.takeShared());
     void this.capture.processQueue();

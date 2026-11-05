@@ -52,6 +52,20 @@ imagen / PDF / texto / voz / correo
 **No soportado en esta ronda:** aprobación automática, notificaciones de Android o SMS, conexión directa a bancos,
 OCR local sin IA, grabar o enviar audio, proveedores de correo distintos de Gmail, sincronizar comprobantes.
 
+## Crear tus cuentas desde una captura (2.19.0)
+
+Pasa una captura de la app de tu banco (una cuenta, una tarjeta, el encabezado de un estado de cuenta) y la app propone la
+**cuenta**: banco (si coincide con el catálogo), tipo (corriente, ahorros, nómina, tarjeta de crédito o de débito),
+**solo los últimos 4 dígitos** del número, la moneda, el saldo actual y, en una tarjeta de crédito, el límite.
+Al aprobar se crea la cuenta y **el saldo pasa a ser su saldo de apertura**: no se crea ningún movimiento, y todos los
+saldos siguientes siguen saliendo de los movimientos (regla 9). En una tarjeta de crédito el monto es lo que **debes**
+(saldo de apertura negativo). Una captura con varias cuentas genera un borrador por cuenta.
+
+- El número completo y el nombre del titular **no** se guardan ni se piden al modelo.
+- Si ya tienes una cuenta con esos últimos 4 dígitos y el mismo banco, el borrador queda como «posible duplicado» y no
+  se sobrescribe nada sin tu decisión.
+- Sin un saldo explícito (0 vale) o sin tipo o moneda, no se puede aprobar: la app no lo supone.
+
 ## La bandeja «Revisar capturas»
 
 - Cada borrador muestra el original junto a los campos; los dudosos (monto que no está en el texto, fecha supuesta,

@@ -5,9 +5,13 @@ import { TransactionCurrency } from './transaction.model';
 
 export type CaptureSource = 'image' | 'pdf' | 'voice' | 'text' | 'email';
 export type CaptureStatus = 'queued' | 'pending' | 'approved' | 'rejected' | 'duplicate' | 'failed';
-export type CaptureKind = 'expense' | 'income' | 'card_payment' | 'internal_transfer' | 'loan_payment' | 'goal_contribution' | 'invoice_purchase' | 'unknown';
+export type CaptureKind = 'expense' | 'income' | 'card_payment' | 'internal_transfer' | 'loan_payment' | 'goal_contribution' | 'invoice_purchase' | 'account_setup' | 'unknown';
 
-export const CAPTURE_KINDS: readonly CaptureKind[] = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'unknown'];
+// What kind of account a screenshot of a bank product shows (account_setup)
+export type AccountSetupType = 'checking' | 'savings' | 'payroll' | 'credit_card' | 'debit_card' | 'other';
+export const ACCOUNT_SETUP_TYPES: readonly AccountSetupType[] = ['checking', 'savings', 'payroll', 'credit_card', 'debit_card', 'other'];
+
+export const CAPTURE_KINDS: readonly CaptureKind[] = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'account_setup', 'unknown'];
 
 // Why a field is highlighted in the tray
 export type CaptureDoubt =
@@ -22,7 +26,9 @@ export type CaptureDoubt =
   | 'account-missing'
   | 'kind-unknown'
   | 'sender-mismatch' // email whose sender is not in the user's filter
-  | 'possible-duplicate';
+  | 'possible-duplicate'
+  | 'account-exists' // an account with the same bank and last 4 digits already exists
+  | 'balance-missing';
 
 export interface CaptureLine {
   description: string;
@@ -54,6 +60,13 @@ export interface CaptureDraft {
   taxAmountMinor?: number; // ITBIS: data, not another expense
   subtotalMinor?: number;
   lines?: CaptureLine[]; // at most 30
+  // account_setup: a screenshot of a bank account or card creates the account (nothing is written until approved).
+  // Only the last 4 digits of the number are ever kept. For a credit card the balance is what is OWED.
+  accountType?: AccountSetupType;
+  accountName?: string;
+  balanceMinor?: number; // the current balance, used as the opening balance of the new account
+  creditLimitMinor?: number;
+  resolvedBankId?: string; // the bank of the catalog the name was matched to
   confidence: Record<string, number>; // per field, 0 to 1
   notes?: string; // what the reader could not read
   doubts: CaptureDoubt[];
@@ -70,7 +83,7 @@ export interface CaptureDraft {
   // duplicate control
   dedupeKey?: string;
   fileFingerprint?: string;
-  duplicateOf?: { type: 'draft' | 'transaction'; id: string };
+  duplicateOf?: { type: 'draft' | 'transaction' | 'account'; id: string };
 
   // email only: who sent it and when (shown next to the draft), and the message id for the cursor
   sender?: string;

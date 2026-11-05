@@ -257,3 +257,19 @@ describe('the capture_parse handler', () => {
     expect((await run({ mode: 'text', text: 'x' })).status).toBe(500);
   });
 });
+
+describe('account screenshots on the server (account_setup)', () => {
+  it('the instructions explain accounts and forbid the full number and the holder name', () => {
+    const t = CAPTURE_FEATURES['capture_parse'].instructions('en');
+    expect(t).toMatch(/account_setup/);
+    expect(t).toMatch(/ONLY the last 4 digits; never write the full number/);
+    expect(t).toMatch(/Never include the holder/);
+  });
+
+  it('the answer keeps the account fields, drops an unknown type and cuts the number to 4 digits', () => {
+    const out = JSON.parse(finalizeCapture(JSON.stringify({ transactions: [{ kind: 'account_setup', bankName: 'Banreservas', accountType: 'savings', accountName: 'Ahorros', accountLast4: '9999000011112222', balanceText: 'RD$ 5,000.00' }, { kind: 'account_setup', accountType: 'crypto' }] }))!);
+    expect(out.transactions[0]).toMatchObject({ kind: 'account_setup', accountType: 'savings', accountLast4: '2222', balanceText: 'RD$ 5,000.00' });
+    expect(out.transactions[1].accountType).toBeUndefined();
+    expect(JSON.stringify(out)).not.toContain('9999000011112222');
+  });
+});

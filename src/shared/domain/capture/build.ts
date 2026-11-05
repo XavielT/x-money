@@ -24,6 +24,7 @@ export interface BuildContext {
   categoryFor: (text: string) => string | undefined;
   categoryByName: (name: string) => string | undefined;
   incomeSourceFor: (text: string) => string | undefined;
+  bankIdOf?: (name: string | undefined) => string | undefined; // the bank of the catalog a screenshot names
   text?: string; // the text the items were read from (voice, email, pasted): enables the cross check
   fileFingerprint?: string;
   sender?: string;
@@ -35,7 +36,53 @@ export interface BuildContext {
 const TEXT_MODES: readonly CaptureSource[] = ['voice', 'text', 'email'];
 const isCard = (a: AccountModel | undefined): boolean => a?.type === 'card' && a.cardKind === 'credit';
 
+// A screenshot of a bank account or card: the account itself, not a movement. Only the last 4 digits are kept.
+function buildAccountDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft {
+  const doubts: CaptureDoubt[] = [];
+  const balance = raw.balanceText ? parseAmount(raw.balanceText, raw.currencyHint, { largeAbove: ctx.largeAbove ?? DEFAULT_LARGE_AMOUNT }) : null;
+  const limit = raw.creditLimitText ? parseAmount(raw.creditLimitText, raw.currencyHint) : null;
+  let currency: TransactionCurrency | undefined = raw.currencyHint;
+  if (balance && balance.ok) {
+    currency = balance.currency ?? currency;
+    if (balance.needsConfirm) doubts.push('amount-large');
+  } else {
+    doubts.push('balance-missing');
+  }
+  if (!currency && limit && limit.ok) currency = limit.currency ?? undefined;
+  if (!currency) doubts.push('currency-ambiguous');
+  if (!raw.accountType) doubts.push('kind-unknown');
+  const last4 = last4Of(raw.accountLast4);
+  const bankId = ctx.bankIdOf?.(raw.bankName);
+  const twin = last4 ? ctx.accounts.find((a) => !a.archived && a.last4 === last4 && (!bankId || !a.bankId || a.bankId === bankId)) : undefined;
+  if (twin) doubts.push('account-exists');
+  const draft: CaptureDraft = {
+    id: ctx.newId(),
+    createdAt: ctx.nowIso,
+    source: ctx.source,
+    status: 'pending',
+    kind: 'account_setup',
+    currency,
+    bankName: raw.bankName,
+    accountLast4: last4,
+    accountType: raw.accountType,
+    accountName: raw.accountName ?? raw.bankName,
+    balanceMinor: balance && balance.ok ? balance.minor : undefined,
+    creditLimitMinor: limit && limit.ok ? limit.minor : undefined,
+    resolvedBankId: bankId,
+    confidence: { ...raw.confidence },
+    notes: raw.notes,
+    doubts,
+    fileFingerprint: ctx.fileFingerprint,
+    sender: ctx.sender,
+    sentAt: ctx.sentAt,
+    messageId: ctx.messageId,
+  };
+  for (const k of Object.keys(draft) as (keyof CaptureDraft)[]) if (draft[k] === undefined) delete draft[k];
+  return draft;
+}
+
 export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft {
+  if (raw.kind === 'account_setup') return buildAccountDraft(raw, ctx);
   const doubts: CaptureDoubt[] = [];
   const confidence: Record<string, number> = { ...raw.confidence };
   const kind: CaptureKind = raw.kind;

@@ -425,3 +425,74 @@ describe('registered like the rest of the data', () => {
     expect((BACKUP_KEYS as readonly string[]).includes('capture_drafts')).toBe(true);
   });
 });
+
+describe('creating accounts from a screenshot', () => {
+  const account = (over: Record<string, unknown>) => item({ kind: 'account_setup', ...over });
+  const screenshot = async (s: ReturnType<typeof session>, ...items: Record<string, unknown>[]) => {
+    gateway.next = async () => reply(...items);
+    const r = await s.capture.submit({ ...image, fingerprint: crypto.randomUUID() });
+    return (r as { drafts: { id: string }[] }).drafts;
+  };
+
+  it('a bank account: the app proposes it, and approving creates it with the balance as the OPENING balance and no movement', async () => {
+    const s = session();
+    on(s.ai);
+    const before = s.accounts.accounts().length;
+    const [d] = await screenshot(s, account({ bankName: 'Banco Popular', accountName: 'Cuenta Nomina', accountType: 'payroll', accountLast4: '************5566', balanceText: 'RD$ 52,340.75', currencyHint: 'DOP' }));
+    expect(s.drafts.byId(d.id)).toMatchObject({ kind: 'account_setup', resolvedBankId: 'popular', accountLast4: '5566', balanceMinor: 5234075 });
+    expect(s.accounts.accounts()).toHaveLength(before); // nothing exists until approved
+    const r = s.capture.approve(d.id);
+    expect(r.ok).toBe(true);
+    const created = s.accounts.accounts().find((a) => a.last4 === '5566')!;
+    expect(created).toMatchObject({ name: 'Cuenta Nomina', type: 'bank', bankKind: 'payroll', bankId: 'popular', currency: 'DOP', initialBalance: 52340.75 });
+    expect(s.tx.transactions()).toHaveLength(0); // no movement: the balance is the opening balance
+    expect(s.tx.accountBalance(created.id)).toBe(52340.75); // and every balance still comes from the movements
+    expect(s.drafts.byId(d.id)).toMatchObject({ status: 'approved', createdMovementIds: ['account:' + created.id] });
+    expect(s.audit.events().find((e) => e.entity === 'account' && e.entityId === created.id && e.origin === 'capture:image')).toBeTruthy();
+    // a purchase on it behaves like on any account
+    s.tx.add({ type: 'expense', amount: 1000, accountId: created.id, date: '2026-11-04', categoryId: 'cat-food' });
+    expect(s.tx.accountBalance(created.id)).toBe(51340.75);
+  });
+
+  it('a credit card: the amount owed is a negative opening balance, with its credit limit', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, account({ bankName: 'Banreservas', accountName: 'Visa Gold', accountType: 'credit_card', accountLast4: '4111', balanceText: 'RD$ 18,500.00', creditLimitText: 'RD$ 100,000.00', currencyHint: 'DOP' }));
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    const card = s.accounts.accounts().find((a) => a.last4 === '4111')!;
+    expect(card).toMatchObject({ type: 'card', cardKind: 'credit', bankId: 'banreservas', initialBalance: -18500, card: { creditLimit: 100000 } });
+    expect(s.tx.accountBalance(card.id)).toBe(-18500);
+  });
+
+  it('several accounts in one screenshot make several drafts, each one approved on its own', async () => {
+    const s = session();
+    on(s.ai);
+    const ds = await screenshot(s, account({ bankName: 'Banreservas', accountType: 'checking', accountLast4: '1001', balanceText: '1,000.00', currencyHint: 'DOP' }), account({ bankName: 'Banreservas', accountType: 'savings', accountLast4: '1002', balanceText: 'US$ 250.00', currencyHint: 'USD' }));
+    expect(ds).toHaveLength(2);
+    const r = s.capture.approveMany([ds[0].id]);
+    expect(r.approved).toEqual([ds[0].id]);
+    expect(s.accounts.accounts().some((a) => a.last4 === '1002')).toBe(false); // the second one was not marked
+    expect(s.capture.approve(ds[1].id).ok).toBe(true);
+    expect(s.accounts.accounts().find((a) => a.last4 === '1002')).toMatchObject({ currency: 'USD', initialBalance: 250, type: 'savings' });
+  });
+
+  it('an account you already have (same bank and last 4 digits) waits for an explicit decision; the balance is not overwritten', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, account({ bankName: 'Banco Popular', accountName: 'Corriente', accountType: 'checking', accountLast4: '7788', balanceText: 'RD$ 999.00', currencyHint: 'DOP' }));
+    expect(s.drafts.byId(d.id)).toMatchObject({ status: 'duplicate', duplicateOf: { type: 'account', id: 'k1' } });
+    expect(s.capture.approve(d.id)).toEqual({ ok: false, error: 'duplicate-decision' });
+    expect(s.accounts.byId('k1')!.initialBalance).toBe(100000); // untouched
+    expect(s.accounts.accounts().filter((a) => a.last4 === '7788')).toHaveLength(1);
+  });
+
+  it('without an explicit balance the account cannot be approved (the app never assumes it)', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, account({ bankName: 'Banco BHD', accountType: 'savings', accountLast4: '3030', currencyHint: 'DOP' }));
+    expect(s.capture.approve(d.id)).toMatchObject({ ok: false, missing: ['balance'] });
+    s.capture.edit(d.id, { balanceMinor: 0 });
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    expect(s.accounts.accounts().find((a) => a.last4 === '3030')!.initialBalance).toBe(0);
+  });
+});

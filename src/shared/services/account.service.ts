@@ -81,7 +81,7 @@ export class AccountService {
     return TYPE_ICONS[type];
   }
 
-  add(data: Omit<AccountModel, 'id' | 'icon'> & { icon?: string }): void {
+  add(data: Omit<AccountModel, 'id' | 'icon'> & { icon?: string }): string {
     const account: AccountModel = {
       ...data,
       id: crypto.randomUUID(),
@@ -91,6 +91,7 @@ export class AccountService {
     };
     this._accounts.update((list) => [...list, account]);
     this.persist();
+    return account.id;
   }
 
   update(account: AccountModel): void {

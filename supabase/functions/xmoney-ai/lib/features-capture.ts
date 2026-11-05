@@ -6,11 +6,12 @@
 import { checkDocument, MAX_TEXT_CHARS } from './capture-files.ts';
 import type { FeatureDef, Locale } from './features.ts';
 
-const KINDS = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'unknown'] as const;
+const KINDS = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'account_setup', 'unknown'] as const;
+const ACCOUNT_TYPES = ['checking', 'savings', 'payroll', 'credit_card', 'debit_card', 'other'] as const;
 
 const STRING_FIELDS: readonly [string, number][] = [
   ['amountText', 40], ['dateText', 60], ['counterparty', 80], ['description', 160], ['bankName', 40], ['accountHint', 60], ['toAccountHint', 60],
-  ['targetName', 60], ['categoryCandidate', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
+  ['targetName', 60], ['categoryCandidate', 40], ['accountName', 60], ['balanceText', 40], ['creditLimitText', 40], ['reference', 40], ['invoiceNumber', 40], ['taxId', 20], ['fiscalNumber', 20], ['taxAmountText', 40], ['subtotalText', 40], ['notes', 240],
 ];
 
 const isRec = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -54,6 +55,7 @@ function normalizeItem(raw: unknown): Record<string, unknown> | null {
     if (s) out[k] = s;
   }
   if (raw['currencyHint'] === 'DOP' || raw['currencyHint'] === 'USD') out['currencyHint'] = raw['currencyHint'];
+  if ((ACCOUNT_TYPES as readonly unknown[]).includes(raw['accountType'])) out['accountType'] = raw['accountType'];
   const a = digits4(raw['accountLast4']);
   if (a) out['accountLast4'] = a;
   const t = digits4(raw['toAccountLast4']);
@@ -106,6 +108,7 @@ const INSTRUCTIONS =
   '"accountHint" and "toAccountHint" (short words naming the main account and, for a transfer or a card payment, the other one, as they appear), "targetName" (the goal or the loan named), "reference" (approval or reference number), "categoryCandidate" (a short guess such as groceries), ' +
   'for invoices also "invoiceNumber", "taxId" (RNC), "fiscalNumber" (NCF), "taxAmountText" (ITBIS), "subtotalText" and up to 30 "lines" ({"description","quantity","amountText"}), ' +
   'and "confidence" (an object with a number from 0 to 1 for each field you filled). ' +
+  'A screenshot of a BANK ACCOUNT or CARD (the app of a bank, a statement header, a card page) is not a transaction: answer one entry per account with kind "account_setup", "bankName", "accountName" (the product name as shown), "accountType" (checking | savings | payroll | credit_card | debit_card | other), "accountLast4" (ONLY the last 4 digits; never write the full number), "balanceText" (the current or available balance exactly as printed; for a credit card the amount OWED), "creditLimitText" for credit cards, and "currencyHint". Never include the holder\'s name. ' +
   'If a field cannot be read with certainty, OMIT it and say what you could not read in "notes". Never invent amounts, dates or references. Never output a number you computed.';
 
 const LANGUAGE: Record<Locale, string> = { es: ' Write "notes" in Spanish.', en: ' Write "notes" in English.' };

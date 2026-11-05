@@ -3,13 +3,14 @@
 import { account, transaction } from '../../testing/builders';
 import { CaptureDraft } from '../../models/capture-draft.model';
 import { majorOf, minorFromNumberToken, parseAmount } from './amount';
+import { bankIdOf } from './bank';
 import { BuildContext, buildDraft } from './build';
 import { parseDate } from './dates';
 import { MAX_PDF_PAGES, checkFile, clampRedaction, fitSize, minimizeText, sniffType, stripHtml } from './files';
 import { kindOfText, readTextLocally, splitSentences } from './local';
 import { cleanSenders, parseSenderText } from './mail';
 import { dedupeKey, findDuplicate, normalizeMerchant } from './merchant';
-import { missingFor, planApproval } from './plan';
+import { accountSpecOf, missingFor, planApproval } from './plan';
 import { resolveAccount, resolveByName } from './resolve';
 import { parseCaptureOutput } from './schema';
 import { amountAppearsIn, amountsInText, wordsToMinor } from './words';
@@ -455,5 +456,80 @@ describe('what may leave the device', () => {
     expect(cleanSenders(['Avisos@Banco.example', 'x', 'bad address', 'avisos@banco.example', '<script>'])).toEqual(['avisos@banco.example']);
     expect(parseSenderText('avisos@banco.example, otro.example;  ')).toEqual(['avisos@banco.example', 'otro.example']);
     expect(cleanSenders(Array.from({ length: 30 }, (_, i) => `a${i}@x.example`))).toHaveLength(20);
+  });
+});
+
+describe('a screenshot of a bank account creates the account (account_setup)', () => {
+  const BANKS = [
+    { id: 'banreservas', name: 'Banreservas' },
+    { id: 'popular', name: 'Banco Popular' },
+    { id: 'bhd', name: 'Banco BHD' },
+    { id: 'santa-cruz', name: 'Banco Santa Cruz' },
+    { id: 'scotiabank', name: 'Scotiabank' },
+    { id: 'other', name: 'Other' },
+  ];
+
+  it('the bank is matched to the catalog only when it is clear', () => {
+    expect(bankIdOf('Banreservas', BANKS)).toBe('banreservas');
+    expect(bankIdOf('BANCO POPULAR DOMINICANO', BANKS)).toBe('popular');
+    expect(bankIdOf('BHD León', BANKS)).toBe('bhd');
+    expect(bankIdOf('Scotiabank RD', BANKS)).toBe('scotiabank');
+    expect(bankIdOf('Banco de Reservas de la República', BANKS)).toBeUndefined(); // not guessed
+    expect(bankIdOf('Un banco cualquiera', BANKS)).toBeUndefined();
+    expect(bankIdOf(undefined, BANKS)).toBeUndefined();
+  });
+
+  const acctCtx = (over: Partial<BuildContext> = {}) => ctx({ bankIdOf: (n) => bankIdOf(n, BANKS), ...over });
+  const checking = { kind: 'account_setup' as const, bankName: 'Banco Popular', accountName: 'Cuenta Corriente', accountType: 'checking' as const, accountLast4: '************7788', balanceText: 'RD$ 52,340.75', currencyHint: 'DOP' as const, confidence: { balance: 0.9 } };
+
+  it('reads the account: bank, type, ONLY the last 4 digits and the balance as the opening balance', () => {
+    const d = buildDraft(checking, acctCtx({ accounts: [] }));
+    expect(d).toMatchObject({ kind: 'account_setup', status: 'pending', bankName: 'Banco Popular', resolvedBankId: 'popular', accountType: 'checking', accountName: 'Cuenta Corriente', accountLast4: '7788', balanceMinor: 5234075, currency: 'DOP', doubts: [] });
+    expect(JSON.stringify(d)).not.toContain('************');
+    expect(d.amountMinor).toBeUndefined();
+    expect(d.occurredAt).toBeUndefined();
+  });
+
+  it('what cannot be read is flagged, never invented', () => {
+    const d = buildDraft({ kind: 'account_setup', bankName: 'Banco X', confidence: {} }, acctCtx({ accounts: [] }));
+    expect(d.doubts).toEqual(expect.arrayContaining(['balance-missing', 'currency-ambiguous', 'kind-unknown']));
+    expect(missingFor(d, { accounts: [] })).toEqual(['account-type', 'currency', 'balance']);
+  });
+
+  it('an account with the same last 4 digits is flagged as already existing', () => {
+    const mine = account({ id: 'k1', name: 'Mi cuenta', type: 'bank', bankId: 'popular', last4: '7788' });
+    const d = buildDraft(checking, acctCtx({ accounts: [mine] }));
+    expect(d.doubts).toContain('account-exists');
+    expect(findDuplicate(d, [], [], [mine])).toEqual({ why: 'existing-account', of: { type: 'account', id: 'k1' } });
+    expect(findDuplicate(d, [], [], [{ ...mine, bankId: 'banreservas' }])).toBeNull(); // another bank, same digits: not the same account
+    expect(findDuplicate(d, [], [], [{ ...mine, archived: true }])).toBeNull();
+  });
+
+  const approvable = (over: Partial<CaptureDraft> = {}): CaptureDraft => ({ ...buildDraft(checking, acctCtx({ accounts: [] })), ...over });
+
+  it('the plan creates the account: a bank account keeps its balance; a credit card holds what is OWED as a negative opening balance', () => {
+    expect(accountSpecOf(approvable())).toEqual({ name: 'Cuenta Corriente', type: 'bank', bankKind: 'checking', bankId: 'popular', last4: '7788', currency: 'DOP', initialBalance: 52340.75 });
+    const card = approvable({ accountType: 'credit_card', accountName: 'Visa Gold', balanceMinor: 1850000, creditLimitMinor: 10000000, accountLast4: '4242' });
+    expect(accountSpecOf(card)).toEqual({ name: 'Visa Gold', type: 'card', cardKind: 'credit', bankId: 'popular', last4: '4242', currency: 'DOP', initialBalance: -18500, creditLimit: 100000 });
+    expect(accountSpecOf(approvable({ accountType: 'savings' })).type).toBe('savings');
+    expect(accountSpecOf(approvable({ accountType: 'debit_card' })).cardKind).toBe('debit');
+    expect(accountSpecOf(approvable({ accountName: undefined, bankName: 'Banco Popular' })).name).toBe('Banco Popular ·7788');
+    expect(planApproval(approvable(), { accounts: [], defaultIncomeCategory: () => 'x' })).toMatchObject({ ok: true, ops: [{ t: 'new-account' }] });
+  });
+
+  it('an account needs its type, currency and an explicit balance (0 is fine) before it can be approved', () => {
+    const c = { accounts: [], defaultIncomeCategory: () => 'x' };
+    expect(planApproval(approvable({ accountType: undefined }), c)).toEqual({ ok: false, missing: ['account-type'] });
+    expect(planApproval(approvable({ balanceMinor: undefined }), c)).toEqual({ ok: false, missing: ['balance'] });
+    expect(planApproval(approvable({ currency: undefined }), c)).toEqual({ ok: false, missing: ['currency'] });
+    expect(planApproval(approvable({ balanceMinor: 0 }), c).ok).toBe(true);
+    expect(planApproval(approvable({ balanceMinor: 6_000_000_000 }), c)).toEqual({ ok: false, missing: ['confirm-large'] });
+  });
+
+  it('the answer of the model for an account: the new fields survive, a made-up type does not', () => {
+    const raw = JSON.stringify({ transactions: [{ kind: 'account_setup', bankName: 'Popular', accountType: 'checking', accountName: 'Corriente', balanceText: 'RD$ 100.00', creditLimitText: '5,000', accountLast4: '0000111122223333' }, { kind: 'account_setup', accountType: 'crypto_wallet' }] });
+    const r = parseCaptureOutput(raw);
+    expect(r.ok && r.value.items[0]).toMatchObject({ kind: 'account_setup', accountType: 'checking', accountName: 'Corriente', balanceText: 'RD$ 100.00', creditLimitText: '5,000', accountLast4: '3333' });
+    expect(r.ok && r.value.items[1].accountType).toBeUndefined();
   });
 });

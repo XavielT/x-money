@@ -2,7 +2,8 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CAPTURE_KINDS, CaptureDoubt, CaptureDraft, CaptureKind } from '../../../shared/models/capture-draft.model';
+import { ACCOUNT_SETUP_TYPES, AccountSetupType, CAPTURE_KINDS, CaptureDoubt, CaptureDraft, CaptureKind } from '../../../shared/models/capture-draft.model';
+import { BANKS_MOCK } from '../../../shared/data/banks';
 import { TransactionCurrency } from '../../../shared/models/transaction.model';
 import { majorOf, minorOf } from '../../../shared/domain/capture/amount';
 import { MissingField, missingFor } from '../../../shared/domain/capture/plan';
@@ -23,7 +24,17 @@ const KIND_LABELS: Record<CaptureKind, string> = {
   loan_payment: 'Loan payment',
   goal_contribution: 'Goal contribution',
   invoice_purchase: 'Invoice purchase',
+  account_setup: 'New account',
   unknown: 'Not recognized',
+};
+
+const ACCOUNT_TYPE_LABELS: Record<AccountSetupType, string> = {
+  checking: 'Checking account',
+  savings: 'Savings account',
+  payroll: 'Payroll account',
+  credit_card: 'Credit card',
+  debit_card: 'Debit card',
+  other: 'Other account',
 };
 
 const DOUBT_LABELS: Record<CaptureDoubt, string> = {
@@ -39,6 +50,8 @@ const DOUBT_LABELS: Record<CaptureDoubt, string> = {
   'kind-unknown': 'The type was not recognized: choose it.',
   'sender-mismatch': 'The sender does not match your filter.',
   'possible-duplicate': 'This looks like something already registered.',
+  'account-exists': 'You already have an account with these last 4 digits.',
+  'balance-missing': 'The balance could not be read: enter it (0 is fine).',
 };
 
 const MISSING_LABELS: Record<MissingField, string> = {
@@ -56,6 +69,9 @@ const MISSING_LABELS: Record<MissingField, string> = {
   'currency-unsupported': 'Goals and the business are in RD$ only for now.',
   'confirm-large': 'Confirm the large amount.',
   'already-approved': 'Already approved.',
+  'account-type': 'Choose the type of account.',
+  'account-name': 'Give the account a name.',
+  balance: 'Enter the opening balance (0 is fine).',
 };
 
 // The review tray: where every capture waits. The user edits, approves or rejects; there is no
@@ -69,6 +85,8 @@ const MISSING_LABELS: Record<MissingField, string> = {
 })
 export class CaptureReviewComponent {
   kinds = CAPTURE_KINDS;
+  accountTypes = ACCOUNT_SETUP_TYPES;
+  banks = BANKS_MOCK.filter((b) => b.id !== 'other');
   open = signal<string | null>(null);
   marked = signal<Set<string>>(new Set());
   message = signal('');
@@ -108,7 +126,36 @@ export class CaptureReviewComponent {
   }
 
   // the amount as shown in the list: the symbol only when the currency is known, a question mark when there is no amount
+  accountTypeLabel(t: AccountSetupType): string {
+    return ACCOUNT_TYPE_LABELS[t];
+  }
+
+  // the balance of an account, in major units for the input
+  balanceOf(d: CaptureDraft): number | null {
+    return d.balanceMinor === undefined ? null : d.balanceMinor / 100;
+  }
+
+  setBalance(d: CaptureDraft, value: number | string | null): void {
+    const n = Number(value);
+    this.capture.edit(d.id, { balanceMinor: value !== null && value !== '' && Number.isFinite(n) && n >= 0 ? minorOf(n) : undefined });
+  }
+
+  setLimit(d: CaptureDraft, value: number | string | null): void {
+    const n = Number(value);
+    this.capture.edit(d.id, { creditLimitMinor: Number.isFinite(n) && n > 0 ? minorOf(n) : undefined });
+  }
+
+  setLast4(d: CaptureDraft, value: string): void {
+    const digits = (value ?? '').replace(/\D/g, '').slice(-4);
+    this.capture.edit(d.id, { accountLast4: digits.length === 4 ? digits : undefined });
+  }
+
   amountLabel(d: CaptureDraft): string {
+    if (d.kind === 'account_setup') {
+      if (d.balanceMinor === undefined) return '?';
+      const sym = d.currency === 'USD' ? 'US$' : d.currency === 'DOP' ? 'RD$' : '';
+      return sym + (d.balanceMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     if (!d.amountMinor) return '?';
     const symbol = d.currency === 'USD' ? 'US$' : d.currency === 'DOP' ? 'RD$' : '';
     return symbol + (d.amountMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -191,6 +238,6 @@ export class CaptureReviewComponent {
   }
 
   duplicateOfLabel(d: CaptureDraft): string {
-    return d.duplicateOf?.type === 'transaction' ? this.t('a movement you already have') : this.t('an earlier capture');
+    return d.duplicateOf?.type === 'account' ? this.t('an account you already have') : d.duplicateOf?.type === 'transaction' ? this.t('a movement you already have') : this.t('an earlier capture');
   }
 }

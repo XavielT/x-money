@@ -2,7 +2,7 @@
 // functions as every other entry point (movements, card payments, goals, loans, business). Pure:
 // no operation here touches storage, and a draft with an essential field empty or ambiguous gives no
 // plan at all, so it can never be approved by accident (principle 1 and rule 11).
-import { AccountModel } from '../../models/account.model';
+import { AccountModel, AccountType, BankAccountKind, CardKind } from '../../models/account.model';
 import { CaptureDraft } from '../../models/capture-draft.model';
 import { TransactionCurrency } from '../../models/transaction.model';
 import { isValidIsoDate } from '../dates';
@@ -22,9 +22,48 @@ export type MissingField =
   | 'currency-mismatch'
   | 'currency-unsupported' // goals and the business module are RD$ only for now
   | 'confirm-large'
+  | 'account-type'
+  | 'account-name'
+  | 'balance'
   | 'already-approved';
 
+// The account a screenshot of a bank product creates. The balance is the OPENING balance: nothing is written
+// as a movement, and every later balance still comes from the movements (rule 9).
+export interface NewAccountSpec {
+  name: string;
+  type: AccountType;
+  cardKind?: CardKind;
+  bankKind?: BankAccountKind;
+  bankId?: string;
+  last4?: string;
+  currency: TransactionCurrency;
+  initialBalance: number; // a credit card holds what is OWED as a negative balance
+  creditLimit?: number;
+}
+
+export function accountSpecOf(d: CaptureDraft): NewAccountSpec {
+  const t = d.accountType ?? 'other';
+  const type: AccountType = t === 'credit_card' || t === 'debit_card' ? 'card' : t === 'savings' ? 'savings' : t === 'other' ? 'other' : 'bank';
+  const currency = d.currency ?? 'DOP';
+  const balance = majorOf(d.balanceMinor ?? 0);
+  const name = (d.accountName ?? '').trim() || [d.bankName, d.accountLast4 ? '·' + d.accountLast4 : ''].filter(Boolean).join(' ').trim();
+  const spec: NewAccountSpec = {
+    name: name.slice(0, 40),
+    type,
+    bankId: d.resolvedBankId,
+    last4: d.accountLast4,
+    currency,
+    initialBalance: t === 'credit_card' ? -balance : balance,
+  };
+  if (t === 'credit_card') spec.cardKind = 'credit';
+  if (t === 'debit_card') spec.cardKind = 'debit';
+  if (t === 'checking' || t === 'payroll') spec.bankKind = t;
+  if (t === 'credit_card' && d.creditLimitMinor) spec.creditLimit = majorOf(d.creditLimitMinor);
+  return spec;
+}
+
 export type CaptureOp =
+  | { t: 'new-account'; account: NewAccountSpec }
   | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string } }
   | { t: 'card-payment'; cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string }
   | { t: 'goal-entry'; goalId: string; amount: number; date: string; note?: string }
@@ -54,6 +93,15 @@ export function noteOf(d: CaptureDraft): string | undefined {
 export function missingFor(d: CaptureDraft, ctx: Pick<PlanContext, 'accounts' | 'confirmLarge' | 'largeAbove'>): MissingField[] {
   const out: MissingField[] = [];
   if (d.status === 'approved') return ['already-approved'];
+  if (d.kind === 'account_setup') {
+    // an account needs its type, its currency, its name and an opening balance (0 is fine, but it must be said)
+    if (!d.accountType) out.push('account-type');
+    if (!d.currency) out.push('currency');
+    if (!((d.accountName ?? '').trim() || d.bankName)) out.push('account-name');
+    if (d.balanceMinor === undefined || d.balanceMinor < 0) out.push('balance');
+    if (d.balanceMinor !== undefined && majorOf(d.balanceMinor) > (ctx.largeAbove ?? 50_000_000) && !ctx.confirmLarge) out.push('confirm-large');
+    return out;
+  }
   if (d.kind === 'unknown') out.push('kind');
   if (!d.amountMinor || d.amountMinor <= 0) out.push('amount');
   if (!d.currency) out.push('currency');
@@ -81,6 +129,7 @@ export function missingFor(d: CaptureDraft, ctx: Pick<PlanContext, 'accounts' | 
 export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops: CaptureOp[] } | { ok: false; missing: MissingField[] } {
   const missing = missingFor(d, ctx);
   if (missing.length) return { ok: false, missing };
+  if (d.kind === 'account_setup') return { ok: true, ops: [{ t: 'new-account', account: accountSpecOf(d) }] };
   const amount = majorOf(d.amountMinor!);
   const currency = d.currency!;
   const date = d.occurredAt!;

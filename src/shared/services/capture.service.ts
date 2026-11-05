@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { bankById } from '../data/banks';
+import { BANKS_MOCK, bankById } from '../data/banks';
+import { bankIdOf } from '../domain/capture/bank';
 import { CAPTURE_FEATURE_ID } from '../ai/capture-feature';
 import { AiFailure } from '../ai/ai.types';
 import { AiService } from '../ai/ai.service';
@@ -143,6 +144,7 @@ export class CaptureService {
         categoryFor: this.categoryFor,
         categoryByName: this.categoryByName,
         incomeSourceFor: this.incomeSourceFor,
+        bankIdOf: (name) => bankIdOf(name, BANKS_MOCK),
         text: extra.text,
         fileFingerprint: extra.fingerprint,
         sender: extra.meta?.sender,
@@ -154,7 +156,7 @@ export class CaptureService {
   }
 
   private markDuplicate(draft: CaptureDraft): CaptureDraft {
-    const match = findDuplicate(draft, this.drafts.drafts(), this.transactions.transactions());
+    const match = findDuplicate(draft, this.drafts.drafts(), this.transactions.transactions(), this.accounts.accounts());
     if (!match) return draft;
     // exige una decisión explícita: it waits as 'duplicate' until the user discards or registers it anyway
     return { ...draft, status: 'duplicate', duplicateOf: match.of, doubts: draft.doubts.includes('possible-duplicate') ? draft.doubts : [...draft.doubts, 'possible-duplicate'] };
@@ -368,7 +370,7 @@ export class CaptureService {
       ids.push(r.id);
     }
     for (const mid of ids) {
-      this.audit.log({ type: 'create', entity: op0Entity(plan.ops[0]), entityId: mid, origin: `capture:${d.source}`, after: { draftId: d.id, source: d.source } });
+      this.audit.log({ type: 'create', entity: op0Entity(plan.ops[0]), entityId: mid.replace(/^account:/, ''), origin: `capture:${d.source}`, after: { draftId: d.id, source: d.source } });
     }
     this.drafts.update(id, { status: 'approved', createdMovementIds: ids, reviewedAt: this.clock().toISOString() });
     this.learn(d);
@@ -404,6 +406,22 @@ export class CaptureService {
   // One operation through the same function every other entry point uses
   private run(op: CaptureOp): { ok: true; id: string } | { ok: false; error: string } {
     switch (op.t) {
+      case 'new-account': {
+        // the account of a screenshot: its balance is the OPENING balance, no movement is written
+        const a = op.account;
+        const id = this.accounts.add({
+          name: a.name,
+          type: a.type,
+          cardKind: a.cardKind,
+          bankKind: a.bankKind,
+          bankId: a.bankId,
+          last4: a.last4,
+          currency: a.currency,
+          initialBalance: a.initialBalance,
+          card: a.creditLimit ? (a.currency === 'USD' ? { creditLimitUsd: a.creditLimit } : { creditLimit: a.creditLimit }) : undefined,
+        });
+        return { ok: true, id: 'account:' + id };
+      }
       case 'transaction': {
         const r = this.transactions.add({ ...op.tx });
         return r.ok ? { ok: true, id: r.id } : { ok: false, error: r.error };
@@ -437,4 +455,4 @@ export class CaptureService {
   }
 }
 
-const op0Entity = (op: CaptureOp): 'transaction' | 'goal' | 'loan' | 'business' => (op.t === 'goal-entry' ? 'goal' : op.t === 'loan-payment' ? 'loan' : op.t === 'business-purchase' ? 'business' : 'transaction');
+const op0Entity = (op: CaptureOp): 'transaction' | 'goal' | 'loan' | 'business' | 'account' => (op.t === 'new-account' ? 'account' : op.t === 'goal-entry' ? 'goal' : op.t === 'loan-payment' ? 'loan' : op.t === 'business-purchase' ? 'business' : 'transaction');

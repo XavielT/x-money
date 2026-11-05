@@ -51,9 +51,11 @@ export class CaptureSettingsComponent implements OnInit {
   }
 
   // Turning it ON goes through the consent; turning it OFF withdraws the consent at once
-  toggle(on: boolean): void {
-    if (on) this.consent.set(true);
-    else {
+  toggle(on: boolean, box?: HTMLInputElement): void {
+    if (on) {
+      this.consent.set(true);
+      if (box) box.checked = false; // it only turns on after "I understand, turn it on"
+    } else {
       this.ai.setDocuments(false);
       this.capture.setPrefs({ mailEnabled: false });
     }

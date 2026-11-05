@@ -77,7 +77,9 @@ export class SpeechService {
     if (status.speechRecognition !== 'granted') status = await p.requestPermissions();
     if (status.speechRecognition !== 'granted') throw fail('denied');
     try {
-      const { matches } = await p.start({ language, maxResults: 1, partialResults: false, popup: false });
+      // Some phones (some Xiaomi) have no recognition service the plugin can use; the system voice dialog still works
+      const hasService = (await p.available().catch(() => ({ available: false }))).available;
+      const { matches } = await p.start({ language, maxResults: 1, partialResults: false, popup: !hasService });
       const text = (matches?.[0] ?? '').trim();
       if (!text) throw fail(this.stopped ? 'aborted' : 'no-speech');
       return text;
