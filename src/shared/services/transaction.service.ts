@@ -3,6 +3,7 @@ import { TransactionCurrency, TransactionModel, TransactionOrigin, TransactionTy
 import { StorageService } from './storage.service';
 import { AccountService } from './account.service';
 import { AuditLogService, summarizeTransaction } from './audit-log.service';
+import { cleanDetails } from '../domain/capture/clean-details';
 import { localIso } from '../domain/dates';
 import { Balances, accountBalance as ledgerBalance, balances, orphanTransactions, totalFrom, txCurrency } from '../domain/ledger';
 import { CategoryTotal, Summary, isCounted, summarize, totalsByCategory } from '../domain/stats';
@@ -163,8 +164,10 @@ export class TransactionService {
       if (!partFits(parts, data.amount, data.groupTotal)) return fail('partial-exceeds');
     }
     const now = this.nowIso();
+    const details = cleanDetails(data.details);
     const tx: TransactionModel = {
       ...data,
+      ...(details ? { details } : {}),
       id: data.id ?? crypto.randomUUID(),
       amount: round2(data.amount),
       fee: data.fee ? round2(data.fee) : undefined,
@@ -195,8 +198,11 @@ export class TransactionService {
       const others = this._transactions().filter((t) => t.linkedId === existing.linkedId && t.id !== existing.id);
       if (!partFits(others, next.amount, existing.groupTotal)) return fail('partial-exceeds');
     }
+    // the form does not edit what was bought, so an edit must never drop it
+    const details = cleanDetails(next.details) ?? existing.details;
     const kept: TransactionModel = {
       ...next,
+      ...(details ? { details } : {}),
       amount: round2(next.amount),
       fee: next.fee ? round2(next.fee) : undefined,
       // trace fields cannot be rewritten by an edit
@@ -304,6 +310,7 @@ export class TransactionService {
       fee: existing.fee,
       date: existing.date,
       note: existing.note,
+      ...(existing.details ? { details: existing.details } : {}),
       ...changes,
       correctionOf: id,
     };

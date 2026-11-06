@@ -40,6 +40,7 @@
         <span *ngIf="o.kind === 'pdf'">📄 {{ o.name }}</span>
       </div>
       <p class="review-note" *ngIf="d.notes">{{ 'The reader says:' | t }} {{ d.notes | t }}</p>
+      <p class="review-note" *ngIf="addsText(d) as adds">🧾 {{ 'Another draft is the same purchase. Registering this one also keeps what it has and this one lacks:' | t }} {{ adds }}.</p>
 
       <div class="review-dup" *ngIf="d.status === 'duplicate'">
         <p>{{ 'This looks the same as' | t }} {{ duplicateOfLabel(d) }}.</p>

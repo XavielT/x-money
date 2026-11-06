@@ -15,6 +15,7 @@ import { AuditLogService } from './audit-log.service';
 import { AuthService } from './auth.service';
 import { CaptureDraftService } from './capture-draft.service';
 import { CaptureService, CapturePayload } from './capture.service';
+import { migrateRecord } from '../data-layer/migrations';
 import { CategoryService } from './category.service';
 import { CreditCardService } from './credit-card.service';
 import { GoalService } from './goal.service';
@@ -580,5 +581,62 @@ describe('bank notifications on the phone (2.20.0)', () => {
     vi.spyOn(storage, 'readOnly').mockReturnValue(true);
     expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('error');
     expect(s.drafts.drafts()).toHaveLength(0);
+  });
+});
+
+describe('what was bought stays with the movement (2.20.2)', () => {
+  const debit = account({ id: 'd1', name: 'Popular débito', type: 'card', cardKind: 'debit', bankId: 'popular', last4: '4237', linkedAccountId: 'k1', initialBalance: 0 });
+  const base = { createdAt: '2026-11-06T12:00:00Z', status: 'pending' as const, confidence: {}, doubts: [], amountMinor: 23913, currency: 'DOP' as const, occurredAt: '2026-11-06', counterparty: 'JUMBO LUPERON', resolvedAccountId: 'd1', resolvedCategoryId: 'cat-groceries' };
+  const receipt = { ...base, id: 'receipt', source: 'image' as const, kind: 'invoice_purchase' as const, invoiceNumber: 'F-1001', lines: [{ description: 'Leche 1L', quantity: 2, amountMinor: 9800 }, { description: 'Pan sobao', quantity: 1, amountMinor: 10466 }] };
+  const email = { ...base, id: 'email', source: 'email' as const, kind: 'expense' as const, messageId: 'm1' };
+
+  function tray() {
+    storage = new MemoryStorage().seed({ accounts: [bank, debit, savings, card], incomeSources: [payroll], transactions: [] });
+    const s = session();
+    s.drafts.add(receipt);
+    s.drafts.add(email);
+    return s;
+  }
+
+  it('registering the bank email keeps the items of the receipt of the same purchase; rejecting the receipt then loses nothing', () => {
+    const s = tray();
+    expect(s.capture.approve('email').ok).toBe(true);
+    expect(s.capture.reject('receipt')).toBe(true);
+    const txs = s.tx.transactions();
+    expect(txs).toHaveLength(1);
+    expect(txs[0]).toMatchObject({ type: 'expense', amount: 239.13, accountId: 'd1' });
+    expect(txs[0].details?.lines).toEqual([
+      { description: 'Leche 1L', quantity: 2, amount: 98 },
+      { description: 'Pan sobao', quantity: 1, amount: 104.66 },
+    ]);
+    expect(txs[0].details?.invoiceNumber).toBe('F-1001');
+  });
+
+  it('editing the movement afterwards (a form save that knows nothing of the details) never drops them', () => {
+    const s = tray();
+    s.capture.approve('email');
+    const t = s.tx.transactions()[0];
+    const { details: _gone, ...formShape } = t; // what the edit form sends
+    expect(s.tx.update({ ...formShape, note: 'compra del mes' }).ok).toBe(true);
+    expect(s.tx.byId(t.id)).toMatchObject({ note: 'compra del mes' });
+    expect(s.tx.byId(t.id)!.details?.lines).toHaveLength(2);
+  });
+
+  it('a movement written before this version (no details) loads, edits and migrates unchanged', () => {
+    const old = { id: 'old1', type: 'expense', amount: 50, categoryId: 'cat-groceries', accountId: 'k1', date: '2026-10-01', origin: 'manual', status: 'posted', scope: 'personal' };
+    storage = new MemoryStorage().seed({ accounts: [bank, savings], incomeSources: [], transactions: [old] });
+    const s = session();
+    expect(s.tx.byId('old1')!.details).toBeUndefined();
+    expect(s.tx.update({ ...s.tx.byId('old1')!, note: 'x' }).ok).toBe(true);
+    expect('details' in s.tx.byId('old1')!).toBe(false); // nothing is invented for old records
+    expect(migrateRecord('transactions', old, 1)).toEqual({ ...old }); // an old backup imports as it was
+  });
+
+  it('a movement with nothing to keep gets no details block', () => {
+    storage = new MemoryStorage().seed({ accounts: [bank, debit, savings, card], incomeSources: [payroll], transactions: [] });
+    const s = session();
+    s.drafts.add(email);
+    s.capture.approve('email');
+    expect(s.tx.transactions()[0].details).toBeUndefined();
   });
 });

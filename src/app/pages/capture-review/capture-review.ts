@@ -9,6 +9,7 @@ import { majorOf, minorOf } from '../../../shared/domain/capture/amount';
 import { MissingField, missingFor } from '../../../shared/domain/capture/plan';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { AccountService } from '../../../shared/services/account.service';
+import { whatOthersAdd } from '../../../shared/domain/capture/details';
 import { CaptureService } from '../../../shared/services/capture.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { GoalService } from '../../../shared/services/goal.service';
@@ -115,6 +116,14 @@ export class CaptureReviewComponent {
   // keep each card's DOM while its draft is edited (every edit makes a new object): the field being typed in keeps its focus
   trackById(_: number, d: CaptureDraft): string {
     return d.id;
+  }
+
+  // What the other drafts of the same purchase would add to this one when it is registered (items, invoice, ...)
+  addsText(d: CaptureDraft): string {
+    const labels: Record<string, string> = { lines: 'Items', invoiceNumber: 'Invoice', fiscalNumber: 'NCF', taxId: 'RNC', subtotal: 'Subtotal', tax: 'ITBIS', reference: 'Reference' };
+    return whatOthersAdd(d, this.capture.drafts.pending())
+      .map((k) => this.t(labels[k]))
+      .join(', ');
   }
 
   kindLabel(k: CaptureKind): string {

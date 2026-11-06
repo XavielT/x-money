@@ -4,7 +4,7 @@
 // plan at all, so it can never be approved by accident (principle 1 and rule 11).
 import { AccountModel, AccountType, BankAccountKind, CardKind } from '../../models/account.model';
 import { CaptureDraft } from '../../models/capture-draft.model';
-import { TransactionCurrency } from '../../models/transaction.model';
+import { PurchaseDetails, TransactionCurrency } from '../../models/transaction.model';
 import { isValidIsoDate } from '../dates';
 import { majorOf } from './amount';
 
@@ -64,7 +64,7 @@ export function accountSpecOf(d: CaptureDraft): NewAccountSpec {
 
 export type CaptureOp =
   | { t: 'new-account'; account: NewAccountSpec }
-  | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string; fee?: number } }
+  | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string; details?: PurchaseDetails; fee?: number } }
   | { t: 'card-payment'; cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string; fee?: number }
   | { t: 'goal-entry'; goalId: string; amount: number; date: string; note?: string }
   | { t: 'loan-payment'; loanId: string; accountId: string; amount: number; date: string; note?: string }
@@ -75,6 +75,7 @@ export interface PlanContext {
   defaultIncomeCategory: (sourceId: string | undefined) => string;
   confirmLarge?: boolean;
   largeAbove?: number;
+  details?: PurchaseDetails; // what was bought: kept with a personal expense
 }
 
 const accepts = (a: AccountModel | undefined, c: TransactionCurrency): boolean => {
@@ -139,7 +140,7 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
 
   switch (d.kind) {
     case 'expense':
-      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note } }] };
+      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note, details: ctx.details } }] };
     case 'income':
       return {
         ok: true,
@@ -157,7 +158,7 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
       // one expense for the TOTAL (the tax stays as data, never a second expense). Marked as the
       // business's: it goes through the inventory purchase of the business module instead.
       if (d.asBusiness) return { ok: true, ops: [{ t: 'business-purchase', name: (d.counterparty ?? d.description ?? 'Invoice').slice(0, 60), totalCost: amount, date, accountId, supplier: d.counterparty, notes: note }] };
-      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note } }] };
+      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note, details: ctx.details } }] };
     default:
       return { ok: false, missing: ['kind'] };
   }

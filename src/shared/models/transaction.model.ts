@@ -35,6 +35,26 @@ export type TransactionScope = 'personal' | 'business';
 // statistics and budgets skip both
 export type TransactionStatus = 'posted' | 'reversed';
 
+// What was bought, kept with the movement so that "what did I buy that day?" can be answered later.
+// Optional and additive (2.20.2): movements written before it simply have none. Amounts are major units.
+export interface PurchaseLine {
+  description: string;
+  quantity?: number;
+  amount?: number;
+}
+
+export interface PurchaseDetails {
+  lines?: PurchaseLine[]; // at most 30
+  invoiceNumber?: string;
+  fiscalNumber?: string; // NCF
+  taxId?: string; // RNC of the seller
+  subtotal?: number;
+  tax?: number; // ITBIS: data, not another expense
+  reference?: string;
+  origin?: 'image' | 'pdf' | 'voice' | 'text' | 'email' | 'notification'; // what the details were read from
+  text?: string; // the bank's own words (notice, email), reduced; at most 1500 characters
+}
+
 export interface TransactionModel {
   id: string;
   type: TransactionKind;
@@ -48,6 +68,7 @@ export interface TransactionModel {
   fee?: number; // bank commission/tax discounted with the movement (e.g. DGII 0.15%)
   date: string; // ISO yyyy-MM-dd
   note?: string;
+  details?: PurchaseDetails; // what was bought (captured from a receipt, an invoice or a bank notice)
 
   // Traceability (schema v2, all optional so v1 data stays valid)
   origin?: TransactionOrigin;

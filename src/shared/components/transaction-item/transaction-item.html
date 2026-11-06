@@ -31,7 +31,7 @@
     <span class="transaction-item-info">
       <span class="transaction-item-category">{{ category?.name || ('Unknown' | t) }}<ng-container *ngTemplateOutlet="tags"></ng-container></span>
       <span class="transaction-item-meta">
-        {{ account?.name }}<ng-container *ngIf="transaction.fee"> · {{ 'fee' | t }} {{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.fee | number:'1.2-2' }}</ng-container><ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container>
+        {{ account?.name }}<ng-container *ngIf="transaction.fee"> · {{ 'fee' | t }} {{ transaction.currency === 'USD' ? 'US$' : settings.currency() }}{{ transaction.fee | number:'1.2-2' }}</ng-container><ng-container *ngIf="transaction.note"> · {{ transaction.note }}</ng-container><ng-container *ngIf="transaction.details"> · 🧾<ng-container *ngIf="transaction.details.lines?.length"> {{ transaction.details.lines?.length }}</ng-container></ng-container>
       </span>
     </span>
     <span class="transaction-item-amount" [class.income]="transaction.type === 'income'">

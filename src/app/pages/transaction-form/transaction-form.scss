@@ -286,3 +286,28 @@
     color: var(--main-ultra-light);
   }
 }
+
+// What was bought: read only, kept from the receipt or the bank notice
+.transaction-form-details {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--main-ultra-light);
+  border-radius: 12px;
+
+  ul {
+    margin: 6px 0;
+    padding-left: 18px;
+  }
+
+  small {
+    display: block;
+    opacity: 0.8;
+  }
+
+  .transaction-form-original {
+    margin: 8px 0 0;
+    white-space: pre-wrap;
+    font-size: 12px;
+    opacity: 0.75;
+  }
+}

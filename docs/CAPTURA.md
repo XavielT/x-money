@@ -140,3 +140,16 @@ la app lo lee con `domain/capture/notification.ts` (monto, moneda, últimos 4 d�
   además llega el correo del mismo consumo, la detección de duplicados lo marca.
 - Los textos de ejemplo de las pruebas son representativos, no copiados del banco: si una notificación real se lee mal,
   agrégala como caso en `notification.spec.ts`.
+
+## Qué se compró se queda con el gasto (2.20.2)
+
+Un gasto aprobado desde una captura guarda en `details` del movimiento: las **líneas** del recibo (descripción, cantidad,
+monto), factura, NCF, subtotal, ITBIS, referencia y el **texto del banco** (notificación o correo, reducido a 1.500
+caracteres). En el historial el gasto lleva 🧾 y, al abrirlo para editar, aparece «Qué se compró» (solo lectura).
+
+- Si el mismo consumo llegó dos veces (el correo del banco trae monto y tarjeta; la captura del recibo trae los artículos),
+  el que se registra **adopta los artículos del otro** (misma moneda, monto y día, y mismo comercio si ambos lo nombran). Así
+  se puede registrar uno y rechazar el duplicado sin perder el detalle. Un borrador rechazado nunca aporta datos.
+- Editar el movimiento (formulario, corrección de uno conciliado) **no borra** `details`.
+- Campo opcional y aditivo: los movimientos viejos simplemente no lo tienen y los respaldos viejos se importan igual
+  (`CLIENT_SCHEMA_VERSION` no cambia, así que ningún otro dispositivo queda bloqueado). Prueba: `capture.spec.ts`.

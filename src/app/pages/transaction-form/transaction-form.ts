@@ -32,6 +32,9 @@ import { round2, sumMoney } from '../../../shared/utils/money';
 export class TransactionFormComponent {
   editId: string | null = null;
 
+  // What was bought, when the movement being edited came from a capture
+  details = () => (this.editId ? this.transactionService.byId(this.editId)?.details : undefined);
+
   kind = signal<TransactionKind>('expense');
   categoryId = signal<string>('');
   txCurrency = signal<TransactionCurrency>('DOP');

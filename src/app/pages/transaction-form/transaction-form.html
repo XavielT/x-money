@@ -200,6 +200,20 @@
   <!-- Note -->
   <label class="transaction-form-label">{{ 'Note (optional)' | t }}</label>
   <input class="x-input" type="text" maxlength="80" [placeholder]="'e.g. Lunch with friends' | t" [(ngModel)]="note" name="note" />
+  <!-- What was bought (captured from a receipt, an invoice or a bank notice): read only, never lost on edit -->
+  <section class="transaction-form-details" *ngIf="details() as d">
+    <label class="transaction-form-label">🧾 {{ 'What was bought' | t }}</label>
+    <ul *ngIf="d.lines?.length">
+      <li *ngFor="let l of d.lines">{{ l.description }}<ng-container *ngIf="l.quantity"> ×{{ l.quantity }}</ng-container><ng-container *ngIf="l.amount !== undefined"> — {{ l.amount | number: '1.2-2' }}</ng-container></li>
+    </ul>
+    <small *ngIf="d.invoiceNumber">{{ 'Invoice' | t }} {{ d.invoiceNumber }}</small>
+    <small *ngIf="d.fiscalNumber">NCF {{ d.fiscalNumber }}</small>
+    <small *ngIf="d.taxId">RNC {{ d.taxId }}</small>
+    <small *ngIf="d.subtotal !== undefined">{{ 'Subtotal' | t }} {{ d.subtotal | number: '1.2-2' }}</small>
+    <small *ngIf="d.tax !== undefined">ITBIS {{ d.tax | number: '1.2-2' }}</small>
+    <small *ngIf="d.reference">{{ 'Reference' | t }} {{ d.reference }}</small>
+    <pre class="transaction-form-original" *ngIf="d.text">{{ d.text }}</pre>
+  </section>
   @defer (on idle) {
     <app-ai-category-hint *ngIf="kind() === 'expense'" [note]="note" (picked)="selectCategory($event)"></app-ai-category-hint>
   }

@@ -8,6 +8,7 @@ import { CaptureDraft, CaptureSource } from '../models/capture-draft.model';
 import { buildDraft } from '../domain/capture/build';
 import { minimizeText } from '../domain/capture/files';
 import { readTextLocally } from '../domain/capture/local';
+import { purchaseDetailsOf } from '../domain/capture/details';
 import { BankNotification, readBankNotification } from '../domain/capture/notification';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
@@ -366,7 +367,9 @@ export class CaptureService {
     if (!d) return { ok: false, error: 'not-found' };
     if (d.status === 'duplicate') return { ok: false, error: 'duplicate-decision' }; // needs the explicit decision first
     if (d.status !== 'pending') return { ok: false, error: 'not-pending' };
-    const plan = planApproval(d, { accounts: this.accounts.accounts(), confirmLarge: options.confirmLarge, defaultIncomeCategory: (sid) => this.incomeCategory(sid) });
+    // what was bought goes with the movement: the draft's own, plus whatever the other drafts of the same purchase have and this one lacks
+    const details = purchaseDetailsOf(d, this.drafts.drafts(), (id) => this.originalOf(id)?.text);
+    const plan = planApproval(d, { accounts: this.accounts.accounts(), confirmLarge: options.confirmLarge, defaultIncomeCategory: (sid) => this.incomeCategory(sid), details });
     if (!plan.ok) return { ok: false, missing: plan.missing };
     const ids: string[] = [];
     for (const op of plan.ops) {
