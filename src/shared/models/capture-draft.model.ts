@@ -3,7 +3,7 @@
 // document, a transcript or an email, so it is only ever a proposal.
 import { TransactionCurrency } from './transaction.model';
 
-export type CaptureSource = 'image' | 'pdf' | 'voice' | 'text' | 'email';
+export type CaptureSource = 'image' | 'pdf' | 'voice' | 'text' | 'email' | 'notification';
 export type CaptureStatus = 'queued' | 'pending' | 'approved' | 'rejected' | 'duplicate' | 'failed';
 export type CaptureKind = 'expense' | 'income' | 'card_payment' | 'internal_transfer' | 'loan_payment' | 'goal_contribution' | 'invoice_purchase' | 'account_setup' | 'unknown';
 

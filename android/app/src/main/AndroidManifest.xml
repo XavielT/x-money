@@ -30,6 +30,17 @@
             </intent-filter>
         </activity>
 
+        <!-- Bank notifications (2.20.0): only works once the user grants "Notification access" in Android settings -->
+        <service
+            android:name=".BankNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

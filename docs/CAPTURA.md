@@ -48,8 +48,9 @@ imagen / PDF / texto / voz / correo
 | Voz | Botón «Hablar» (es-DO, con respaldo es-419/es) | Se muestra el texto para que lo corrijas antes de enviar |
 | Compartir desde otra app | Android: «Compartir → X Money» (imagen, PDF o texto). PWA en Chrome/Android: `share_target` | **iPhone no tiene destino de compartir para PWA**: usa elegir archivo o pegar |
 | Correo | Gmail, solo lectura, filtro por remitentes (ver `SETUP-CAPTURA.md`) | Interruptor propio, apagado por defecto |
+| Notificaciones del banco (2.20.0) | Android: Ajustes → Captura inteligente → «Leer las notificaciones de mi banco» | Solo Popular, Banreservas y BHD; se leen en el teléfono, **sin IA ni internet**; apagado por defecto |
 
-**No soportado en esta ronda:** aprobación automática, notificaciones de Android o SMS, conexión directa a bancos,
+**No soportado en esta ronda:** aprobación automática, SMS, conexión directa a bancos,
 OCR local sin IA, grabar o enviar audio, proveedores de correo distintos de Gmail, sincronizar comprobantes.
 
 ## Crear tus cuentas desde una captura (2.19.0)
@@ -122,3 +123,20 @@ saldos siguientes siguen saliendo de los movimientos (regla 9). En una tarjeta d
 10. Apaga el interruptor: «Leer en este dispositivo» sigue leyendo frases; imágenes y PDF piden encenderlo.
 
 Muestras reales para evaluar tú mismo: `docs/muestras-bancos/` (ignorada por git; ver su README).
+
+## Notificaciones del banco en el teléfono (2.20.0)
+
+Un servicio de Android (`BankNotificationListener`) escucha **solo** las apps de Popular (`com.popular.app.android`),
+Banreservas (`com.banreservas.tubancoappmobile`) y BHD (`com.bhdleon.tdcdigital`, `com.artech.infocorp_bhd.bhd`). Cualquier
+otra app se descarta antes de mirar su contenido. El texto queda en una bandeja del dispositivo (máx. 100, nunca sale de él);
+la app lo lee con `domain/capture/notification.ts` (monto, moneda, últimos 4 dígitos, comercio, tipo, fecha) y crea un
+**borrador** en la bandeja de captura. Nada se registra hasta que apruebas (regla 11).
+
+- Requiere dos permisos del usuario: el interruptor de X Money y «Acceso a notificaciones» en los ajustes de Android (solo el
+  usuario puede darlo; el botón lo abre). Apagar el interruptor borra lo que esperaba en la bandeja.
+- Una notificación sin monto o sin palabra de movimiento (códigos, promociones) **no** genera borrador.
+- Devoluciones, transferencias enviadas y pagos de tarjeta quedan con tipo «sin reconocer» para que elijas.
+- La misma notificación nunca crea dos borradores (id propio `notification:<hash>`), ni siquiera si rechazaste el primero. Si
+  además llega el correo del mismo consumo, la detección de duplicados lo marca.
+- Los textos de ejemplo de las pruebas son representativos, no copiados del banco: si una notificación real se lee mal,
+  agrégala como caso en `notification.spec.ts`.

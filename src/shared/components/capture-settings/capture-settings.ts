@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AiService } from '../../ai/ai.service';
+import { NotificationCaptureService } from '../../capture/notification-capture.service';
 import { CAPTURE_DAILY_LIMIT } from '../../ai/ai.types';
 import { parseSenderText } from '../../domain/capture/mail';
 import { TranslatePipe } from '../../pipes/translate.pipe';
@@ -34,12 +35,14 @@ export class CaptureSettingsComponent implements OnInit {
   sendersText = signal('');
   subjectText = signal('');
   message = signal('');
+  noticeMessage = signal('');
   limit = CAPTURE_DAILY_LIMIT;
 
   constructor(
     public ai: AiService,
     public capture: CaptureService,
     public mail: MailCaptureService,
+    public notices: NotificationCaptureService,
     private translate: TranslateService
   ) {}
 
@@ -48,6 +51,7 @@ export class CaptureSettingsComponent implements OnInit {
     this.sendersText.set(f.senders.join(', '));
     this.subjectText.set(f.subjectWords.join(', '));
     if (this.capture.prefs().mailEnabled) void this.mail.refresh();
+    void this.notices.refresh();
   }
 
   // Turning it ON goes through the consent; turning it OFF withdraws the consent at once
@@ -102,6 +106,31 @@ export class CaptureSettingsComponent implements OnInit {
     this.message.set('');
     const r = await this.mail.scan();
     this.message.set(r.ok ? this.translate.instant('{n} message(s) read, {d} draft(s) created.').replace('{n}', String(r.messages)).replace('{d}', String(r.drafts)) : this.translate.instant(MAIL_MESSAGES[r.code]));
+  }
+
+  noticeStatusKey(): string {
+    if (!this.capture.prefs().notificationsEnabled) return 'Off. Nothing is read.';
+    return this.notices.access()?.granted ? 'On. Android allows X Money to read notifications.' : 'On, but Android has not given X Money notification access yet.';
+  }
+
+  // Turning it ON also sends the user to Android's own screen: only they can grant notification access
+  async toggleNotices(on: boolean): Promise<void> {
+    this.noticeMessage.set('');
+    await this.notices.setEnabled(on);
+    if (!on) return;
+    const access = await this.notices.refresh();
+    if (access && !access.granted) {
+      this.noticeMessage.set(this.translate.instant('In the Android screen that opens, turn on X Money, then come back.'));
+      await this.notices.openAndroidSettings();
+    } else {
+      await this.checkNotices();
+    }
+  }
+
+  async checkNotices(): Promise<void> {
+    await this.notices.refresh();
+    const r = await this.notices.drain();
+    this.noticeMessage.set(this.translate.instant('{d} draft(s) created, {s} ignored (not a movement).').replace('{d}', String(r.drafts)).replace('{s}', String(r.skipped)));
   }
 
   captureStatusKey(): string {

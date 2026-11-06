@@ -33,7 +33,7 @@ export interface BuildContext {
   largeAbove?: number;
 }
 
-const TEXT_MODES: readonly CaptureSource[] = ['voice', 'text', 'email'];
+const TEXT_MODES: readonly CaptureSource[] = ['voice', 'text', 'email', 'notification'];
 const isCard = (a: AccountModel | undefined): boolean => a?.type === 'card' && a.cardKind === 'credit';
 
 // A screenshot of a bank account or card: the account itself, not a movement. Only the last 4 digits are kept.

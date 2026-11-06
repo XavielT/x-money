@@ -99,6 +99,16 @@ export class App {
         await take();
         share.onShared(() => void take());
       });
+      // Bank-app notifications (2.20.0): only when the user turned them on in Settings → Smart capture.
+      // They are read on the device (no AI) and only ever become drafts in the tray.
+      if (this.storage.get<{ notificationsEnabled?: boolean }>('capture-prefs', {}).notificationsEnabled) {
+        void import('../shared/capture/notification-capture.service').then(async (m) => {
+          const notices = this.injector.get(m.NotificationCaptureService);
+          await notices.sync();
+          await notices.drain();
+          notices.onArrived(() => void notices.drain());
+        });
+      }
     }
   }
 

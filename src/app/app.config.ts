@@ -9,6 +9,7 @@ import {
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+import { Capacitor } from '@capacitor/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { StorageService } from '../shared/services/storage.service';
 import { AuthService } from '../shared/services/auth.service';
@@ -32,7 +33,8 @@ export const appConfig: ApplicationConfig = {
     }),
     provideRouter(routes),
     provideServiceWorker('xmoney-sw.js', {
-      enabled: !isDevMode(),
+      // The Android app ships its files inside the APK: a service worker there can only serve a stale copy
+      enabled: !isDevMode() && !Capacitor.isNativePlatform(),
       registrationStrategy: 'registerWhenStable:30000',
     }),
   ],

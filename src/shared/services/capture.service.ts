@@ -8,6 +8,7 @@ import { CaptureDraft, CaptureSource } from '../models/capture-draft.model';
 import { buildDraft } from '../domain/capture/build';
 import { minimizeText } from '../domain/capture/files';
 import { readTextLocally } from '../domain/capture/local';
+import { BankNotification, readBankNotification } from '../domain/capture/notification';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
 import { RawTransaction, parseCaptureOutput } from '../domain/capture/schema';
@@ -55,11 +56,15 @@ export interface CapturePrefs {
   mailFilter: { senders: string[]; subjectWords: string[] };
   includePdf: boolean;
   lastMailScan?: string;
+  notificationsEnabled: boolean; // bank-app notifications on this phone become drafts (Android only)
 }
 
-export const DEFAULT_CAPTURE_PREFS: CapturePrefs = { saveReceipts: false, mailEnabled: false, mailFilter: { senders: [], subjectWords: [] }, includePdf: false };
+export const DEFAULT_CAPTURE_PREFS: CapturePrefs = { saveReceipts: false, mailEnabled: false, mailFilter: { senders: [], subjectWords: [] }, includePdf: false, notificationsEnabled: false };
 
 export type SubmitResult = { ok: true; drafts: CaptureDraft[]; queued?: boolean } | { ok: false; code: AiFailure | 'unreadable' | 'write' };
+
+// What happened to one bank notification: a new draft, ignored because it is not a movement, or already handled
+export type NotificationOutcome = 'draft' | 'skipped' | 'seen' | 'error';
 
 export type ApproveResult = { ok: true; movementIds: string[] } | { ok: false; missing: MissingField[] } | { ok: false; error: string };
 
@@ -443,6 +448,24 @@ export class CaptureService {
         return r.ok ? { ok: true, id: r.id } : { ok: false, error: r.error };
       }
     }
+  }
+
+
+  // A notification a bank app posted on the phone. Read on the device with no AI and no network: the
+  // wording of bank notices is fixed enough, and what cannot be read is left empty for the tray. It is
+  // ONLY a draft (rule 11); the same notification is never turned into a second draft, even after the
+  // first one was rejected.
+  ingestNotification(n: BankNotification & { id: string }): NotificationOutcome {
+    if (this.storage.readOnly()) return 'error';
+    const messageId = `notification:${n.id}`;
+    if (this.drafts.hasMessage(messageId)) return 'seen';
+    const raw = readBankNotification(n);
+    if (!raw) return 'skipped';
+    const text = minimizeText(`${n.title}
+${n.text}`.trim());
+    const meta = { sender: raw.bankName, sentAt: new Date(n.postedAt).toISOString(), messageId };
+    const result = this.finish(this.build([raw], 'notification', { text, meta }), { kind: 'text', text });
+    return result.ok ? 'draft' : 'error';
   }
 
   // ---------- text entry points

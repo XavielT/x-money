@@ -59,4 +59,17 @@
     </ng-container>
     <p class="ai-note" *ngIf="message()">{{ message() }}</p>
   </ng-container>
+  <ng-container *ngIf="notices.available">
+    <h3>{{ 'Bank notifications (this phone)' | t }}</h3>
+    <p class="ai-note">{{ 'When Popular, Banreservas or BHD show a notification on this phone, X Money reads it here, with no AI and no internet, and prepares a draft. Only those bank apps are read, never anything else; you approve every draft.' | t }}</p>
+    <label class="ai-row">
+      <input type="checkbox" [ngModel]="capture.prefs().notificationsEnabled" (ngModelChange)="toggleNotices($event)" name="notices-enabled" />
+      <span><b>{{ 'Read my bank notifications' | t }}</b><small>{{ noticeStatusKey() | t }}</small></span>
+    </label>
+    <div class="ai-actions" *ngIf="capture.prefs().notificationsEnabled">
+      <button class="x-btn" (click)="notices.openAndroidSettings()" *ngIf="!notices.access()?.granted">{{ 'Allow notification access' | t }}</button>
+      <button class="x-btn" (click)="checkNotices()">{{ 'Check now' | t }}</button>
+    </div>
+    <p class="ai-note" *ngIf="noticeMessage()">{{ noticeMessage() }}</p>
+  </ng-container>
 </section>

@@ -522,3 +522,63 @@ describe('creating accounts from a screenshot', () => {
     expect(s.accounts.accounts().find((a) => a.last4 === '3030')!.initialBalance).toBe(0);
   });
 });
+
+describe('bank notifications on the phone (2.20.0)', () => {
+  const debit = account({ id: 'd1', name: 'Popular débito', type: 'card', cardKind: 'debit', bankId: 'popular', last4: '4237', linkedAccountId: 'k1', initialBalance: 0 });
+  const notice = (id: string, text: string) => ({ id, pkg: 'com.popular.app.android', title: 'Popular', text, postedAt: new Date('2026-11-20T09:30:00').getTime() });
+  const purchase = 'Compra por RD$1,250.50 con su tarjeta de débito terminada en 4237 en SUPERMERCADO NACIONAL.';
+
+  function withDebit() {
+    storage = new MemoryStorage().seed({ accounts: [bank, debit, savings, card], incomeSources: [payroll], transactions: [] });
+    return session();
+  }
+
+  it('becomes a DRAFT on the debit card, with no AI call and no movement written', () => {
+    const s = withDebit();
+    expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('draft');
+    expect(s.drafts.pending()).toHaveLength(1);
+    expect(s.drafts.pending()[0]).toMatchObject({ source: 'notification', kind: 'expense', amountMinor: 125050, currency: 'DOP', resolvedAccountId: 'd1', occurredAt: '2026-11-20', counterparty: 'SUPERMERCADO NACIONAL', messageId: 'notification:n1' });
+    expect(s.tx.transactions()).toHaveLength(0);
+    expect(gateway.calls).toHaveLength(0);
+  });
+
+  it('works with the AI switch off (it never needed it)', () => {
+    const s = withDebit();
+    expect(s.ai.prefs().documentsEnabled).toBe(false);
+    expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('draft');
+  });
+
+  it('the same notification is never a second draft, even after the first one was rejected', () => {
+    const s = withDebit();
+    s.capture.ingestNotification(notice('n1', purchase));
+    expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('seen');
+    s.capture.reject(s.drafts.pending()[0].id);
+    expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('seen');
+    expect(s.drafts.drafts()).toHaveLength(1);
+  });
+
+  it('ignores what is not a movement; a code or a promotion is not a draft', () => {
+    const s = withDebit();
+    expect(s.capture.ingestNotification(notice('n2', 'Tu código de verificación es 482913'))).toBe('skipped');
+    expect(s.capture.ingestNotification(notice('n3', 'Aprovecha: préstamo desde RD$ 50,000'))).toBe('skipped');
+    expect(s.drafts.drafts()).toHaveLength(0);
+  });
+
+  it('approving writes ONE expense through the normal service, on the card the notice names', () => {
+    const s = withDebit();
+    s.capture.ingestNotification(notice('n1', purchase));
+    const [d] = s.drafts.pending();
+    s.capture.edit(d.id, { resolvedCategoryId: 'cat-shopping' });
+    const r = s.capture.approve(d.id);
+    expect(r.ok).toBe(true);
+    expect(s.tx.transactions()).toHaveLength(1);
+    expect(s.tx.transactions()[0]).toMatchObject({ type: 'expense', amount: 1250.5, accountId: 'd1' });
+  });
+
+  it('a read-only storage keeps the notification for later instead of losing it', () => {
+    const s = withDebit();
+    vi.spyOn(storage, 'readOnly').mockReturnValue(true);
+    expect(s.capture.ingestNotification(notice('n1', purchase))).toBe('error');
+    expect(s.drafts.drafts()).toHaveLength(0);
+  });
+});
