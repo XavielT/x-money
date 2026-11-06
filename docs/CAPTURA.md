@@ -163,3 +163,10 @@ Si un aviso nombra una tarjeta que todavía no has agregado, el borrador queda c
 - si el aviso trae **dígitos**, deben coincidir: el nombre del banco solo no basta (otra tarjeta del mismo banco no sirve);
   sin dígitos, el banco alcanza solo si exactamente una cuenta encaja;
 - dos cuentas posibles = no se elige ninguna; sigue siendo un borrador y no se registra nada.
+
+## La coincidencia de cuenta ya no confunde dos tarjetas del mismo banco (2.20.4)
+
+`resolveAccount` (primera lectura de un borrador y también la re-coincidencia de 2.20.3): si el documento **nombra unos
+dígitos** y ninguna cuenta los tiene, una cuenta cuyos dígitos sí se conocen y son otros **no** se elige por el nombre del
+banco (la Visa ····7108 no es la tarjeta de débito ····4237 solo porque ambas son del Popular). Una cuenta sin dígitos
+guardados todavía puede coincidir por el banco. Los dígitos que sí coinciden siguen ganando a cualquier pista.

@@ -166,6 +166,20 @@ describe('resolving accounts against the user\'s own data', () => {
     expect(resolveAccount([{ ...popularCard, archived: true }], '4242', 'DOP', undefined, bankName)).toEqual({ status: 'none' });
   });
 
+  it('digits named by the document that no account has are never replaced by another account of the same bank', () => {
+    // the notice says ····7777 and "Banco Popular"; the only Popular card is ····4242: it is not that card
+    expect(resolveAccount(all, '7777', 'DOP', 'Banco Popular', bankName)).toEqual({ status: 'none' });
+  });
+
+  it('an account whose digits are not stored can still be matched by the bank when the digits match nothing', () => {
+    const noDigits = account({ id: 'p9', name: 'Cuenta Popular', type: 'bank', bankId: 'popular', currency: 'DOP' });
+    expect(resolveAccount([popularCard, noDigits], '7777', 'DOP', 'Banco Popular', bankName)).toEqual({ status: 'resolved', accountId: 'p9', by: 'hint' });
+  });
+
+  it('digits that do match an account still win over any hint', () => {
+    expect(resolveAccount(all, '4242', 'DOP', 'Banreservas', bankName)).toEqual({ status: 'resolved', accountId: 'c1', by: 'last4' });
+  });
+
   it('names resolve to exactly one thing or nothing', () => {
     const goals = [{ id: 'g1', name: 'Carro nuevo' }, { id: 'g2', name: 'Viaje a Punta Cana' }];
     expect(resolveByName(goals, 'carro')?.id).toBe('g1');

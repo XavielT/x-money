@@ -24,6 +24,9 @@ const words = (s: string): string[] => s.split(/\s+/).map(normalizeWord).filter(
 
 // `hint`: free words from the document or the voice ("tarjeta del Popular"); used only when the last 4
 // digits did not settle it. Bank words come from the catalog of the user's own accounts.
+// When the document NAMES digits and no account has them, an account whose own digits are known and differ is
+// never chosen through the bank name (the Visa ····7108 is not the debit card ····4237 just because both are
+// Popular). Accounts with no digits stored can still be matched by the hint.
 export function resolveAccount(accounts: readonly AccountModel[], last4: string | undefined, currency: TransactionCurrency | undefined, hint: string | undefined, bankNameOf: (a: AccountModel) => string): AccountResolution {
   const live = accounts.filter((a) => !a.archived);
   if (last4) {
@@ -34,7 +37,7 @@ export function resolveAccount(accounts: readonly AccountModel[], last4: string 
   if (hint) {
     const hw = new Set(words(hint));
     const scored = live
-      .filter((a) => accepts(a, currency))
+      .filter((a) => accepts(a, currency) && !(last4 && a.last4))
       .map((a) => ({ a, hits: [...new Set([...words(bankNameOf(a)), ...words(a.name)])].filter((w) => hw.has(w)).length }))
       .filter((x) => x.hits > 0);
     if (scored.length) {
