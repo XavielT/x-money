@@ -107,6 +107,10 @@ export class App {
           await notices.sync();
           await notices.drain();
           notices.onArrived(() => void notices.drain());
+          // opened again from the background: whatever arrived meanwhile is read now
+          void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+            if (isActive) void notices.drain();
+          });
         });
       }
     }

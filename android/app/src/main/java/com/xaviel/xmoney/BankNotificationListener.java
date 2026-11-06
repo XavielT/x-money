@@ -1,6 +1,7 @@
 package com.xaviel.xmoney;
 
 import android.app.Notification;
+import android.content.ComponentName;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -11,6 +12,13 @@ import android.service.notification.StatusBarNotification;
  * layer turns each item into a draft that the user approves. Does nothing while the switch in Settings is off.
  */
 public class BankNotificationListener extends NotificationListenerService {
+
+    // Android (and Xiaomi's battery manager) can drop a listener; ask to be bound again so no bank notification is missed
+    @Override
+    public void onListenerDisconnected() {
+        super.onListenerDisconnected();
+        requestRebind(new ComponentName(this, BankNotificationListener.class));
+    }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
