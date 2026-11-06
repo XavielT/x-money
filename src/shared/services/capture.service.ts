@@ -10,6 +10,7 @@ import { minimizeText } from '../domain/capture/files';
 import { readTextLocally } from '../domain/capture/local';
 import { purchaseDetailsOf } from '../domain/capture/details';
 import { BankNotification, readBankNotification } from '../domain/capture/notification';
+import { rematchAccount } from '../domain/capture/rematch';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
 import { RawTransaction, parseCaptureOutput } from '../domain/capture/schema';
@@ -318,6 +319,17 @@ export class CaptureService {
   }
 
   // ---------- the tray: edit, approve, reject
+
+  // Drafts that were waiting for an account that did not exist yet get it now (a card added after its notice
+  // arrived). Only empty accounts are filled, only when exactly one account fits; returns how many were settled.
+  rematch(): number {
+    let done = 0;
+    for (const d of this.drafts.pending()) {
+      const patch = rematchAccount(d, this.accounts.accounts(), this.bankNameOf);
+      if (patch && this.edit(d.id, patch)) done++;
+    }
+    return done;
+  }
 
   edit(id: string, patch: Partial<CaptureDraft>): CaptureDraft | undefined {
     const current = this.drafts.byId(id);

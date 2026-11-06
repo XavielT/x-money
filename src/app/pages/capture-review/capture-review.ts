@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, effect, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -107,7 +107,14 @@ export class CaptureReviewComponent {
     public goals: GoalService,
     public loans: LoanService,
     private translate: TranslateService
-  ) {}
+  ) {
+    // when the tray opens, and whenever the user's accounts change (a card added after its notice arrived),
+    // drafts that were waiting for an account that did not exist get it
+    effect(() => {
+      this.accounts.accounts();
+      untracked(() => this.capture.rematch());
+    });
+  }
 
   t(key: string): string {
     return this.translate.instant(key);

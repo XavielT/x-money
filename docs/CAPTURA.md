@@ -153,3 +153,13 @@ caracteres). En el historial el gasto lleva 🧾 y, al abrirlo para editar, apar
 - Editar el movimiento (formulario, corrección de uno conciliado) **no borra** `details`.
 - Campo opcional y aditivo: los movimientos viejos simplemente no lo tienen y los respaldos viejos se importan igual
   (`CLIENT_SCHEMA_VERSION` no cambia, así que ningún otro dispositivo queda bloqueado). Prueba: `capture.spec.ts`.
+
+## Borradores que esperaban una cuenta que aún no existía (2.20.3)
+
+Si un aviso nombra una tarjeta que todavía no has agregado, el borrador queda con «elige la cuenta». Cuando agregas la cuenta
+(o al abrir la bandeja), `rematchAccount` (`domain/capture/rematch.ts`) la busca otra vez con la misma regla de siempre:
+
+- solo llena una cuenta **vacía**: lo que elegiste tú o lo que ya leyó el lector **nunca** se reemplaza;
+- si el aviso trae **dígitos**, deben coincidir: el nombre del banco solo no basta (otra tarjeta del mismo banco no sirve);
+  sin dígitos, el banco alcanza solo si exactamente una cuenta encaja;
+- dos cuentas posibles = no se elige ninguna; sigue siendo un borrador y no se registra nada.

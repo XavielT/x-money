@@ -640,3 +640,29 @@ describe('what was bought stays with the movement (2.20.2)', () => {
     expect(s.tx.transactions()[0].details).toBeUndefined();
   });
 });
+
+describe('drafts that waited for an account that did not exist (2.20.3)', () => {
+  const waiting = { createdAt: '2026-11-06T12:00:00Z', status: 'pending' as const, confidence: {}, doubts: ['account-missing' as const], amountMinor: 23913, currency: 'DOP' as const, occurredAt: '2026-11-06', counterparty: 'JUMBO LUPERON', resolvedCategoryId: 'cat-groceries', kind: 'expense' as const, source: 'email' as const, accountLast4: '4237', bankName: 'Banco Popular' };
+
+  it('the card added afterwards is found: the draft gets it and loses the doubt', () => {
+    storage = new MemoryStorage().seed({ accounts: [bank, savings, card], incomeSources: [], transactions: [] });
+    const s = session();
+    s.drafts.add({ ...waiting, id: 'w1' });
+    expect(s.capture.rematch()).toBe(0); // no such card yet
+    const id = s.accounts.add({ name: 'Debito Popular', type: 'card', cardKind: 'debit', bankId: 'popular', last4: '4237', currency: 'DOP', initialBalance: 0 });
+    expect(s.capture.rematch()).toBe(1);
+    expect(s.drafts.byId('w1')).toMatchObject({ resolvedAccountId: id });
+    expect(s.drafts.byId('w1')!.doubts).not.toContain('account-missing');
+    expect(s.tx.transactions()).toHaveLength(0); // it is still only a draft
+    expect(s.capture.approve('w1').ok).toBe(true);
+  });
+
+  it('what the user chose is never replaced', () => {
+    storage = new MemoryStorage().seed({ accounts: [bank, savings, card], incomeSources: [], transactions: [] });
+    const s = session();
+    s.drafts.add({ ...waiting, id: 'w2', resolvedAccountId: 's1', doubts: [] });
+    s.accounts.add({ name: 'Debito Popular', type: 'card', cardKind: 'debit', bankId: 'popular', last4: '4237', currency: 'DOP', initialBalance: 0 });
+    expect(s.capture.rematch()).toBe(0);
+    expect(s.drafts.byId('w2')!.resolvedAccountId).toBe('s1');
+  });
+});
