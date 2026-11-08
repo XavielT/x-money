@@ -127,7 +127,7 @@
         </select>
       </label>
 
-      <label *ngIf="d.kind === 'internal_transfer' || d.kind === 'card_payment'">{{ 'Bank tax or fee (optional)' | t }}
+      <label *ngIf="d.kind === 'internal_transfer' || d.kind === 'card_payment' || d.kind === 'expense'">{{ 'Bank tax or fee (optional)' | t }}
         <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="d.bankFeeMinor ? d.bankFeeMinor / 100 : null" (ngModelChange)="setBankFee(d, $event)" [name]="'fee-' + d.id" />
       </label>
       <label *ngIf="d.kind === 'expense' || d.kind === 'invoice_purchase'">{{ 'Category' | t }}

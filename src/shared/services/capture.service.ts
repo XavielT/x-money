@@ -9,6 +9,7 @@ import { buildDraft } from '../domain/capture/build';
 import { minimizeText } from '../domain/capture/files';
 import { readTextLocally } from '../domain/capture/local';
 import { purchaseDetailsOf } from '../domain/capture/details';
+import { bankTaxInText } from '../domain/capture/fee';
 import { BankNotification, readBankNotification } from '../domain/capture/notification';
 import { rematchAccount } from '../domain/capture/rematch';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
@@ -138,7 +139,11 @@ export class CaptureService {
 
   private build(raw: RawTransaction[], source: CaptureSource, extra: { text?: string; fingerprint?: string; meta?: QueueItem['meta'] }): CaptureDraft[] {
     const now = this.clock();
-    return raw.map((r) => {
+    // the tax a bank prints in its own notice ("Impuestos: DOP 4.00") is read from the text when the reader did not
+    // return it; only when the text holds ONE movement, so a tax is never attached to the wrong one
+    const localTax = raw.length === 1 && extra.text ? bankTaxInText(extra.text) : undefined;
+    return raw.map((r0) => {
+      const r = localTax && !r0.bankFeeText ? { ...r0, bankFeeText: localTax } : r0;
       const draft = buildDraft(r, {
         source,
         today: localIso(now),

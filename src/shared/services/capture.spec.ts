@@ -666,3 +666,36 @@ describe('drafts that waited for an account that did not exist (2.20.3)', () => 
     expect(s.drafts.byId('w2')!.resolvedAccountId).toBe('s1');
   });
 });
+
+describe('the bank tax printed in the notice reaches the account (2.20.5)', () => {
+  // wording of a real Banreservas transfer email, with invented names and numbers (this repository is public)
+  const email = '¡Transacción realizada! Te notificamos que la siguiente transacción fue realizada desde tu App Banreservas: Monto: DOP 2,000.00 Transacción: Transferencia a Tercero Origen: JUAN PEREZ, Cuenta de ahorro DOP ** - 7788 Destino: MARIA LOPEZ, Cuenta de ahorro DOP ** - 2222 Fecha de transacción: 7 de Noviembre de 2026 - 7:12 PM Impuestos: DOP 4.00 Número de transacción: 100000000001';
+
+  it('the reader returned no tax, the text has it: the draft carries it and the account drops by amount + tax (the real case)', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: 'DOP 2,000.00', dateText: '07/11/2026', counterparty: 'MARIA LOPEZ', accountLast4: '7788', reference: '100000000001', categoryCandidate: 'groceries' }));
+    const before = s.tx.accountBalance('k1', 'DOP');
+    const r = await s.capture.submit(text(email));
+    expect(r.ok && r.drafts[0]).toMatchObject({ kind: 'expense', amountMinor: 200000, bankFeeMinor: 400, resolvedAccountId: 'k1' });
+    expect(r.ok && s.capture.approve(r.drafts[0].id).ok).toBe(true);
+    expect(s.tx.transactions()[0]).toMatchObject({ amount: 2000, fee: 4 });
+    expect(s.tx.accountBalance('k1', 'DOP')).toBe(before - 2004);
+  });
+
+  it('a tax the reader did return is not overwritten by the text', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: 'DOP 2,000.00', dateText: '07/11/2026', accountLast4: '7788', bankFeeText: 'DOP 5.00' }));
+    const r = await s.capture.submit(text(email));
+    expect(r.ok && r.drafts[0].bankFeeMinor).toBe(500);
+  });
+
+  it('two movements in one text: the tax is not attached to either (it could belong to the other)', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: 'DOP 2,000.00', dateText: '07/11/2026', accountLast4: '7788' }), item({ amountText: 'DOP 300.00', dateText: '07/11/2026', accountLast4: '7788' }));
+    const r = await s.capture.submit(text(email));
+    expect(r.ok && r.drafts.map((d) => d.bankFeeMinor)).toEqual([undefined, undefined]);
+  });
+});

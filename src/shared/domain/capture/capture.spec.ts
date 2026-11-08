@@ -267,10 +267,12 @@ describe('buildDraft: the model reads, the code decides', () => {
     expect(buildDraft({ kind: 'expense', amountText: '100', confidence: {} }, ctx({ source: 'voice', text: '100' })).doubts).not.toContain('date-assumed');
   });
 
-  it('the bank tax is kept only for a transfer or a card payment, never for an expense', () => {
+  it('the bank tax is kept for a transfer or a card payment, and for an expense only when it is plausible (up to 2% of the amount)', () => {
     expect(buildDraft({ kind: 'card_payment', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', accountLast4: '4242', confidence: {} }, ctx()).bankFeeMinor).toBe(150);
     expect(buildDraft({ kind: 'internal_transfer', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBe(150);
-    expect(buildDraft({ kind: 'expense', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined();
+    expect(buildDraft({ kind: 'expense', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBe(150); // a transfer to a third party
+    expect(buildDraft({ kind: 'expense', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 135.00', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined(); // 18%: a receipt tax, not the bank's
+    expect(buildDraft({ kind: 'expense', bankFeeText: 'RD$ 1.50', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined(); // no amount to judge it by
     expect(buildDraft({ kind: 'card_payment', amountText: 'RD$ 750.00', bankFeeText: 'RD$ 0.00', confidence: {} }, ctx()).bankFeeMinor).toBeUndefined();
   });
 
@@ -552,5 +554,26 @@ describe('a screenshot of a bank account creates the account (account_setup)', (
     const r = parseCaptureOutput(raw);
     expect(r.ok && r.value.items[0]).toMatchObject({ kind: 'account_setup', accountType: 'checking', accountName: 'Corriente', balanceText: 'RD$ 100.00', creditLimitText: '5,000', accountLast4: '3333' });
     expect(r.ok && r.value.items[1].accountType).toBeUndefined();
+  });
+});
+
+describe('the bank tax of a transfer to a third party (an expense) is kept (2.20.5)', () => {
+  const accounts = [account({ id: 'k1', name: 'Cuenta de ahorro', type: 'bank', last4: '1111', currency: 'DOP' })];
+  const ctx = (): Parameters<typeof buildDraft>[1] => ({ source: 'email', today: '2026-11-08', nowIso: '2026-11-08T10:00:00.000Z', newId: () => 'd1', accounts, bankNameOf: () => '', goals: [], loans: [], categoryFor: () => undefined, categoryByName: () => undefined, incomeSourceFor: () => undefined });
+  const raw = { kind: 'expense' as const, amountText: 'DOP 2,000.00', dateText: '07/11/2026', counterparty: 'MARIA LOPEZ', accountLast4: '1111', bankFeeText: 'DOP 4.00', confidence: {} };
+
+  it('the draft keeps the tax and approving passes it on, so the account loses amount + tax', () => {
+    const d = buildDraft(raw, ctx());
+    expect(d.bankFeeMinor).toBe(400);
+    const plan = planApproval({ ...d, resolvedCategoryId: 'cat-other' }, { accounts, defaultIncomeCategory: () => 'cat-other-income' });
+    expect(plan.ok && plan.ops[0]).toMatchObject({ t: 'transaction', tx: { type: 'expense', amount: 2000, fee: 4 } });
+  });
+
+  it('a draft without a tax stays without one (nothing is invented)', () => {
+    expect(buildDraft({ ...raw, bankFeeText: undefined }, ctx()).bankFeeMinor).toBeUndefined();
+  });
+
+  it('an invoice purchase never takes the bank tax (its ITBIS is data, not a charge)', () => {
+    expect(buildDraft({ ...raw, kind: 'invoice_purchase' }, ctx()).bankFeeMinor).toBeUndefined();
   });
 });

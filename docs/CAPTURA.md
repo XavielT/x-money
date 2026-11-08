@@ -170,3 +170,17 @@ Si un aviso nombra una tarjeta que todavía no has agregado, el borrador queda c
 dígitos** y ninguna cuenta los tiene, una cuenta cuyos dígitos sí se conocen y son otros **no** se elige por el nombre del
 banco (la Visa ····7108 no es la tarjeta de débito ····4237 solo porque ambas son del Popular). Una cuenta sin dígitos
 guardados todavía puede coincidir por el banco. Los dígitos que sí coinciden siguen ganando a cualquier pista.
+
+## El impuesto del banco en una transferencia a un tercero (2.20.5)
+
+Una transferencia a otra persona se registra como **gasto**, pero el banco cobra además el impuesto (DGII 0,20 %) de la
+cuenta. Hasta 2.20.4 ese impuesto se perdía en los gastos: el saldo de la app quedaba **más alto** que el del banco por
+esa cantidad (4,00 en una transferencia de 2.000). Ahora:
+
+- `domain/capture/fee.ts` lee «Impuestos: DOP 4.00» del texto del aviso o del correo (no depende de la IA); solo se usa si
+  el lector no devolvió uno y el texto trae **un solo** movimiento. El ITBIS de una factura nunca se lee como impuesto del banco.
+- En un gasto solo se conserva un impuesto **plausible** (hasta el 2 % del monto): el 18 % de un ITBIS se descarta.
+- Aprobar el borrador guarda el impuesto en el gasto (`fee`), y la cuenta baja monto + impuesto, como en el banco.
+- La bandeja muestra «Impuesto o comisión» también en los gastos, para corregirlo antes de aprobar.
+
+Los gastos aprobados antes de 2.20.5 no se corrigen solos: se les agrega el impuesto editándolos (campo «Impuesto del banco»).

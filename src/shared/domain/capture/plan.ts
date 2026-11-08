@@ -140,7 +140,7 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
 
   switch (d.kind) {
     case 'expense':
-      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note, details: ctx.details } }] };
+      return { ok: true, ops: [{ t: 'transaction', tx: { type: 'expense', amount, accountId, currency, date, categoryId: d.resolvedCategoryId, note, details: ctx.details, fee } }] };
     case 'income':
       return {
         ok: true,

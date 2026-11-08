@@ -165,7 +165,12 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   });
   const tax = raw.taxAmountText ? parseAmount(raw.taxAmountText, currency) : null;
   const sub = raw.subtotalText ? parseAmount(raw.subtotalText, currency) : null;
-  const fee = (kind === 'internal_transfer' || kind === 'card_payment') && raw.bankFeeText ? parseAmount(raw.bankFeeText, currency) : null;
+  // the bank's tax comes out of the account on top of the amount. A transfer to a third party is filed as an expense
+  // and carries it too, but a plain purchase must never turn a receipt figure (the 18% ITBIS) into a "bank fee": for an
+  // expense only a plausible bank tax is kept (DGII is 0.20%; up to 2% of the amount).
+  const feeKind = kind === 'internal_transfer' || kind === 'card_payment' || kind === 'expense';
+  let fee = feeKind && raw.bankFeeText ? parseAmount(raw.bankFeeText, currency) : null;
+  if (fee && fee.ok && kind === 'expense' && (amountMinor === undefined || fee.minor * 50 > amountMinor)) fee = null;
 
   const draft: CaptureDraft = {
     id: ctx.newId(),
