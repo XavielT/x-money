@@ -1,0 +1,24 @@
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 14px 8px;
+  background: var(--Hub-translucid);
+  font-size: 0.8rem;
+
+  span {
+    flex: 1;
+  }
+
+  button {
+    background: none;
+    border: none;
+    color: inherit;
+  }
+
+  .update-banner-go {
+    color: var(--Hub);
+    font-weight: 700;
+    padding: 4px 8px;
+  }
+}

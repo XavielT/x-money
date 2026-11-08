@@ -101,3 +101,22 @@ Lee los dos archivos locales y los sube con `gh secret set`, sin imprimir nada s
 4. Reflejarlo en el portafolio (ver «Lanzamiento» en `CLAUDE.md`).
 
 Las solicitudes de cambios (forks) nunca corren el flujo ni reciben los secretos.
+
+## Actualizar desde la propia app (2.20.7)
+
+Ajustes → «Actualizaciones de la app» → **Buscar actualizaciones**, y un aviso en cualquier pantalla cuando hay una versión
+nueva (la app mira al abrirla y cada vez que vuelve al primer plano, como máximo cada 30 minutos).
+
+- **PWA / iPhone:** el service worker guarda una copia de la app y un iPhone puede seguir sirviendo una vieja durante días.
+  «Actualizar» le pide los archivos nuevos al service worker, los activa y recarga. Tus datos no se tocan.
+- **App de Android (APK):** los archivos web viajan dentro del APK, así que una versión nueva es un APK nuevo. La app lee
+  el último *release* público de GitHub (un solo GET, no envía nada tuyo) y «Actualizar» abre la descarga de
+  `…/releases/latest/download/x-money.apk` (la dirección se construye en la app, nunca sale de lo que responda la red). Android
+  lo instala **encima** porque lo firma la misma llave de release: los datos se quedan. La primera vez Android pide permitir
+  «instalar apps desconocidas» al navegador. Un release cuyo APK aún no está adjunto (el flujo sigue corriendo) no cuenta
+  como actualización.
+- El número de versión sale de `APP_VERSION` (`src/shared/config/app-version.ts`) y **debe ser igual a `versionName`** de
+  `android/app/build.gradle`: si no, la app creería que hay una actualización que ya tiene (o no vería una real).
+- Lo que **no** hace: no instala sola ni en segundo plano, y no cambia nada sin que toques «Actualizar».
+- Se probó en el teléfono con una copia que decía ser 2.20.0: el aviso apareció solo, «Actualizar» abrió la descarga de
+  `x-money.apk` en el navegador y no se instaló nada.

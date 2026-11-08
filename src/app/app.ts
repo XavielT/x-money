@@ -14,6 +14,7 @@ import { CreditCardService } from '../shared/services/credit-card.service';
 import { CardNoticeService } from '../shared/services/card-notice.service';
 import { StorageService } from '../shared/services/storage.service';
 import { AuthGateComponent } from '../shared/components/auth-gate/auth-gate';
+import { UpdateBannerComponent } from '../shared/components/update-banner/update-banner';
 import { LinkWizardComponent } from '../shared/components/link-wizard/link-wizard';
 import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banner';
 
@@ -27,6 +28,7 @@ import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banne
     Navbar,
     TranslatePipe,
     AuthGateComponent,
+    UpdateBannerComponent,
     LinkWizardComponent,
     SyncBannerComponent,
   ],
@@ -48,6 +50,7 @@ export class App {
     private router: Router
   ) {
     this.startCapture();
+    this.startUpdateChecks();
     // the optional device notices for critical alerts load only when the user turned them on
     if (Capacitor.isNativePlatform() && this.storage.get<{ smartAlerts?: boolean }>('device-prefs', {}).smartAlerts) {
       void import('../shared/services/insight-notice.service').then((m) => this.injector.get(m.InsightNoticeService));
@@ -64,6 +67,18 @@ export class App {
       // Re-lock when the app goes to background
       CapacitorApp.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) this.lock.lock();
+      });
+    }
+  }
+
+  // New versions (2.20.7): look for one a few seconds after start and each time the app comes back to the front, at most
+  // every 30 minutes; a found update shows the banner. Loaded on demand, so it costs nothing at start-up.
+  private startUpdateChecks(): void {
+    const run = () => void import('../shared/services/app-update.service').then((m) => this.injector.get(m.AppUpdateService).autoCheck());
+    setTimeout(run, 6000);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') run();
       });
     }
   }

@@ -49,7 +49,7 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 - Reutilizar antes de crear (`shared/services`, `shared/ui`, `shared/models`, `:root` en `styles.scss`).
 
 ## Versión
-No vive en `package.json` (0.0.0): `android/app/build.gradle` (`versionName`, `versionCode`) y mensaje de commit `vX.Y.Z: resumen`. El número visible está en Ajustes (`settings.html`).
+No vive en `package.json` (0.0.0): `android/app/build.gradle` (`versionName`, `versionCode`) y mensaje de commit `vX.Y.Z: resumen`. El número visible sale de `APP_VERSION` en `src/shared/config/app-version.ts` (Ajustes y el botón «Buscar actualizaciones»): **debe ser igual a `versionName`** al subir de versión.
 
 ## Lanzamiento (norma del dueño, 05/11/2026): cada versión nueva en `main` se publica y se refleja en el portafolio
 Cuando se suben a `main` cambios con **versión nueva** (`versionName`/`versionCode` en `android/app/build.gradle`, mensaje `vX.Y.Z: …`; el dueño ya autorizó que el APK sea **público**):

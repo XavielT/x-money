@@ -1,0 +1,5 @@
+<div class="update-banner" *ngIf="updates.bannerVisible()" role="status">
+  <span>{{ (updates.native ? 'A new version of X Money is ready to download.' : 'A new version of X Money is ready.') | t }}<ng-container *ngIf="updates.latest()"> v{{ updates.latest() }}</ng-container></span>
+  <button class="update-banner-go" (click)="updates.apply()">{{ 'Update' | t }}</button>
+  <button class="update-banner-x" (click)="updates.dismissBanner()" aria-label="Dismiss">✕</button>
+</div>

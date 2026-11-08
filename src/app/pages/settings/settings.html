@@ -194,5 +194,15 @@
   <app-ai-settings></app-ai-settings>
   <app-capture-settings></app-capture-settings>
 
-  <p class="settings-version">X Money · v2.20.6</p>
+  <section class="settings-section">
+    <h2>{{ 'App updates' | t }}</h2>
+    <p class="settings-hint">X Money · v{{ version }}<ng-container *ngIf="updates.latest() as l"> · {{ 'latest' | t }} v{{ l }}</ng-container></p>
+    <div class="settings-data">
+      <button class="x-btn" (click)="updates.check()" [disabled]="updates.state() === 'checking' || updates.state() === 'applying'">{{ 'Check for updates' | t }}</button>
+      <button class="x-btn" *ngIf="updates.state() === 'available'" (click)="updates.apply()">{{ 'Update now' | t }}</button>
+    </div>
+    <p class="settings-hint" *ngIf="updateStatusKey() as k">{{ k | t }}</p>
+  </section>
+
+  <p class="settings-version">X Money · v{{ version }}</p>
 </div>

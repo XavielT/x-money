@@ -21,6 +21,8 @@ import { AiSettingsComponent } from '../../../shared/components/ai-settings/ai-s
 import { CaptureSettingsComponent } from '../../../shared/components/capture-settings/capture-settings';
 import { InsightSettingsComponent } from '../../../shared/components/insight-settings/insight-settings';
 import { CardNoticeService } from '../../../shared/services/card-notice.service';
+import { APP_VERSION } from '../../../shared/config/app-version';
+import { AppUpdateService } from '../../../shared/services/app-update.service';
 import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
 import { ChangeHistoryComponent } from '../../../shared/components/change-history/change-history';
 import { CategoryManagerComponent } from '../../../shared/components/category-manager/category-manager';
@@ -60,8 +62,32 @@ export class SettingsComponent {
     private sync: SyncService,
     private storage: StorageService,
     private reminder: BackupReminderService,
-    public cardNotices: CardNoticeService
+    public cardNotices: CardNoticeService,
+    public updates: AppUpdateService
   ) {}
+
+  readonly version = APP_VERSION;
+
+  // The line under the update button
+  updateStatusKey(): string {
+    const u = this.updates;
+    switch (u.state()) {
+      case 'checking':
+        return 'Looking for a new version…';
+      case 'up-to-date':
+        return 'You have the latest version.';
+      case 'available':
+        return u.native ? 'A new version is ready. It downloads as a file: open it to install it; your data stays.' : 'A new version is ready. Updating reloads the app; your data stays.';
+      case 'applying':
+        return 'Updating…';
+      case 'error':
+        return 'Could not check for updates. Check your connection and try again.';
+      case 'unsupported':
+        return 'This browser updates the app by itself when you reload it.';
+      default:
+        return '';
+    }
+  }
 
   // Device reminders for card cut and due dates. The system permission is asked only here.
   async toggleCardAlerts(event: Event): Promise<void> {

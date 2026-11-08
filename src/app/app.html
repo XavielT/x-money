@@ -1,5 +1,8 @@
 <!-- App shell: routed page + bottom navigation -->
 <app-sync-banner></app-sync-banner>
+@defer (on idle) {
+  <app-update-banner></app-update-banner>
+}
 <main class="app-main">
   <router-outlet />
 </main>
