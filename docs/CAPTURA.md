@@ -184,3 +184,14 @@ esa cantidad (4,00 en una transferencia de 2.000). Ahora:
 - La bandeja muestra «Impuesto o comisión» también en los gastos, para corregirlo antes de aprobar.
 
 Los gastos aprobados antes de 2.20.5 no se corrigen solos: se les agrega el impuesto editándolos (campo «Impuesto del banco»).
+
+## El correo se revisa solo al abrir la app (2.20.6)
+
+Con el interruptor de captura y «Buscar avisos del banco en mi correo» encendidos y la sesión iniciada, la app busca avisos
+nuevos **al arrancar y cada vez que vuelve al primer plano** (en un iPhone la app queda suspendida, así que abrirla es
+reanudarla, no arrancarla). Nunca por temporizador y **no más de una vez cada 3 minutos** (`mailScanDue`,
+`domain/capture/mail.ts`): cada aviso nuevo es una captura del límite diario y la revisión lee el buzón. Los correos ya leídos
+no se vuelven a procesar. Cada aviso es solo un borrador.
+
+**Es por dispositivo:** el interruptor de captura, el de correo y los remitentes se guardan en cada teléfono (no se
+sincronizan). Para que el iPhone lo haga solo hay que encenderlos también allí (Ajustes → Captura inteligente).

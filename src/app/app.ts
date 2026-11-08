@@ -70,20 +70,28 @@ export class App {
 
   // Smart capture at start-up (2.18.0): nothing loads unless the user turned the capture switch on.
   // It resumes the captures that waited for the connection and, only if the mail switch is on too,
-  // looks for new bank notices (once per opening, never on a schedule).
+  // looks for new bank notices: at start-up and every time the app comes back to the foreground (an
+  // iPhone keeps the app suspended, so "opening" it is a resume), never on a timer and never more
+  // often than every 3 minutes. Every notice becomes a draft you approve.
   private startCapture(): void {
     const ai = this.storage.get<{ documentsEnabled?: boolean; documentsConsentAt?: string }>('ai-prefs', {});
     if (ai.documentsEnabled && ai.documentsConsentAt) {
-      setTimeout(() => {
-        void import('../shared/services/capture.service').then(async (m) => {
-          const capture = this.injector.get(m.CaptureService);
-          await capture.processQueue();
-          if (capture.prefs().mailEnabled && this.auth.mode() === 'signed-in') {
-            const mail = await import('../shared/services/mail-capture.service');
-            await this.injector.get(mail.MailCaptureService).scan();
-          }
+      const run = async (): Promise<void> => {
+        const m = await import('../shared/services/capture.service');
+        const capture = this.injector.get(m.CaptureService);
+        await capture.processQueue();
+        if (!capture.prefs().mailEnabled || this.auth.mode() !== 'signed-in') return;
+        const [{ MailCaptureService }, { mailScanDue }] = await Promise.all([import('../shared/services/mail-capture.service'), import('../shared/domain/capture/mail')]);
+        const mail = this.injector.get(MailCaptureService);
+        if (mail.scanning() || !mailScanDue(capture.prefs().lastMailScan, Date.now())) return;
+        await mail.scan();
+      };
+      setTimeout(() => void run(), 4000);
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') void run();
         });
-      }, 4000);
+      }
     }
     if (Capacitor.isNativePlatform()) {
       // something was shared to X Money from another app: go to Capture, where it is checked before sending
