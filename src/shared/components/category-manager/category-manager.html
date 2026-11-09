@@ -21,15 +21,19 @@
         <button class="catman-btn" *ngIf="!node.category.parentId" (click)="startSub(node.category)" [attr.aria-label]="'Add subcategory' | t">＋</button>
         <button class="catman-btn" *ngIf="isCustom(node.category.id)" (click)="remove(node.category)" [attr.aria-label]="'Delete' | t">✕</button>
       </div>
+      <ng-container *ngIf="editingId() === node.category.id" [ngTemplateOutlet]="editForm"></ng-container>
       <small class="catman-pattern" *ngIf="node.category.irregular">{{ patternText(node.category) }}</small>
 
-      <div class="catman-row catman-sub" *ngFor="let sub of node.children">
+      <ng-container *ngFor="let sub of node.children">
+      <div class="catman-row catman-sub">
         <span class="catman-icon">{{ sub.icon }}</span>
         <span class="catman-name">{{ sub.name }}</span>
         <small class="catman-tag" *ngIf="type() === 'expense'">{{ natureLabel(sub) | t }}</small>
         <button class="catman-btn" (click)="edit(sub)" [attr.aria-label]="'Edit' | t">✎</button>
         <button class="catman-btn" *ngIf="isCustom(sub.id)" (click)="remove(sub)" [attr.aria-label]="'Delete' | t">✕</button>
       </div>
+      <ng-container *ngIf="editingId() === sub.id" [ngTemplateOutlet]="editForm"></ng-container>
+      </ng-container>
 
       <div class="catman-newsub" *ngIf="newSubFor() === node.category.id">
         <input class="x-input" type="text" maxlength="24" [(ngModel)]="newSubName" name="newSub" [placeholder]="'Subcategory name' | t" />
@@ -38,8 +42,9 @@
     </ng-container>
   </div>
 
-  <!-- Edit -->
-  <div class="catman-edit x-card" *ngIf="editingId()">
+  <!-- Edit: one template, drawn right under the row being edited -->
+  <ng-template #editForm>
+  <div class="catman-edit">
     <h3>{{ 'Edit category' | t }}</h3>
     <label>{{ 'Name' | t }}</label>
     <input class="x-input" type="text" maxlength="24" [(ngModel)]="fName" name="fName" />
@@ -94,4 +99,5 @@
       <button class="x-btn catman-ghost" (click)="cancel()">{{ 'Cancel' | t }}</button>
     </div>
   </div>
+  </ng-template>
 </section>

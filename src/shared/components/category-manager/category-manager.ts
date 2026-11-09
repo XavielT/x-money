@@ -1,5 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, computed, signal } from '@angular/core';
+import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CategoryFrequency, CategoryModel, Nature } from '../../models/category.model';
 import { TransactionType } from '../../models/transaction.model';
@@ -8,6 +8,7 @@ import { TranslatePipe } from '../../pipes/translate.pipe';
 import { CategoryService } from '../../services/category.service';
 import { SettingsService } from '../../services/settings.service';
 import { TranslateService } from '../../services/translate.service';
+import { revealAndFocus } from '../../ui/reveal';
 
 const ERROR_TEXT: Record<CategoryError, string> = {
   name: 'Give the category a name.',
@@ -27,7 +28,7 @@ const ERROR_TEXT: Record<CategoryError, string> = {
 @Component({
   selector: 'app-category-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, NgTemplateOutlet, TranslatePipe],
   templateUrl: './category-manager.html',
   styleUrl: './category-manager.scss',
 })
@@ -57,7 +58,8 @@ export class CategoryManagerComponent {
   constructor(
     public categories: CategoryService,
     public settings: SettingsService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private host: ElementRef<HTMLElement>
   ) {}
 
   isCustom(id: string): boolean {
@@ -81,6 +83,10 @@ export class CategoryManagerComponent {
 
   edit(c: CategoryModel): void {
     this.message.set('');
+    if (this.editingId() === c.id) {
+      this.editingId.set(null); // "edit" on the row already open closes it
+      return;
+    }
     this.editingId.set(c.id);
     this.fName = c.name;
     this.fIcon = c.icon;
@@ -94,6 +100,7 @@ export class CategoryManagerComponent {
     this.fTimesMax = c.irregular?.timesMax ?? null;
     this.fPer = c.irregular?.per ?? 'week';
     this.fParent = c.parentId ?? '';
+    setTimeout(() => revealAndFocus(this.host.nativeElement.querySelector<HTMLElement>('.catman-edit'), 'input[name="fName"]'));
   }
 
   hasChildren(c: CategoryModel): boolean {

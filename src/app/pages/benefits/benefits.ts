@@ -1,5 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, computed, signal } from '@angular/core';
+import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BenefitKind, BenefitModel } from '../../../shared/models/benefit.model';
@@ -9,6 +9,7 @@ import { IncomeSourceService } from '../../../shared/services/income-source.serv
 import { SettingsService } from '../../../shared/services/settings.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 import { BENEFIT_ESTIMATE_LABEL } from '../../../shared/domain/benefits';
+import { revealAndFocus } from '../../../shared/ui/reveal';
 
 const KIND_LABELS: Record<BenefitKind, string> = {
   'fuel-card': 'Fuel card',
@@ -34,7 +35,7 @@ const ERROR_TEXT: Record<BenefitError, string> = {
 @Component({
   selector: 'app-benefits',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, NgTemplateOutlet, TranslatePipe],
   templateUrl: './benefits.html',
   styleUrl: './benefits.scss',
 })
@@ -45,7 +46,8 @@ export class BenefitsComponent {
   year = this.now.getFullYear();
   month = this.now.getMonth() + 1;
 
-  view = signal<'list' | 'form'>('list');
+  // where the form is open: under "Add benefit" ('new'), under a benefit (its id) or nowhere
+  formFor = signal<string | null>(null);
   message = signal('');
   error = signal('');
   openUse = signal<string | null>(null);
@@ -54,7 +56,10 @@ export class BenefitsComponent {
   yearSaving = computed(() => this.benefits.yearSaving(this.year, this.month));
 
   // form
-  editingId: string | null = null;
+  get editingId(): string | null {
+    const f = this.formFor();
+    return f && f !== 'new' ? f : null;
+  }
   fName = '';
   fKind: BenefitKind = 'fuel-card';
   fProvider = '';
@@ -77,7 +82,8 @@ export class BenefitsComponent {
     public sources: IncomeSourceService,
     public settings: SettingsService,
     private router: Router,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private host: ElementRef<HTMLElement>
   ) {
     this.uDate = this.benefits.today(); // not in the initializer: parameter properties are not assigned yet there
   }
@@ -95,13 +101,22 @@ export class BenefitsComponent {
   }
 
   back(): void {
-    if (this.view() === 'form') this.view.set('list');
-    else history.back();
+    history.back();
+  }
+
+  closeForm(): void {
+    const was = this.editingId;
+    this.formFor.set(null);
+    if (was) setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>('[data-benefit-id="' + was + '"]')?.scrollIntoView?.({ block: 'nearest' }));
   }
 
   openForm(b?: BenefitModel): void {
+    const target = b?.id ?? 'new';
+    if (this.formFor() === target) {
+      this.closeForm(); // the same button again closes the form
+      return;
+    }
     this.error.set('');
-    this.editingId = b?.id ?? null;
     this.fName = b?.name ?? '';
     this.fKind = b?.kind ?? 'fuel-card';
     this.fProvider = b?.provider ?? '';
@@ -113,7 +128,8 @@ export class BenefitsComponent {
     this.fActive = b?.active ?? true;
     this.fNotes = b?.notes ?? '';
     this.fMonetary = false;
-    this.view.set('form');
+    this.formFor.set(target);
+    setTimeout(() => revealAndFocus(this.host.nativeElement.querySelector<HTMLElement>('.benefits-form'), 'input[name="fName"]'));
   }
 
   // "This is money you receive": it is not a benefit, it is an income source
@@ -140,7 +156,7 @@ export class BenefitsComponent {
       this.error.set(this.translate.instant(ERROR_TEXT[result.error]));
       return;
     }
-    this.view.set('list');
+    this.formFor.set(null);
   }
 
   remove(b: BenefitModel): void {

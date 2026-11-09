@@ -6,7 +6,7 @@
 
   <p class="benefits-msg" *ngIf="message()">{{ message() }}</p>
 
-  <ng-container *ngIf="view() === 'list'">
+  <ng-container>
     <section class="x-card benefits-card">
       <h2>{{ 'Estimated saving from benefits' | t }} <span class="benefits-tag">{{ estimateLabel | t }}</span></h2>
       <div class="benefits-row"><span>{{ 'This month' | t }}</span><strong>{{ settings.currency() }}{{ monthSaving() | number:'1.2-2' }}</strong></div>
@@ -14,9 +14,14 @@
       <small class="benefits-hint">{{ 'What you really used when you noted uses; otherwise the estimated monthly value. This is not money in your accounts and it never adds to your income, balances or payment capacity.' | t }}</small>
     </section>
 
+    <!-- New benefit: the button is on top and its form opens right under it -->
+    <button class="x-btn benefits-add" (click)="openForm()">{{ 'Add benefit' | t }}</button>
+    <ng-container *ngIf="formFor() === 'new'" [ngTemplateOutlet]="benefitForm"></ng-container>
+
     <p class="benefits-hint" *ngIf="!benefits.benefits().length">{{ 'No benefits yet. Add the ones your employer gives you that are not money.' | t }}</p>
 
-    <div class="x-card benefits-card" *ngFor="let b of benefits.benefits()" [class.inactive]="!b.active">
+    <ng-container *ngFor="let b of benefits.benefits()">
+    <div class="x-card benefits-card" [class.inactive]="!b.active" [class.benefits-card-editing]="formFor() === b.id" [attr.data-benefit-id]="b.id">
       <div class="benefits-row">
         <strong>{{ b.name }}</strong>
         <span class="benefits-tag">{{ kindLabel(b.kind) | t }}</span>
@@ -51,11 +56,13 @@
         </div>
       </div>
     </div>
-
-    <button class="x-btn" (click)="openForm()">{{ 'Add benefit' | t }}</button>
+    <ng-container *ngIf="formFor() === b.id" [ngTemplateOutlet]="benefitForm"></ng-container>
+    </ng-container>
   </ng-container>
 
-  <section class="x-card benefits-card" *ngIf="view() === 'form'">
+  <!-- New / edit form: one template, drawn in one place at a time -->
+  <ng-template #benefitForm>
+  <section class="x-card benefits-card benefits-form" [class.benefits-form-attached]="!!editingId">
     <h2>{{ (editingId ? 'Edit benefit' : 'New benefit') | t }}</h2>
 
     <label class="benefits-check"><input type="checkbox" [(ngModel)]="fMonetary" name="fMonetary" /> {{ 'It is money that reaches one of my accounts' | t }}</label>
@@ -93,8 +100,9 @@
       <p class="benefits-error" *ngIf="error()">{{ error() }}</p>
       <div class="benefits-actions">
         <button class="x-btn" (click)="save()">{{ 'Save' | t }}</button>
-        <button class="x-btn benefits-ghost" (click)="back()">{{ 'Cancel' | t }}</button>
+        <button class="x-btn benefits-ghost" (click)="closeForm()">{{ 'Cancel' | t }}</button>
       </div>
     </ng-container>
   </section>
+  </ng-template>
 </div>

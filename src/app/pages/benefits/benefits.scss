@@ -120,3 +120,26 @@
   border: none;
   color: var(--main-ultra-light);
 }
+
+// New benefit button on top; the form continues the card it belongs to
+.benefits-add {
+  margin-bottom: 12px;
+}
+
+.benefits-card-editing {
+  border-color: var(--Hub);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-bottom: 0;
+}
+
+.benefits-form {
+  min-width: 0;
+
+  &.benefits-form-attached {
+    border-color: var(--Hub);
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}

@@ -55,6 +55,8 @@
 }
 
 .catman-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
   flex: 1;
 }
 
@@ -92,6 +94,11 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px;
+  margin: 4px 0 8px;
+  min-width: 0;
+  background: var(--secondary);
+  border: 1px solid var(--Hub);
+  border-radius: 12px;
 
   h3 {
     font-size: 0.95rem;
