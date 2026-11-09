@@ -1,4 +1,4 @@
-// "Liquid net worth" and "net worth". RD$ and US$ are never added together.
+// Liquid money (shown as "Money in your accounts") and net worth. RD$ and US$ are never added together.
 import { AccountType } from '../models/account.model';
 import { TransactionCurrency } from '../models/transaction.model';
 import { addMoney, subMoney } from '../utils/money';

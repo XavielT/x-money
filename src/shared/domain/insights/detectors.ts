@@ -264,7 +264,7 @@ export function detectBudgetAdjustments(d: { rec: Recommendation; limits: Partia
         messageKey: 'Your base income of {base} is below what your fixed obligations and debt payments take ({obligations}).',
         params: { base: fmtMoney(d.rec.base), obligations: fmtMoney(round2(d.rec.obligations + d.rec.debtMinimums)) },
         evidence: [
-          { label: 'Base income', value: d.rec.base, kind: 'money' },
+          { label: 'Income used to plan', value: d.rec.base, kind: 'money' },
           { label: 'Fixed obligations (median)', value: d.rec.obligations, kind: 'money' },
           { label: 'Debt payments', value: d.rec.debtMinimums, kind: 'money' },
         ],

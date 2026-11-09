@@ -198,7 +198,7 @@
     <p *ngIf="!capture.drafts.history().length" class="review-note">{{ 'Nothing yet.' | t }}</p>
     <div *ngFor="let h of capture.drafts.history()" class="review-hist-row">
       <span>{{ h.status === 'approved' ? '✅' : h.status === 'failed' ? '⚠️' : '✖️' }} {{ h.counterparty || h.description || (kindLabel(h.kind) | t) }}</span>
-      <small>{{ h.createdAt | date: 'yyyy-MM-dd' }} · {{ h.source }}<ng-container *ngIf="h.status === 'approved'"> · {{ 'registered from capture' | t }}</ng-container></small>
+      <small>{{ h.createdAt | date: 'yyyy-MM-dd' }} · {{ sourceLabel(h.source) | t }}<ng-container *ngIf="h.status === 'approved'"> · {{ 'registered from capture' | t }}</ng-container></small>
     </div>
   </div>
 </div>

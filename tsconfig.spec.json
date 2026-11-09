@@ -6,7 +6,8 @@
     "outDir": "./out-tsc/spec",
     "rewriteRelativeImportExtensions": true,
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "node"
     ]
   },
   "include": [

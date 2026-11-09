@@ -133,6 +133,12 @@ export class CaptureReviewComponent {
       .join(', ');
   }
 
+  // the way a capture came in, in words (never the internal value)
+  sourceLabel(s: string): string {
+    const labels: Record<string, string> = { image: 'Photo or screenshot', pdf: 'PDF', voice: 'Voice', text: 'Text', email: 'Email', notification: 'Bank app notice' };
+    return labels[s] ?? 'Capture';
+  }
+
   kindLabel(k: CaptureKind): string {
     return KIND_LABELS[k];
   }

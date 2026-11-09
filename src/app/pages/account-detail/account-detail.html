@@ -25,7 +25,7 @@
 
     <div class="detail-actions">
       <a class="x-btn" routerLink="/add">{{ 'Add transaction' | t }}</a>
-      <a class="x-btn detail-ghost" [routerLink]="['/reconcile', a.id]">{{ 'Reconcile' | t }}</a>
+      <a class="x-btn detail-ghost" [routerLink]="['/reconcile', a.id]">{{ 'Match with the bank' | t }}</a>
       <a class="x-btn detail-ghost" routerLink="/accounts" [queryParams]="{ edit: a.id }">{{ 'Edit' | t }}</a>
     </div>
 

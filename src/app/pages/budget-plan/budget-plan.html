@@ -13,7 +13,7 @@
   <!-- ================= BLOCKS ================= -->
   <ng-container *ngIf="tab() === 'blocks'">
     <section class="x-card plan-card">
-      <h2>{{ 'Base income' | t }}</h2>
+      <h2>{{ 'Income used to plan' | t }}</h2>
       <div class="plan-toggle">
         <button *ngFor="let b of bases" [class.active]="settings.budget().base === b.key" (click)="setBase(b.key)">{{ b.label | t }}</button>
       </div>
@@ -75,7 +75,7 @@
   <ng-container *ngIf="tab() === 'projection'">
     <section class="x-card plan-card" *ngIf="projection() as p">
       <h2>{{ 'Balance at the end of the month' | t }} <span class="plan-tag">{{ 'Estimate' | t }}</span></h2>
-      <div class="plan-row"><span>{{ 'Liquid balance now' | t }}</span><strong>{{ settings.currency() }}{{ p.liquid | number:'1.2-2' }}</strong></div>
+      <div class="plan-row"><span>{{ 'Money in your accounts now' | t }}</span><strong>{{ settings.currency() }}{{ p.liquid | number:'1.2-2' }}</strong></div>
       <div class="plan-row"><span>− {{ 'Fixed obligations still to pay' | t }}</span><strong>{{ settings.currency() }}{{ p.fixedPending | number:'1.2-2' }}</strong></div>
       <div class="plan-row"><span>− {{ 'Variable spending still expected' | t }}</span><strong>{{ settings.currency() }}{{ p.variable.projected | number:'1.2-2' }}</strong></div>
       <div class="plan-row"><span>+ {{ 'Guaranteed income still expected' | t }}</span><strong>{{ settings.currency() }}{{ p.guaranteedExpected | number:'1.2-2' }}</strong></div>
@@ -113,7 +113,7 @@
             <button class="plan-link" (click)="toggleFormula(b.kind)">{{ 'Where does it come from?' | t }}</button>
           </div>
           <small class="plan-hint" *ngIf="openFormula() === b.kind">
-            {{ 'Your spending in' | t }} {{ label(b.kind) | t }}: {{ b.months.join(' / ') }} → {{ 'median' | t }} {{ b.median | number:'1.0-0' }}.
+            {{ 'Your spending in' | t }} {{ label(b.kind) | t }}: {{ b.months.join(' / ') }} → {{ 'usual amount' | t }} {{ b.median | number:'1.0-0' }}.
             <ng-container *ngIf="b.kind === 'savings'">{{ 'Savings = base income − suggested spending of every block − debt minimums, never below zero.' | t }}</ng-container>
             <ng-container *ngIf="b.kind !== 'savings'">{{ 'Suggested = the median, scaled down only if all blocks together would exceed the base income.' | t }}</ng-container>
           </small>

@@ -169,7 +169,8 @@
 
   <!-- Bank fee / tax -->
   <ng-container *ngIf="showFeeField()">
-    <label class="transaction-form-label">{{ 'Bank fee / tax (optional)' | t }}</label>
+    <label class="transaction-form-label">{{ 'Bank charge (optional)' | t }}</label>
+    <p class="transaction-form-fee-hint">{{ 'Extra amount the bank takes with this movement (tax, fees).' | t }}</p>
     <div class="transaction-form-fee">
       <input
         class="x-input"
