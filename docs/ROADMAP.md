@@ -29,6 +29,8 @@ No cambia cálculos, reglas ni datos; ver `docs/UX.md`.
 |---|---|---|---|
 | 13 | Arreglos que estorban hoy: editar en su sitio, cuadrícula de categorías, cámara sin botón flotante, `docs/UX.md` | 2.21.0 | **hecho** (sin commitear: lo hace Xaviel; pendiente la checklist de pantalla de `docs/UX.md`) |
 
+| 14 | Módulos que se activan, Inicio simple, una cifra principal, lenguaje claro y guía inicial | 2.22.0 | **hecho** (sin commitear; pendiente la checklist de pantalla) |
+
 ## Después de la ronda 12 (05/11/2026): versiones 2.19.x
 - **2.19.1–2.19.5**: app real en el teléfono con llave de release; cuentas creadas desde capturas de Banreservas y Popular; arreglos
   de campos de monto que perdían el foco, editor «Tapar partes», banco + últimos 4 en los borradores, impuesto bancario en pagos y

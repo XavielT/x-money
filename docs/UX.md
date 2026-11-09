@@ -32,11 +32,25 @@ Un cambio que sume toques a un flujo de esta tabla no se hace.
   pintado con `ngTemplateOutlet` en un solo sitio a la vez: como hermano siguiente de la fila editada. Crear = botón arriba de la
   lista y el formulario justo debajo. Ya aplicado en Cuentas, Categorías y Beneficios; la Revisión de capturas ya lo hacía.
 - Secciones con filas de resumen — pendiente (prompt 15).
-- Módulos que se activan — pendiente (prompt 14/15).
+- **Módulos que se activan** (2.22.0): núcleo siempre activo (cuentas y tarjetas, movimientos, presupuestos y gastos fijos, estadísticas,
+  Ajustes) y seis módulos con interruptor (Ingresos, Beneficios, Negocio, Préstamos, Objetivos, Alertas inteligentes). Sin elección
+  explícita el módulo es automático (encendido si tiene datos; Alertas inteligentes nace encendido). Interruptores en Ajustes →
+  «Features» (`app-module-switches`). Una página de un módulo apagado abre igual y muestra «This feature is off. Turn it on».
+  **Regla de integridad:** apagar un módulo solo oculta accesos, tarjetas de Inicio e indicadores; nunca borra datos ni deja de contarlos
+  (la deuda de un préstamo sigue restando del patrimonio, los pagos siguen en los presupuestos). Los avisos de pagos (tarjetas y
+  préstamos) y los recordatorios de metas se muestran siempre: son obligaciones. Un indicador del tablero se oculta (nunca en cero) solo
+  si todas sus fuentes son módulos apagados.
+- **Una cifra principal por pantalla** (2.22.0): Inicio = «Available money» y debajo «Money in your accounts»; la tarjeta que era «Total
+  balance» es «This month». Cuentas = «Money in your accounts», «After paying your cards» (= suma de saldos) y, solo si debes en
+  préstamos, «After your loans». Las dos cifras salen de la misma señal (`NetWorthService`).
+- **Cifra al día** (2.22.0): ficha «Updating…» bajo la cifra principal (reserva su espacio) mientras se sincroniza o lee el correo, y
+  «Offline: showing the last saved data» con la hora si no hay conexión.
+- **Respaldo** (2.22.0): el aviso vive solo en Inicio; «Later» lo calla 7 días (`device-prefs.backupSnoozedUntil`).
+- **Guía inicial** (2.22.0): tarjeta «Get started» de 3 pasos que se marcan solos; no la ven usuarios con cuentas y movimientos.
 - Captura (2.21.0): sin botón flotante. Cámara en el encabezado de Inicio con insignia, tarjeta «N capturas esperan» en Inicio, y
   una fila «¿Tienes una captura…?» en Nuevo movimiento. Rutas `/capture` y `/capture/review` sin cambios.
 
-## Lenguaje por revisar (lo resuelve el prompt 14)
+## Lenguaje por revisar (el prompt 14 resolvió el glosario de `docs/LENGUAJE.md`; lo que sigue queda)
 - Préstamos (simulador): «Fixed installment (french)», «Constant principal (german)», TNA/TEA, «Capitalizations per year», «Amortization table», «Prudence discount».
 - Tarjeta: «Statement balance», «Utilization», «Cut rule», «Recalculate», «Interest, fees and advances»; Pagar tarjeta: «Statement balance», «Minimum payment».
 - Negocio: «Capital recovered», «Working capital», «Gross profit», «ROI» (literal fuera de `t`), «Cost per unit (constant)».
