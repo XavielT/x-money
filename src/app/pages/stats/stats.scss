@@ -26,7 +26,7 @@
 
 .stats-year-totals {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 14px;
 
@@ -226,6 +226,7 @@
 }
 
 .stats-trends-month {
+  min-width: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -314,6 +315,7 @@
 
 .stats-row-name {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

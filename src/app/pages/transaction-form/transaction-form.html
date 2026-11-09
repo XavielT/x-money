@@ -5,6 +5,12 @@
     <h1 class="x-page-title">{{ (editId ? 'Edit transaction' : 'New transaction') | t }}</h1>
   </header>
 
+  <!-- Capture: a screenshot, photo or invoice becomes a draft to approve (not for editing an existing movement) -->
+  <a class="transaction-form-capture" routerLink="/capture" *ngIf="!editId">
+    <span>{{ 'Have a screenshot, photo or invoice?' | t }}</span>
+    <strong>{{ 'Capture it' | t }}</strong>
+  </a>
+
   <!-- Kind toggle -->
   <div class="transaction-form-toggle">
     <button [class.active-expense]="kind() === 'expense'" (click)="setKind('expense')">
@@ -42,6 +48,7 @@
         class="transaction-form-category"
         [class.active]="categoryId() === cat.id"
         [style.border-color]="categoryId() === cat.id ? cat.color : ''"
+        [attr.title]="cat.name"
         (click)="selectCategory(cat.id)"
       >
         <span class="transaction-form-category-icon">{{ cat.icon }}</span>

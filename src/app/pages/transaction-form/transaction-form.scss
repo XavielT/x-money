@@ -1,3 +1,27 @@
+// compact row under the title: a way into capture without a floating button
+.transaction-form-capture {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border: 1px dashed var(--card-border);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+
+  span {
+    min-width: 0;
+  }
+
+  strong {
+    flex: none;
+    color: var(--Hub);
+  }
+}
+
 .transaction-form-header {
   display: flex;
   align-items: center;
@@ -112,10 +136,15 @@
 }
 
 // Category grid
+// minmax(0, 1fr): a long name ("Card interest and charges") must not widen its column and push the page sideways
 .transaction-form-categories {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .transaction-form-category {
@@ -124,6 +153,8 @@
   align-items: center;
   gap: 4px;
   padding: 10px 4px;
+  min-width: 0;
+  min-height: 44px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
@@ -140,13 +171,19 @@
   font-size: 1.25rem;
 }
 
+// up to two lines, then an ellipsis; the full name is in the title
 .transaction-form-category-name {
   font-size: 0.65rem;
   color: var(--main-ultra-light);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .transaction-form-category-new {

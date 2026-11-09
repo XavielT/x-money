@@ -39,6 +39,7 @@
 
 .budgets-row-name {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
   font-weight: 600;
 }
 

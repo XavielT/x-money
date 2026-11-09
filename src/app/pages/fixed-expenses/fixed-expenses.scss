@@ -58,6 +58,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
 
   small {
     color: var(--main-ultra-light);

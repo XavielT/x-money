@@ -66,6 +66,7 @@
 
 .settings-link-info {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -99,6 +100,7 @@
 
 .settings-account-info {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -274,6 +276,7 @@
 
 .settings-cat-name {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
   font-size: 0.9rem;
 }
 
