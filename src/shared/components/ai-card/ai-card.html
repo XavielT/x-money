@@ -15,8 +15,8 @@
 
     <div class="ai-card-actions">
       <button class="x-btn" *ngIf="ai.prefs().enabled && moduleOn" (click)="write()" [disabled]="busy()">{{ (busy() ? 'Writing…' : outcome()?.source === 'ai' ? 'Write it again' : 'Write it with AI') | t }}</button>
-      <a class="ai-card-link" routerLink="/settings" *ngIf="!ai.prefs().enabled">{{ 'Turn on AI in Settings to get a written version' | t }}</a>
-      <a class="ai-card-link" routerLink="/settings" *ngIf="ai.prefs().enabled && !moduleOn">{{ 'This module has AI turned off in Settings.' | t }}</a>
+      <a class="ai-card-link" [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment" *ngIf="!ai.prefs().enabled">{{ 'Turn on AI in Settings to get a written version' | t }}</a>
+      <a class="ai-card-link" [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment" *ngIf="ai.prefs().enabled && !moduleOn">{{ 'This module has AI turned off in Settings.' | t }}</a>
     </div>
   </ng-container>
   <ng-template #nothing>

@@ -6,7 +6,7 @@
   <p class="capture-note">{{ 'Pass a screenshot of a bank notice, a deposit, an invoice, or say it. You get a DRAFT to approve: nothing is registered until you approve it.' | t }}</p>
 
   <div class="x-card capture-off" *ngIf="!documentsOn()">
-    <p>{{ 'Smart capture is off, so images and PDFs cannot be read. A typed or spoken sentence is still read here, on this device.' | t }} <a routerLink="/settings">{{ 'Turn it on in Settings' | t }}</a></p>
+    <p>{{ 'Smart capture is off, so images and PDFs cannot be read. A typed or spoken sentence is still read here, on this device.' | t }} <a [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment">{{ 'Turn it on in Settings' | t }}</a></p>
   </div>
 
   <p class="capture-message" *ngIf="message()">{{ message() }}</p>

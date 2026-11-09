@@ -37,6 +37,8 @@ const REASONS: Record<string, string> = {
 // "Capture": the single entry point. Image (gallery, camera, paste, drop), PDF, pasted text, voice.
 // Every capture shows what will be sent before sending (unless the user asked to hide that step) and
 // produces DRAFTS for the review tray: nothing is registered here.
+import { SETTINGS_LINKS } from '../../../shared/config/settings-links';
+
 @Component({
   selector: 'app-capture',
   standalone: true,
@@ -45,6 +47,7 @@ const REASONS: Record<string, string> = {
   styleUrl: './capture.scss',
 })
 export class CaptureComponent implements OnInit, OnDestroy {
+  readonly settingsLinks = SETTINGS_LINKS;
   items = signal<Item[]>([]);
   text = signal('');
   message = signal('');

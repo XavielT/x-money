@@ -18,6 +18,8 @@ const LABELS: Record<AiModule, string> = { income: 'Income', expenses: 'Expenses
 
 // Every AI function of the modules in one place. Each one shows its calculated text first; the
 // ones that classify, group or rank only make SUGGESTIONS that the user accepts one by one.
+import { SETTINGS_LINKS } from '../../../shared/config/settings-links';
+
 @Component({
   selector: 'app-ai-hub',
   standalone: true,
@@ -26,6 +28,7 @@ const LABELS: Record<AiModule, string> = { income: 'Income', expenses: 'Expenses
   styleUrl: './ai-hub.scss',
 })
 export class AiHubComponent {
+  readonly settingsLinks = SETTINGS_LINKS;
   modules = AI_MODULES;
   tab = signal<AiModule>('dashboard');
   features = computed(() => featuresOf(this.tab()));

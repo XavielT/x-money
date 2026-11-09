@@ -3,7 +3,7 @@
   <p class="hub-note">{{ 'Each function shows its calculated text first. AI only adds natural language, classification or grouping, and every suggestion waits for you: nothing changes on its own.' | t }}</p>
 
   <div class="x-card hub-off" *ngIf="!ai.prefs().enabled">
-    <p>{{ 'AI is off, so you see the calculated summaries.' | t }} <a routerLink="/settings">{{ 'Turn it on in Settings' | t }}</a></p>
+    <p>{{ 'AI is off, so you see the calculated summaries.' | t }} <a [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment">{{ 'Turn it on in Settings' | t }}</a></p>
   </div>
   <p class="hub-message" *ngIf="message()">{{ message() }}</p>
   <p class="hub-ok" *ngIf="notice()">{{ notice() }}</p>

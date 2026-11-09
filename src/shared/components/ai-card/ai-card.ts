@@ -12,6 +12,8 @@ import { AiLabelComponent } from '../ai-label/ai-label';
 // One AI function that narrates. The calculated text is ALWAYS on screen (it is the deterministic
 // alternative); with AI on, a button writes it in natural language. The text of the model only
 // appears after the validator accepted it, with its figures put by this device, and it is labelled.
+import { SETTINGS_LINKS } from '../../config/settings-links';
+
 @Component({
   selector: 'app-ai-card',
   standalone: true,
@@ -20,6 +22,7 @@ import { AiLabelComponent } from '../ai-label/ai-label';
   styleUrl: './ai-card.scss',
 })
 export class AiCardComponent implements OnChanges {
+  readonly settingsLinks = SETTINGS_LINKS;
   @Input({ required: true }) featureId = '';
   @Input() arg: unknown = undefined;
   @Input() showTitle = true;

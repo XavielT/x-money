@@ -28,6 +28,6 @@
   <section class="x-card fixed-card" *ngIf="subscriptions() as sub">
     <h2>{{ 'All recurring expenses' | t }}</h2>
     <div class="fixed-row"><span>{{ sub.count }} {{ 'active rules' | t }}</span><strong>{{ settings.currency() }}{{ sub.monthly | number:'1.0-0' }} / {{ 'month' | t }}</strong></div>
-    <small class="fixed-hint">{{ 'Includes the ones you marked as variable. Edit or delete rules in Settings.' | t }} <a routerLink="/settings">{{ 'Settings' | t }}</a></small>
+    <small class="fixed-hint">{{ 'Includes the ones you marked as variable. Edit or delete rules in Settings.' | t }} <a [routerLink]="settingsLinks.recurring.commands" [fragment]="settingsLinks.recurring.fragment">{{ 'Settings' | t }}</a></small>
   </section>
 </div>

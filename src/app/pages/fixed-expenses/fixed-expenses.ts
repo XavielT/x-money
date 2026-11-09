@@ -9,6 +9,8 @@ import { SettingsService } from '../../../shared/services/settings.service';
 
 // Fixed expenses: the recurring obligations whose nature is fixed, with what they cost per month,
 // per year (an estimate) and what is still to be paid this month.
+import { SETTINGS_LINKS } from '../../../shared/config/settings-links';
+
 @Component({
   selector: 'app-fixed-expenses',
   standalone: true,
@@ -17,6 +19,7 @@ import { SettingsService } from '../../../shared/services/settings.service';
   styleUrl: './fixed-expenses.scss',
 })
 export class FixedExpensesComponent {
+  readonly settingsLinks = SETTINGS_LINKS;
   constructor(
     public fixed: FixedExpenseService,
     private categories: CategoryService,

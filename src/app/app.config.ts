@@ -6,7 +6,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 
 import { routes } from './app.routes';
 import { Capacitor } from '@capacitor/core';
@@ -31,7 +31,8 @@ export const appConfig: ApplicationConfig = {
       // the Spanish texts load only for Spanish users
       await injector.get(TranslateService).ensureLoaded();
     }),
-    provideRouter(routes),
+    // anchorScrolling: a link to /settings#data lands on that section
+    provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
     provideServiceWorker('xmoney-sw.js', {
       // The Android app ships its files inside the APK: a service worker there can only serve a stale copy
       enabled: !isDevMode() && !Capacitor.isNativePlatform(),
