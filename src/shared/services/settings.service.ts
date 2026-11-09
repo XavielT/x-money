@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { BACKUP_KEYS, BackupCounts, ImportError, buildBackup, parseBackup } from '../data-layer/backup';
 import { BaseIncome, BudgetSettings } from '../models/budget.model';
+import { ModuleChoices, ModuleId, cleanChoices } from '../domain/modules';
 import { AuditLogService } from './audit-log.service';
 import { StorageService } from './storage.service';
 
@@ -18,6 +19,7 @@ interface SettingsState {
   budget?: BudgetSettings; // distribution base and risk threshold (2.10.0)
   dashboard?: DashboardSettings;
   antMax?: number; // ceiling of a "small purchase"; empty = the usual relative rule
+  modules?: ModuleChoices; // what the user chose for each switchable module; a missing key = automatic (2.22.0)
 }
 
 export const DEFAULT_BUDGET_SETTINGS: BudgetSettings = { base: 'avg3', riskAt: 90 };
@@ -53,6 +55,10 @@ export class SettingsService {
   private _antMax = signal<number | undefined>(undefined);
   antMax = this._antMax.asReadonly();
 
+  private _modules = signal<ModuleChoices>({});
+  // explicit choices only; ModuleService decides what is on
+  modules = this._modules.asReadonly();
+
   private _suggestions = signal<SuggestionMemory>(NO_SUGGESTIONS);
   suggestions = this._suggestions.asReadonly();
 
@@ -71,6 +77,13 @@ export class SettingsService {
     this._budget.set({ ...DEFAULT_BUDGET_SETTINGS, ...(saved.budget ?? {}) });
     this._antMax.set(saved.antMax);
     this._dashboard.set({ ...DEFAULT_DASHBOARD_SETTINGS, ...(saved.dashboard ?? {}) });
+    this._modules.set(cleanChoices(saved.modules));
+  }
+
+  // Hides or shows the shortcuts of a module. It never touches the module's data.
+  setModule(id: ModuleId, on: boolean): void {
+    this._modules.set({ ...this._modules(), [id]: on });
+    this.persist();
   }
 
   setDashboard(patch: Partial<DashboardSettings>): void {
@@ -133,6 +146,7 @@ export class SettingsService {
       budget: this._budget(),
       antMax: this._antMax(),
       dashboard: this._dashboard(),
+      ...(Object.keys(this._modules()).length ? { modules: this._modules() } : {}),
     });
   }
 

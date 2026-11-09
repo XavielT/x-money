@@ -1,4 +1,5 @@
 <div class="x-page insights">
+  <app-module-off [module]="'insights'"></app-module-off>
   <h1 class="x-page-title">{{ 'Smart alerts' | t }}</h1>
   <p class="insights-note">{{ 'Calculated on your device from your own data. No internet, no AI. Estimates are marked and show their assumptions.' | t }}</p>
 
@@ -71,7 +72,7 @@
     </div>
   </section>
 
-  <a routerLink="/settings" class="insights-link">⚙ {{ 'Choose which alerts you want' | t }}</a>
+  <a [routerLink]="settingsLinks.alerts.commands" [fragment]="settingsLinks.alerts.fragment" class="insights-link">⚙ {{ 'Choose which alerts you want' | t }}</a>
 
   <app-explain-sheet *ngIf="sheet() as s" [title]="s.title" [evidence]="s.evidence" [formula]="s.formula" [assumptions]="s.assumptions" [state]="s.state" [period]="s.period" (closed)="sheet.set(null)"></app-explain-sheet>
 </div>

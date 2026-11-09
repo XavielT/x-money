@@ -1,9 +1,13 @@
 <div class="x-page settings">
   <h1 class="x-page-title">{{ 'Settings' | t }}</h1>
 
+  <!-- Features: which modules you see (the next round moves this to its own Settings screen) -->
+  <app-module-switches></app-module-switches>
+
   <!-- Currency -->
-  <section class="settings-section">
-    <h2>{{ 'Currency' | t }}</h2>
+  <section class="settings-section" id="preferences">
+    <h2>{{ 'Symbol for your main currency (pesos)' | t }}</h2>
+    <p class="settings-hint">{{ 'It is only the symbol shown for your pesos. Dollars stay as US$.' | t }}</p>
     <div class="settings-currencies">
       <button
         *ngFor="let symbol of currencies"
@@ -54,7 +58,7 @@
   </section>
 
   <!-- Recurring transactions -->
-  <section class="settings-section">
+  <section class="settings-section" id="recurring">
     <h2>{{ 'Recurring transactions' | t }}</h2>
     <p class="settings-hint" *ngIf="!recurringService.recurring().length">
       {{ 'None yet. When adding a transaction, set "Repeat" to make it recurring.' | t }}
@@ -101,19 +105,21 @@
   </section>
 
   <!-- Categories: tree, nature, frequency and irregular patterns -->
+  <div id="categories">
   @defer {
     <app-category-manager></app-category-manager>
   }
+  </div>
 
   <!-- Budget alerts and small purchases -->
-  <section class="settings-section">
+  <section class="settings-section" id="alerts">
     <h2>{{ 'Budget alerts' | t }}</h2>
     <p class="settings-hint">{{ 'A budget shows "risk" when, at the current pace, the month will end above this share of its limit. It is an estimate.' | t }}</p>
     <div class="settings-lock x-card">
-      <label>{{ 'Risk threshold (% of the limit)' | t }}
+      <label>{{ "Warn me when I'm on track to spend more than (% of the limit)" | t }}
         <input class="x-input" type="number" inputmode="numeric" min="10" max="200" [ngModel]="settingsService.budget().riskAt" (ngModelChange)="settingsService.setRiskAt(+$event)" name="riskAt" />
       </label>
-      <label>{{ 'Small purchase: up to (empty = automatic)' | t }}
+      <label>{{ 'Count purchases up to this amount as small ones (empty = automatic)' | t }}
         <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="settingsService.antMax() ?? null" (ngModelChange)="setAntMax($event)" name="antMax" />
       </label>
     </div>
@@ -132,7 +138,7 @@
   </section>
 
   <!-- App lock -->
-  <section class="settings-section">
+  <section class="settings-section" id="security">
     <h2>{{ 'App lock' | t }}</h2>
     <p class="settings-hint">{{ 'Protect the app with a PIN. It locks on start and when going to background.' | t }}</p>
 
@@ -164,9 +170,11 @@
   </section>
 
   <!-- Account, sync, devices, change history -->
+  <div id="account">
   @defer {
     <app-account-settings></app-account-settings>
   }
+  </div>
 
   <!-- What changed in your money data (append-only audit) -->
   @defer {
@@ -174,7 +182,7 @@
   }
 
   <!-- Data -->
-  <section class="settings-section">
+  <section class="settings-section" id="data">
     <h2>{{ 'Your data' | t }}</h2>
     <p class="settings-hint" *ngIf="auth.mode() === 'local'">{{ 'Everything is stored only on this device. Export a backup before changing phone.' | t }}</p>
     <p class="settings-hint" *ngIf="auth.mode() !== 'local'">{{ 'Your data is saved in your account and a copy is kept on this device to work offline. Export a backup regularly: it is your second copy.' | t }}</p>
@@ -194,7 +202,7 @@
   <app-ai-settings></app-ai-settings>
   <app-capture-settings></app-capture-settings>
 
-  <section class="settings-section">
+  <section class="settings-section" id="about">
     <h2>{{ 'App updates' | t }}</h2>
     <p class="settings-hint">X Money · v{{ version }}<ng-container *ngIf="updates.latest() as l"> · {{ 'latest' | t }} v{{ l }}</ng-container></p>
     <div class="settings-data">

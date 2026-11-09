@@ -1,4 +1,5 @@
 <div class="x-page loans">
+  <app-module-off [module]="'loans'"></app-module-off>
   <h1 class="x-page-title">{{ 'Loans' | t }}</h1>
   <div class="loans-links">
     <a routerLink="/loans/simulator" class="x-card">🧮 {{ 'Simulator and register a loan' | t }}</a>
@@ -79,7 +80,7 @@
 
         <!-- Schedule -->
         <section>
-          <h3>{{ 'Amortization table' | t }} <small>({{ 'fixed at registration; only an extra payment recomputes it' | t }})</small></h3>
+          <h3>{{ 'Payment schedule' | t }} <small>({{ 'fixed at registration; only an extra payment recomputes it' | t }})</small></h3>
           <div class="loans-scroll">
             <table class="loans-table">
               <tr><th>#</th><th>{{ 'Date' | t }}</th><th>{{ 'Installment' | t }}</th><th>{{ 'Principal' | t }}</th><th>{{ 'Interest' | t }}</th><th>{{ 'Balance' | t }}</th><th></th></tr>

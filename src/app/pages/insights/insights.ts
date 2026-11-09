@@ -22,14 +22,19 @@ interface Sheet {
 const SEVERITIES: Severity[] = ['alert', 'attention', 'info'];
 const MODULES: InsightModule[] = ['debt', 'cards', 'budget', 'spending', 'savings', 'income', 'data'];
 
+import { SETTINGS_LINKS } from '../../../shared/config/settings-links';
+
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-insights',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslatePipe, ExplainSheetComponent],
+  imports: [CommonModule, RouterLink, TranslatePipe, ExplainSheetComponent, ModuleOffComponent],
   templateUrl: './insights.html',
   styleUrl: './insights.scss',
 })
 export class InsightsComponent {
+  readonly settingsLinks = SETTINGS_LINKS;
   severities = SEVERITIES;
   modules = MODULES;
   severity = signal<Severity | null>(null);

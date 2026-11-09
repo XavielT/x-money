@@ -1,0 +1,18 @@
+<section class="settings-section modsw" id="features">
+  <h2>{{ 'Features' | t }}</h2>
+  <p class="modsw-hint">{{ 'Choose what you want to see. Accounts, movements, budgets and statistics are always on.' | t }}</p>
+
+  <div class="modsw-row x-card" *ngFor="let row of rows()">
+    <span class="modsw-icon">{{ row.icon }}</span>
+    <div class="modsw-info">
+      <strong>{{ row.name | t }}</strong>
+      <small>{{ row.description | t }}</small>
+      <small class="modsw-count" *ngIf="count(row)">{{ count(row) }}</small>
+      <a class="modsw-open" [routerLink]="row.route" *ngIf="modules.isOn(row.id)">{{ 'Open' | t }} ›</a>
+    </div>
+    <label class="modsw-switch">
+      <input type="checkbox" [checked]="modules.isOn(row.id)" (change)="toggle(row, $event)" [attr.aria-label]="row.name | t" />
+      <span class="modsw-track"></span>
+    </label>
+  </div>
+</section>

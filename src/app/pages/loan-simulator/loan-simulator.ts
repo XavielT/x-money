@@ -53,10 +53,12 @@ const ERRORS: Record<string, string> = {
   'no-amortization': 'The installment does not cover the interest.',
 };
 
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-loan-simulator',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ExplainSheetComponent, AiCardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ExplainSheetComponent, AiCardComponent, ModuleOffComponent],
   templateUrl: './loan-simulator.html',
   styleUrl: './loan-simulator.scss',
 })

@@ -1,0 +1,98 @@
+.modsw-hint {
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+  margin-bottom: 10px;
+}
+
+.modsw-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.modsw-icon {
+  font-size: 1.3rem;
+}
+
+.modsw-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  small {
+    font-size: 0.75rem;
+    color: var(--main-ultra-light);
+    overflow-wrap: anywhere;
+  }
+}
+
+.modsw-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 0.8rem;
+  color: var(--Hub);
+}
+
+// 44 px touch target around a compact switch
+.modsw-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 44px;
+  flex: none;
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.modsw-track {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--secondary);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--main-ultra-light);
+    transition: all 0.2s ease;
+  }
+}
+
+input:checked + .modsw-track {
+  background: var(--Hub);
+  border-color: var(--Hub);
+
+  &::after {
+    left: 20px;
+    background: var(--main);
+  }
+}
+
+input:focus-visible + .modsw-track {
+  outline: 2px solid var(--Hub);
+  outline-offset: 2px;
+}

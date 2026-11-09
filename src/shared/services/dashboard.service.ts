@@ -29,6 +29,7 @@ import { BudgetService } from './budget.service';
 import { BusinessService } from './business.service';
 import { GoalService } from './goal.service';
 import { LoanService } from './loan.service';
+import { ModuleService } from './module.service';
 import { CategoryService } from './category.service';
 import { CreditCardService } from './credit-card.service';
 import { FixedExpenseService } from './fixed-expense.service';
@@ -66,7 +67,8 @@ export class DashboardService {
     private settings: SettingsService,
     private business: BusinessService,
     private goals: GoalService,
-    private loans: LoanService
+    private loans: LoanService,
+    private modules: ModuleService
   ) {}
 
   // The contract for prompts 06 (business), 07 (savings goals) and 08 (loans): they hand over
@@ -102,8 +104,27 @@ export class DashboardService {
 
   indicators = computed<Indicator[]>(() => {
     const list = [this.availableIndicator(), this.incomeIndicator(), this.expensesIndicator(), this.commercialProfitIndicator(), this.businessCapitalIndicator(), this.savingsIndicator(), this.debtsIndicator(), this.utilizationIndicator(), this.budgetIndicator(), this.netWorthIndicator()];
-    return list;
+    // an indicator is hidden by a switched-off module only when ALL its sources are modules that are off; the figures keep
+    // being counted everywhere else (they are hidden here, never zeroed)
+    return list.map((i) => (i.available && this.hiddenByModules(i.id) ? { ...i, available: false } : i));
   });
+
+  private hiddenByModules(id: Indicator['id']): boolean {
+    const on = (m: Parameters<ModuleService['isOn']>[0]) => this.modules.isOn(m);
+    switch (id) {
+      // a module that hands its figure over with provide() is a source too
+      case 'commercial-profit':
+        return !on('business') && !on('income') && !this._external().commercialProfit;
+      case 'business-capital':
+        return !on('business') && !this._external().businessCapital;
+      case 'savings':
+        return !on('goals') && !this._external().goalsSaved && this.accounts.activeAccounts().every((a) => a.type !== 'savings');
+      case 'debts':
+        return !on('loans') && !this._external().loanBalance && this.cards.cards().length === 0;
+      default:
+        return false;
+    }
+  }
 
   // The ones with a module behind them; hidden ones are `available: false`
   visible = computed(() => this.indicators().filter((i) => i.available));
@@ -225,14 +246,14 @@ export class DashboardService {
       display: 'money',
       currency: 'DOP',
       components: [
-        money('Liquid net worth', liquid, 'data', 'Cash, bank and savings accounts.'),
+        money('Money in your accounts', liquid, 'data', 'Cash, bank and savings accounts.'),
         money('Card payments due in 30 days', -cardDue, 'data'),
         ...(loanDue > 0 ? [money('Loan installments due in 30 days', -loanDue, 'data')] : []),
         money('Fixed obligations still to pay this month', -fixedPending, 'data', 'From your recurring expenses.'),
         this.figures().goalsReserved ? money('Set aside in goals', -reserved, 'data') : money('Set aside in goals', null, 'excluded', 'Not part of the formula until the savings goals exist.'),
         money('Non-monetary benefits', null, 'excluded', 'Never cash (rule 4).'),
       ],
-      formula: 'Liquid net worth − card payments and loan installments due in the next 30 days − fixed obligations still to pay this month − money set aside in goals.',
+      formula: 'Money in your accounts − card payments and loan installments due in the next 30 days − fixed obligations still to pay this month − money set aside in goals.',
       sources: ['NetWorthService', 'CreditCardService', 'FixedExpenseService'],
       estimate: false,
       available: true,
@@ -326,12 +347,12 @@ export class DashboardService {
       display: 'money',
       currency: 'DOP',
       components: [
-        money('Liquid net worth', nw.liquid.DOP),
+        money('Money in your accounts', nw.liquid.DOP),
         money('Credit card debt', -nw.cardDebt.DOP),
         ...(nw.loanDebt.DOP > 0 ? [money('Loans', -nw.loanDebt.DOP)] : []),
         ...(capital ? [money('Commercial capital (apart, not added)', capital.value, 'excluded', 'Business inventory is never mixed with personal assets (rule 6).')] : []),
       ],
-      formula: 'Liquid net worth − credit card debt − what is owed on loans. Commercial capital is shown apart.',
+      formula: 'Money in your accounts − credit card debt − what is owed on loans. Commercial capital is shown apart.',
       sources: ['NetWorthService'],
       estimate: false,
       available: true,

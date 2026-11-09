@@ -1,4 +1,5 @@
 <div class="x-page biz">
+  <app-module-off [module]="'business'"></app-module-off>
   <header class="biz-header">
     <button class="biz-back" (click)="back()" aria-label="Back">←</button>
     <h1 class="x-page-title">{{ 'Business' | t }}</h1>
@@ -92,7 +93,7 @@
         <div class="biz-row small"><span>{{ 'Gross profit' | t }}</span><span [class.neg]="f.grossProfit < 0">{{ settings.currency() }}{{ f.grossProfit | number:'1.2-2' }}</span></div>
         <div class="biz-row small"><span>{{ 'Expenses of the operation' | t }}</span><span>{{ settings.currency() }}{{ f.expenses | number:'1.2-2' }}</span></div>
         <div class="biz-row"><span>{{ 'Net profit' | t }}</span><strong [class.neg]="f.netProfit < 0">{{ f.netProfit < 0 ? '-' : '' }}{{ settings.currency() }}{{ (f.netProfit < 0 ? -f.netProfit : f.netProfit) | number:'1.2-2' }}</strong></div>
-        <small class="biz-hint">{{ 'Margin' | t }} {{ f.margin !== null ? (f.margin | number:'1.0-1') + '%' : '—' }} · ROI {{ f.roi !== null ? (f.roi | number:'1.0-1') + '%' : '—' }} · {{ f.days }} {{ 'days in inventory' | t }}<ng-container *ngIf="f.sale.depositApplied"> · {{ 'deposit applied' | t }} {{ settings.currency() }}{{ f.sale.depositApplied | number:'1.2-2' }}</ng-container></small>
+        <small class="biz-hint">{{ 'Margin' | t }} {{ f.margin !== null ? (f.margin | number:'1.0-1') + '%' : '—' }} · {{ 'Return on cost' | t }} {{ f.roi !== null ? (f.roi | number:'1.0-1') + '%' : '—' }} · {{ f.days }} {{ 'days in inventory' | t }}<ng-container *ngIf="f.sale.depositApplied"> · {{ 'deposit applied' | t }} {{ settings.currency() }}{{ f.sale.depositApplied | number:'1.2-2' }}</ng-container></small>
         <div class="biz-actions">
           <button class="biz-link" (click)="correctPrice(o, f.sale.id)">{{ 'Correct price' | t }}</button>
           <button class="biz-link" (click)="reverseSale(o, f.sale.id)">{{ 'Reverse sale' | t }}</button>

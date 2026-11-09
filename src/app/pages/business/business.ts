@@ -45,10 +45,12 @@ const ERRORS: Record<string, string> = {
 // Business: buy inventory (working capital, not a personal expense), record expenses, reserve
 // with a deposit, sell (also in parts) and see the profit. The screens only show what
 // BusinessService calculates.
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-business',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, ModuleOffComponent],
   templateUrl: './business.html',
   styleUrl: './business.scss',
 })

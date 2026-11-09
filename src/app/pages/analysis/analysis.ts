@@ -23,10 +23,12 @@ const ROW_LABELS: Record<string, string> = {
 
 // Analysis: each tab composes DashboardService (which composes the other services); nothing
 // here calculates money. Estimates are labelled and show their assumptions.
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-analysis',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, ModuleOffComponent],
   templateUrl: './analysis.html',
   styleUrl: './analysis.scss',
 })

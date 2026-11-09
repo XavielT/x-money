@@ -1,4 +1,5 @@
 <div class="x-page sim">
+  <app-module-off [module]="'loans'"></app-module-off>
   <h1 class="x-page-title">{{ 'Loan simulator' | t }}</h1>
   <p class="sim-note">{{ 'Everything here is a simulation: an estimate with its assumptions, not an offer from any bank.' | t }}</p>
   <a routerLink="/loans" class="sim-link">← {{ 'My loans' | t }}</a>
@@ -27,12 +28,12 @@
         </select>
       </label>
     </div>
-    <label *ngIf="f().rateType === 'nominal'">{{ 'Capitalizations per year' | t }}<input class="x-input" type="number" min="1" max="365" [ngModel]="f().compounding" (ngModelChange)="upd({ compounding: $event })" name="comp" /></label>
+    <label *ngIf="f().rateType === 'nominal'">{{ 'Times interest is added per year' | t }}<input class="x-input" type="number" min="1" max="365" [ngModel]="f().compounding" (ngModelChange)="upd({ compounding: $event })" name="comp" /></label>
     <div class="sim-row">
       <label>{{ 'Method' | t }}
         <select class="x-input" [ngModel]="f().method" (ngModelChange)="upd({ method: $event })" name="method">
-          <option value="french">{{ 'Fixed installment (french)' | t }}</option>
-          <option value="german">{{ 'Constant principal (german)' | t }}</option>
+          <option value="french">{{ 'Same payment every period' | t }}</option>
+          <option value="german">{{ 'Payment goes down over time' | t }}</option>
           <option value="flat">{{ 'Flat rate (on the original amount)' | t }}</option>
         </select>
       </label>
@@ -127,7 +128,7 @@
         <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.bonuses" (ngModelChange)="setSwitch('bonuses', $event)" name="s2" /> {{ 'Recurring bonuses' | t }}</label>
         <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.commercial" (ngModelChange)="setSwitch('commercial', $event)" name="s3" /> {{ 'Business income (6-month average)' | t }}</label>
         <label class="sim-check"><input type="checkbox" [ngModel]="loans.settings().switches.declared" (ngModelChange)="setSwitch('declared', $event)" name="s4" /> {{ 'Other declared income' | t }}</label>
-        <label>{{ 'Prudence discount on business income (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().commercialDiscount" (ngModelChange)="setSetting({ commercialDiscount: $event })" name="disc" /></label>
+        <label>{{ 'Safety cut on business income (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().commercialDiscount" (ngModelChange)="setSetting({ commercialDiscount: $event })" name="disc" /></label>
         <div class="sim-row">
           <label>{{ 'Comfortable up to (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().comfortable" (ngModelChange)="setSetting({ comfortable: $event })" name="cmf" /></label>
           <label>{{ 'Tight up to (%)' | t }}<input class="x-input" type="number" min="0" max="100" [ngModel]="loans.settings().tight" (ngModelChange)="setSetting({ tight: $event })" name="tgt" /></label>
@@ -271,7 +272,7 @@
 
     <!-- Schedule -->
     <section class="x-card sim-block">
-      <h2>{{ 'Amortization table' | t }}</h2>
+      <h2>{{ 'Payment schedule' | t }}</h2>
       <div class="sim-scroll">
         <table class="sim-table sim-schedule">
           <tr><th>#</th><th>{{ 'Date' | t }}</th><th>{{ 'Installment' | t }}</th><th>{{ 'Principal' | t }}</th><th>{{ 'Interest' | t }}</th><th>{{ 'Charges' | t }}</th><th>{{ 'Balance' | t }}</th></tr>

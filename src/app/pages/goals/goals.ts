@@ -42,10 +42,12 @@ const ERRORS: Record<string, string> = {
   'not-found': 'That entry was not found.',
 };
 
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-goals',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, ModuleOffComponent],
   templateUrl: './goals.html',
   styleUrl: './goals.scss',
 })

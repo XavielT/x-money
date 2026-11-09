@@ -32,10 +32,12 @@ const ERROR_TEXT: Record<BenefitError, string> = {
 // Non-monetary work benefits. Everything here is an ESTIMATE of what the benefit saves you:
 // it is not cash, never touches an account and never adds to income, net worth or payment
 // capacity (integrity rule 4). A use is a note, not a movement.
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-benefits',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgTemplateOutlet, TranslatePipe],
+  imports: [CommonModule, FormsModule, NgTemplateOutlet, TranslatePipe, ModuleOffComponent],
   templateUrl: './benefits.html',
   styleUrl: './benefits.scss',
 })

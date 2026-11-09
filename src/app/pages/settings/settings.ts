@@ -25,12 +25,13 @@ import { APP_VERSION } from '../../../shared/config/app-version';
 import { AppUpdateService } from '../../../shared/services/app-update.service';
 import { AccountSettingsComponent } from '../../../shared/components/account-settings/account-settings';
 import { ChangeHistoryComponent } from '../../../shared/components/change-history/change-history';
+import { ModuleSwitchesComponent } from '../../../shared/components/module-switches/module-switches';
 import { CategoryManagerComponent } from '../../../shared/components/category-manager/category-manager';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent, ChangeHistoryComponent, CategoryManagerComponent, InsightSettingsComponent, AiSettingsComponent, CaptureSettingsComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AccountSettingsComponent, ChangeHistoryComponent, CategoryManagerComponent, ModuleSwitchesComponent, InsightSettingsComponent, AiSettingsComponent, CaptureSettingsComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

@@ -44,10 +44,12 @@ type Periodicity = 'none' | 'weekly' | 'biweekly' | 'monthly' | 'days' | 'every'
 // Income screen: sources, what is expected, averages and stability, the unclassified income
 // review, and the form. Everything shown as an average or a "guaranteed" figure is an estimate
 // with its assumptions next to it; variable income is never part of the guaranteed amount.
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-income',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, ExpectedIncomeComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, ExpectedIncomeComponent, ModuleOffComponent],
   templateUrl: './income.html',
   styleUrl: './income.scss',
 })

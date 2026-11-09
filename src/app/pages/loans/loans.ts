@@ -24,10 +24,12 @@ const ERRORS: Record<string, string> = {
   write: 'The movements could not be written.',
 };
 
+import { ModuleOffComponent } from '../../../shared/components/module-off/module-off';
+
 @Component({
   selector: 'app-loans',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, ModuleOffComponent],
   templateUrl: './loans.html',
   styleUrl: './loans.scss',
 })

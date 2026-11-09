@@ -111,7 +111,7 @@ describe('the ten indicators on a full scenario', () => {
   it('5. available money: liquid - card payments due in 30 days - fixed still to pay; both numbers shown', () => {
     const s = session();
     const a = by(s, 'available');
-    expect(comp(s, 'available', 'Liquid net worth')?.amount).toBe(224100); // bank 201,100 + savings 23,000; the card is not liquid
+    expect(comp(s, 'available', 'Money in your accounts')?.amount).toBe(224100); // bank 201,100 + savings 23,000; the card is not liquid
     expect(comp(s, 'available', 'Card payments due in 30 days')?.amount).toBe(-3000); // statement of 5,000 minus the 2,000 paid
     expect(comp(s, 'available', 'Fixed obligations still to pay this month')?.amount).toBe(-15000);
     expect(a.value).toBe(206100);
