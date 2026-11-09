@@ -38,6 +38,8 @@ Angular CLI 22 exige Node ≥ 22.22.3 (o ≥ 24.15 / 26). Con Node 20/22.16 `ng`
 - `src/shared/characterization/` pruebas que fijan el comportamiento actual (`KNOWN GAP:` = violación documentada).
 - `docs/` AUDITORIA, INTEGRIDAD, VISION, ROADMAP, IA, ARQUITECTURA. `supabase/migrations/` SQL (`<timestamp>_xmoney_*.sql`, schema `xmoney`); **no lo aplica Claude**, lo aplica Xaviel.
 
+- Interfaz (2.21.0): editar **en su sitio** (el formulario sale justo bajo el elemento editado, uno a la vez: Cuentas, Categorías, Beneficios) con `src/shared/ui/reveal.ts` (`revealAndFocus`); la captura ya no es un botón flotante (cámara en el encabezado de Inicio, tarjeta de revisión, fila en Nuevo movimiento). Tabla de toques y cola de mejoras en `docs/UX.md`; `balanceAfterOpeningChange` (`domain/opening-balance.ts`) avisa antes de cambiar un saldo inicial.
+
 ## Convenciones
 - Signals y componentes standalone. Código, nombres y comentarios en inglés; comentarios solo donde el porqué no sea obvio.
 - Interfaz bilingüe: toda cadena visible entra por `TranslateService` (inglés = clave, español en el mapa `ES`); sin claves repetidas, sin texto suelto en plantillas.
