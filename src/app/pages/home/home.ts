@@ -5,6 +5,7 @@ import { TransactionItem } from '../../../shared/components/transaction-item/tra
 import { BankBadge } from '../../../shared/ui/bank-badge/bank-badge';
 import { spentInCategory } from '../../../shared/domain/stats';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { subMoney } from '../../../shared/utils/money';
 import { TransactionService } from '../../../shared/services/transaction.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { SettingsService } from '../../../shared/services/settings.service';
@@ -22,12 +23,25 @@ import { HomeInsightsComponent } from '../../../shared/components/home-insights/
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
+import { GetStartedComponent } from '../../../shared/components/get-started/get-started';
+import { BackupReminderComponent } from '../../../shared/components/backup-reminder/backup-reminder';
+import { ModuleService } from '../../../shared/services/module.service';
+import { ModuleId } from '../../../shared/domain/modules';
+import { SETTINGS_LINKS } from '../../../shared/config/settings-links';
 import { CaptureDraftService } from '../../../shared/services/capture-draft.service';
+
+const HOME_LINKS: { id: ModuleId; icon: string; label: string; route: string }[] = [
+  { id: 'income', icon: '💼', label: 'Income', route: '/income' },
+  { id: 'benefits', icon: '🎁', label: 'Benefits', route: '/benefits' },
+  { id: 'business', icon: '🧰', label: 'Business', route: '/business' },
+  { id: 'goals', icon: '🎯', label: 'Goals', route: '/goals' },
+  { id: 'loans', icon: '🏦', label: 'Loans', route: '/loans' },
+];
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent, HomeInsightsComponent],
+  imports: [CommonModule, RouterLink, BackupReminderComponent, GetStartedComponent, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent, HomeInsightsComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -38,6 +52,7 @@ export class HomeComponent {
   monthLabel = '';
 
   summary = computed(() => this.transactionService.monthSummary(this.year, this.month));
+  monthNet = computed(() => subMoney(this.summary().income, this.summary().expense));
 
   recent = computed(() => this.transactionService.sorted().slice(0, 5));
 
@@ -130,11 +145,18 @@ export class HomeComponent {
     private cardService: CreditCardService,
     private goals: GoalService,
     private loans: LoanService,
-    public drafts: CaptureDraftService
+    public drafts: CaptureDraftService,
+    public modules: ModuleService
   ) {
     this.cardService.ensureStatements();
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });
   }
+
+  readonly settingsLinks = SETTINGS_LINKS;
+
+  // shortcuts of the modules that are on; "+ More" opens Settings → Features when some are off
+  linkChips = computed(() => HOME_LINKS.filter((l) => this.modules.isOn(l.id)));
+  showMore = computed(() => this.linkChips().length > 0 && this.linkChips().length < HOME_LINKS.length);
 
   reviewText(): string {
     const n = this.drafts.pendingCount();

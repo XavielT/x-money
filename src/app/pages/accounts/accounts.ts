@@ -20,6 +20,7 @@ import { TranslateService } from '../../../shared/services/translate.service';
 import { bankById } from '../../../shared/data/banks';
 import { NetWorthService } from '../../../shared/services/net-worth.service';
 import { SuggestionsService } from '../../../shared/services/suggestions.service';
+import { LoanService } from '../../../shared/services/loan.service';
 import { CreditCardService } from '../../../shared/services/credit-card.service';
 import { CardPaymentSuggestion } from '../../../shared/domain/card-payments';
 import { isCreditCard } from '../../../shared/domain/cards';
@@ -89,6 +90,7 @@ export class AccountsComponent {
     private netWorthService: NetWorthService,
     private suggestions: SuggestionsService,
     public cardService: CreditCardService,
+    public loanService: LoanService,
     private host: ElementRef<HTMLElement>
   ) {
     this.netWorth = netWorthService.summary;
@@ -98,6 +100,8 @@ export class AccountsComponent {
     // the account detail sends the user here to edit: /accounts?edit=<id>
     const toEdit = this.accountService.byId(route.snapshot.queryParamMap.get('edit') ?? '');
     if (toEdit) this.openEdit(toEdit);
+    // the get-started card sends the user here to add the first account: /accounts?new=1
+    else if (route.snapshot.queryParamMap.get('new') === '1') this.openAdd();
   }
 
   abs(value: number): number {

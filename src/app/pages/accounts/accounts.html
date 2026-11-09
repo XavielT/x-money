@@ -5,26 +5,25 @@
     <h1 class="x-page-title">{{ 'Accounts' | t }}</h1>
   </header>
 
-  <!-- Total -->
+  <!-- One main figure: the money you have in your accounts; the other two lines say what is left after the cards and the loans -->
   <div class="accounts-total x-card">
-    <span>{{ 'Total balance' | t }}</span>
+    <span>{{ 'Money in your accounts' | t }}</span>
     <strong>
-      {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
+      {{ settings.currency() }}{{ netWorth().liquid.DOP | number:'1.2-2' }}<ng-container *ngIf="netWorth().liquid.USD !== 0"> · US${{ netWorth().liquid.USD | number:'1.2-2' }}</ng-container>
     </strong>
   </div>
 
-  <!-- Liquid net worth and net worth, per currency, with what adds up and what does not -->
   <div class="accounts-networth x-card">
     <div class="accounts-networth-row">
-      <span>{{ 'Liquid net worth' | t }}</span>
-      <strong>{{ settings.currency() }}{{ netWorth().liquid.DOP | number:'1.2-2' }}<ng-container *ngIf="netWorth().liquid.USD !== 0"> · US${{ netWorth().liquid.USD | number:'1.2-2' }}</ng-container></strong>
+      <span>{{ 'After paying your cards' | t }}</span>
+      <strong>{{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}</strong>
     </div>
-    <div class="accounts-networth-row">
-      <span>{{ 'Net worth (after card debt)' | t }}</span>
-      <strong>{{ settings.currency() }}{{ netWorth().net.DOP | number:'1.2-2' }}<ng-container *ngIf="netWorth().net.USD !== 0 || netWorth().liquid.USD !== 0"> · US${{ netWorth().net.USD | number:'1.2-2' }}</ng-container></strong>
+    <div class="accounts-networth-row" *ngIf="loanService.totalOwed() > 0">
+      <span>{{ 'After your loans' | t }}</span>
+      <strong>{{ netWorth().net.DOP < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(netWorth().net.DOP) | number:'1.2-2' }}</strong>
     </div>
     <details>
-      <summary>{{ 'What adds up' | t }}</summary>
+      <summary>{{ 'See how it adds up' | t }}</summary>
       <div class="accounts-networth-row small" *ngFor="let row of netWorth().rows">
         <span>{{ accountName(row.accountId) }} · {{ (row.debt ? 'Card debt' : row.liquid ? 'Liquid' : 'Not liquid') | t }}</span>
         <span>{{ settings.currency() }}{{ row.balance.DOP | number:'1.2-2' }}<ng-container *ngIf="row.balance.USD !== 0"> · US${{ row.balance.USD | number:'1.2-2' }}</ng-container></span>
@@ -112,7 +111,7 @@
     <div class="accounts-card-actions">
       <button class="accounts-card-reconcile" *ngIf="isCreditCard(acc)" (click)="openCard(acc, $event)">{{ 'Card' | t }}</button>
       <button class="accounts-card-reconcile" (click)="edit(acc, $event)">{{ 'Edit' | t }}</button>
-      <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Reconcile' | t }}</button>
+      <button class="accounts-card-reconcile" (click)="reconcile(acc, $event)">{{ 'Match with the bank' | t }}</button>
       <button class="accounts-card-history" (click)="viewTransactions(acc, $event)" [attr.aria-label]="'View transactions'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -230,17 +229,17 @@
 
     <!-- Initial balance (not for linked debit cards) -->
     <ng-container *ngIf="!isLinked()">
-      <label class="accounts-form-label">{{ (editing() ? 'Opening balance' : 'Initial balance') | t }}</label>
+      <label class="accounts-form-label">{{ 'Opening balance' | t }}</label>
       <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
       <p class="accounts-form-hint" *ngIf="editing()">
         {{ 'Balance now' | t }}: <strong>{{ currentBalanceText() }}</strong><br />
-        {{ 'Changing this changes the current balance. To match your bank, use Reconcile instead.' | t }}
+        {{ 'Changing this changes the current balance. To make it match your bank, use "Match with the bank".' | t }}
       </p>
     </ng-container>
 
     <label class="accounts-form-check">
       <input type="checkbox" [(ngModel)]="formLiquid" name="formLiquid" />
-      {{ 'Liquid account (counts in liquid net worth)' | t }}
+      {{ 'Counts as money you can use' | t }}
     </label>
 
     <div class="accounts-form-actions">

@@ -25,29 +25,30 @@
     <strong>{{ 'Review' | t }}</strong>
   </a>
 
+  <app-get-started></app-get-started>
+
+  <app-backup-reminder></app-backup-reminder>
+
   <!-- The ten indicators: available money first, the rest under "See more" -->
   @defer (on idle) {
     <app-dashboard-indicators></app-dashboard-indicators>
   }
 
-  <!-- Balance card (taps through to accounts) -->
+  <!-- This month (taps through to accounts). The one big figure of Home is "Available money" above. -->
   <section class="home-balance x-card" routerLink="/accounts">
-    <span class="home-balance-label">{{ 'Total balance' | t }}</span>
-    <span class="home-balance-amount">
-      {{ transactionService.totalBalance() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(transactionService.totalBalance()) | number:'1.2-2' }}
-    </span>
-    <span class="home-balance-usd" *ngIf="transactionService.totalBalanceUsd() !== 0">
-      {{ transactionService.totalBalanceUsd() < 0 ? '-' : '+' }}US${{ abs(transactionService.totalBalanceUsd()) | number:'1.2-2' }}
-    </span>
-
+    <span class="home-balance-label">{{ monthLabel }}</span>
     <div class="home-balance-month">
       <div class="home-balance-pill">
-        <span>{{ monthLabel }} {{ 'income' | t }}</span>
+        <span>{{ 'Income' | t }}</span>
         <strong class="income">+{{ settings.currency() }}{{ summary().income | number:'1.2-2' }}</strong>
       </div>
       <div class="home-balance-pill">
-        <span>{{ monthLabel }} {{ 'expenses' | t }}</span>
+        <span>{{ 'Expenses' | t }}</span>
         <strong class="expense">-{{ settings.currency() }}{{ summary().expense | number:'1.2-2' }}</strong>
+      </div>
+      <div class="home-balance-pill">
+        <span>{{ 'Left over' | t }}</span>
+        <strong [class.income]="monthNet() >= 0" [class.expense]="monthNet() < 0">{{ monthNet() < 0 ? '-' : '' }}{{ settings.currency() }}{{ abs(monthNet()) | number:'1.2-2' }}</strong>
       </div>
     </div>
   </section>
@@ -67,18 +68,17 @@
   <!-- Expected income ("Did it arrive?" asks; nothing is posted until you confirm) -->
   <app-expected-income [limit]="2"></app-expected-income>
 
-  <!-- Income and benefits -->
-  <section class="home-links">
-    <a routerLink="/income" class="x-card">💼 {{ 'Income' | t }}</a>
-    <a routerLink="/benefits" class="x-card">🎁 {{ 'Benefits' | t }}</a>
-    <a routerLink="/business" class="x-card">🧰 {{ 'Business' | t }}</a>
-    <a routerLink="/goals" class="x-card">🎯 {{ 'Goals' | t }}</a>
-    <a routerLink="/loans" class="x-card">🏦 {{ 'Loans' | t }}</a>
+  <!-- Shortcuts: only the modules that are on -->
+  <section class="home-links" *ngIf="linkChips().length">
+    <a *ngFor="let l of linkChips()" [routerLink]="l.route" class="x-card">{{ l.icon }} {{ l.label | t }}</a>
+    <a *ngIf="showMore()" [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment" class="x-card home-more">+ {{ 'More' | t }}</a>
   </section>
 
   <!-- Smart alerts: the three most important in one card (not one banner each) -->
-  @defer (on idle) {
-    <app-home-insights />
+  @if (modules.isOn('insights')) {
+    @defer (on idle) {
+      <app-home-insights />
+    }
   }
 
   <!-- Loan installments: 7, 3 and 1 day before, and overdue -->

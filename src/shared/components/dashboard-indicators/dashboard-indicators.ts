@@ -4,7 +4,10 @@ import { RouterLink } from '@angular/router';
 import { Indicator } from '../../domain/dashboard';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { DashboardService } from '../../services/dashboard.service';
+import { ModuleService } from '../../services/module.service';
+import { NetWorthService } from '../../services/net-worth.service';
 import { SettingsService } from '../../services/settings.service';
+import { SyncChipComponent } from '../sync-chip/sync-chip';
 import { IndicatorSheetComponent } from '../indicator-sheet/indicator-sheet';
 
 // The ten indicators: "Available money" as the main figure and the rest in two columns under
@@ -13,7 +16,7 @@ import { IndicatorSheetComponent } from '../indicator-sheet/indicator-sheet';
 @Component({
   selector: 'app-dashboard-indicators',
   standalone: true,
-  imports: [CommonModule, RouterLink, TranslatePipe, IndicatorSheetComponent],
+  imports: [CommonModule, RouterLink, TranslatePipe, IndicatorSheetComponent, SyncChipComponent],
   templateUrl: './dashboard-indicators.html',
   styleUrl: './dashboard-indicators.scss',
 })
@@ -23,11 +26,14 @@ export class DashboardIndicatorsComponent {
 
   main = computed(() => this.dashboard.visible().find((i) => i.id === 'available')!);
   others = computed(() => this.dashboard.visible().filter((i) => i.id !== 'available'));
-  liquid = computed(() => this.main()?.components.find((c) => c.label === 'Liquid net worth')?.amount ?? 0);
+  // the same signal the Accounts screen reads: one number, one name
+  liquid = computed(() => this.netWorth.summary().liquid);
 
   constructor(
     private dashboard: DashboardService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    public modules: ModuleService,
+    private netWorth: NetWorthService
   ) {}
 
   open(i: Indicator): void {

@@ -1,0 +1,15 @@
+<section class="gs x-card" *ngIf="started.state().visible">
+  <div class="gs-head">
+    <h2>{{ 'Get started' | t }}</h2>
+    <button class="gs-hide" (click)="started.hide()">{{ 'Hide' | t }}</button>
+  </div>
+  <ol class="gs-steps">
+    <li *ngFor="let v of views; let i = index" [class.done]="done(v.id)">
+      <a class="gs-step" [routerLink]="v.commands" [queryParams]="v.query" [fragment]="v.fragment">
+        <span class="gs-mark">{{ done(v.id) ? '✓' : i + 1 }}</span>
+        <span class="gs-label">{{ v.label | t }}</span>
+      </a>
+      <button class="gs-skip" *ngIf="v.id === 'features' && !done(v.id)" (click)="started.skip()">{{ 'Skip' | t }}</button>
+    </li>
+  </ol>
+</section>

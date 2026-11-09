@@ -4,8 +4,9 @@
     <span class="dash-main-value" [class.negative]="(m.value ?? 0) < 0">
       {{ (m.value ?? 0) < 0 ? '-' : '' }}{{ settings.currency() }}{{ ((m.value ?? 0) < 0 ? -(m.value ?? 0) : (m.value ?? 0)) | number:'1.2-2' }}
     </span>
-    <span class="dash-sub">{{ 'Liquid net worth' | t }}: {{ settings.currency() }}{{ liquid() | number:'1.2-2' }}</span>
+    <span class="dash-sub">{{ 'Money in your accounts' | t }}: {{ settings.currency() }}{{ liquid().DOP | number:'1.2-2' }}<ng-container *ngIf="liquid().USD !== 0"> · US${{ liquid().USD | number:'1.2-2' }}</ng-container></span>
   </button>
+  <app-sync-chip></app-sync-chip>
 
   <button class="dash-toggle" (click)="expanded.set(!expanded())" [attr.aria-expanded]="expanded()">
     {{ (expanded() ? 'See less' : 'See more') | t }}
@@ -27,7 +28,7 @@
     </button>
   </div>
 
-  <a routerLink="/analysis" class="dash-analysis x-card">📊 {{ 'Analysis' | t }} <small>{{ 'Trends, cash flow, comparisons and unusual expenses' | t }}</small></a>
+  <a routerLink="/analysis" class="dash-analysis x-card" *ngIf="modules.isOn('insights')">📊 {{ 'Analysis' | t }} <small>{{ 'Trends, cash flow, comparisons and unusual expenses' | t }}</small></a>
 
   <app-indicator-sheet *ngIf="selected() as s" [indicator]="s" (closed)="selected.set(null)"></app-indicator-sheet>
 </section>

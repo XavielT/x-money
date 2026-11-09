@@ -8,7 +8,3 @@
   <span>{{ 'Your clock is off by more than 5 minutes. Fix the date and time of this device.' | t }}</span>
   <button (click)="skewDismissed.set(true)" aria-label="Dismiss">✕</button>
 </div>
-<div class="banner" *ngIf="reminder.due() && transactions.transactions().length && !backupDismissed()">
-  <a routerLink="/settings">{{ 'Time to export a backup' | t }}</a>
-  <button (click)="backupDismissed.set(true)" aria-label="Dismiss">✕</button>
-</div>
