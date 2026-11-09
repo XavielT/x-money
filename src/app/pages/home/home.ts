@@ -22,6 +22,7 @@ import { HomeInsightsComponent } from '../../../shared/components/home-insights/
 import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
+import { CaptureDraftService } from '../../../shared/services/capture-draft.service';
 
 @Component({
   selector: 'app-home',
@@ -128,10 +129,16 @@ export class HomeComponent {
     public settings: SettingsService,
     private cardService: CreditCardService,
     private goals: GoalService,
-    private loans: LoanService
+    private loans: LoanService,
+    public drafts: CaptureDraftService
   ) {
     this.cardService.ensureStatements();
     this.monthLabel = this.today.toLocaleString(this.translate.locale(), { month: 'long' });
+  }
+
+  reviewText(): string {
+    const n = this.drafts.pendingCount();
+    return this.translate.instant(n === 1 ? '1 capture waiting for your review' : '{n} captures waiting for your review', { n: String(n) });
   }
 
   // Alert sentence. English phrases are the translation keys.

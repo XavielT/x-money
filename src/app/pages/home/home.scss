@@ -15,7 +15,21 @@
   }
 }
 
+.home-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// camera (capture) and gear: 44 px touch targets
+.home-capture,
 .home-settings {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   color: var(--main-ultra-light);
   transition: all 0.3s ease;
 
@@ -26,6 +40,40 @@
 
   &:hover {
     color: var(--Hub);
+  }
+}
+
+.home-capture-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--expense);
+  color: #fff;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.home-review {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-color: var(--Hub);
+
+  span {
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  strong {
+    color: var(--Hub);
+    font-size: 0.85rem;
   }
 }
 
@@ -240,6 +288,7 @@
 
 .home-top-info {
   flex: 1;
+  min-width: 0; // free-length text must wrap or shrink, never widen the page
 }
 
 .home-top-labels {
