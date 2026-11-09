@@ -168,13 +168,31 @@
 }
 
 .accounts-add {
-  margin-top: 6px;
+  margin: 0 0 12px;
+}
+
+// The account being edited: marked, and its form continues the card right under it
+.accounts-card-editing {
+  border-color: var(--Hub);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-bottom: 0;
 }
 
 // Add / edit form
 .accounts-form {
   padding: 16px;
-  margin-top: 14px;
+  margin: 0 0 12px;
+  min-width: 0;
+
+  // opened for an existing account: same width and corners as the card above it
+  &.accounts-form-attached {
+    border-color: var(--Hub);
+    border-top: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    margin-bottom: 12px;
+  }
 
   h2 {
     font-family: var(--font-heading);
@@ -195,7 +213,7 @@
 
 .accounts-form-types {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 
   button {
@@ -240,7 +258,7 @@
 // Bank picker grid
 .accounts-form-banks {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
@@ -284,8 +302,34 @@
 .accounts-form-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   margin-top: 18px;
+}
+
+// Save first and wide, Cancel beside it
+.accounts-form-main {
+  display: flex;
+  gap: 10px;
+
+  .accounts-form-save {
+    flex: 2;
+  }
+
+  .accounts-form-cancel {
+    flex: 1;
+  }
+}
+
+// Archive / Delete apart, Delete last and in red
+.accounts-form-danger {
+  display: flex;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+
+  .x-btn {
+    flex: 1;
+  }
 }
 
 .accounts-form-cancel {

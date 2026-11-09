@@ -1,5 +1,5 @@
-import { Component, Signal, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, Signal, signal } from '@angular/core';
+import { CommonModule, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -27,11 +27,13 @@ import { NetWorth, defaultLiquid } from '../../../shared/domain/networth';
 import { TransferSuggestion } from '../../../shared/domain/transfers';
 import { Cadence, IncomePatternSuggestion } from '../../../shared/domain/income-patterns';
 import { TxErrorCode } from '../../../shared/domain/validation';
+import { balanceAfterOpeningChange } from '../../../shared/domain/opening-balance';
+import { revealAndFocus } from '../../../shared/ui/reveal';
 
 @Component({
   selector: 'app-accounts',
   standalone: true,
-  imports: [CommonModule, FormsModule, BankBadge, TranslatePipe],
+  imports: [CommonModule, FormsModule, NgTemplateOutlet, BankBadge, TranslatePipe],
   templateUrl: './accounts.html',
   styleUrl: './accounts.scss',
 })
@@ -53,7 +55,11 @@ export class AccountsComponent {
   ];
 
   showForm = signal(false);
-  editingId: string | null = null;
+  // the account being edited (null = adding a new one); a signal so the form moves under the right card
+  editing = signal<string | null>(null);
+  get editingId(): string | null {
+    return this.editing();
+  }
   formTypeKey = signal('bank');
   formBankId = signal('');
   formBankKind = signal<BankAccountKind | ''>('');
@@ -82,7 +88,8 @@ export class AccountsComponent {
     public settings: SettingsService,
     private netWorthService: NetWorthService,
     private suggestions: SuggestionsService,
-    public cardService: CreditCardService
+    public cardService: CreditCardService,
+    private host: ElementRef<HTMLElement>
   ) {
     this.netWorth = netWorthService.summary;
     this.transferSuggestions = suggestions.transfers;
@@ -195,7 +202,11 @@ export class AccountsComponent {
   }
 
   openAdd(): void {
-    this.editingId = null;
+    if (this.showForm() && !this.editing()) {
+      this.cancelForm(); // tapping "Add account" again closes the open new-account form
+      return;
+    }
+    this.editing.set(null);
     this.formTypeKey.set('bank');
     this.formBankId.set('');
     this.formBankKind.set('');
@@ -208,6 +219,7 @@ export class AccountsComponent {
     this.formLiquid = true;
     this.bankSearch.set('');
     this.showForm.set(true);
+    this.reveal();
   }
 
   // tapping a row: the account's detail (balance, latest movements); a credit card has its own page
@@ -221,7 +233,11 @@ export class AccountsComponent {
   }
 
   openEdit(account: AccountModel): void {
-    this.editingId = account.id;
+    if (this.showForm() && this.editing() === account.id) {
+      this.cancelForm(); // "Edit" on the account already open closes its form
+      return;
+    }
+    this.editing.set(account.id);
     this.formTypeKey.set(
       account.type === 'card' ? (account.cardKind === 'credit' ? 'credit' : 'debit') : account.type
     );
@@ -236,11 +252,64 @@ export class AccountsComponent {
     this.formLiquid = account.liquid ?? defaultLiquid(account.type);
     this.bankSearch.set('');
     this.showForm.set(true);
+    this.reveal();
+  }
+
+  // the form is rendered under its account (or under "Add account"): bring it into view and focus the name
+  private reveal(): void {
+    setTimeout(() => revealAndFocus(this.host.nativeElement.querySelector<HTMLElement>('.accounts-form'), 'input[name="formName"]'));
+  }
+
+  // after closing, return the view to the row of the account that was being edited
+  private backToRow(id: string | null): void {
+    if (!id) return;
+    setTimeout(() => {
+      const row = this.host.nativeElement.querySelector<HTMLElement>(`[data-account-id="${id}"]`);
+      if (row && typeof row.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   cancelForm(): void {
+    const was = this.editing();
     this.showForm.set(false);
-    this.editingId = null;
+    this.editing.set(null);
+    this.backToRow(was);
+  }
+
+  // ----- opening balance: a change moves the whole history, so it is shown and confirmed first
+
+  private editedAccount(): AccountModel | undefined {
+    const id = this.editing();
+    return id ? this.accountService.byId(id) : undefined;
+  }
+
+  // the currency the edited account started in (a dual card starts in RD$)
+  private startCurrency(a: AccountModel): 'DOP' | 'USD' {
+    return a.currency === 'USD' ? 'USD' : 'DOP';
+  }
+
+  // the balance now, in the currency the account started in (shown under the opening-balance field)
+  currentBalanceText(): string {
+    const a = this.editedAccount();
+    if (!a) return '';
+    const c = this.startCurrency(a);
+    return this.money(c, c === 'USD' ? this.usdBalanceOf(a) : this.balanceOf(a));
+  }
+
+  private money(currency: 'DOP' | 'USD', value: number): string {
+    const sym = currency === 'USD' ? 'US$' : this.settings.currency();
+    const n = Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${value < 0 ? '-' : ''}${sym}${n}`;
+  }
+
+  // null when the opening balance did not change (nothing to ask)
+  openingChange(): { currency: 'DOP' | 'USD'; before: number; after: number } | null {
+    const a = this.editedAccount();
+    if (!a || this.isLinked()) return null;
+    const currency = this.startCurrency(a);
+    const current = currency === 'USD' ? this.usdBalanceOf(a) : this.balanceOf(a);
+    const change = balanceAfterOpeningChange(current, a.initialBalance, Number(this.formBalance) || 0);
+    return change.changed ? { currency, before: change.before, after: change.after } : null;
   }
 
   setTypeKey(key: string): void {
@@ -313,6 +382,11 @@ export class AccountsComponent {
       initialBalance: this.isLinked() ? 0 : Number(this.formBalance) || 0,
     };
     if (this.editingId) {
+      const change = this.openingChange();
+      if (change) {
+        const text = `${this.translate.instant('Balance now')} ${this.money(change.currency, change.before)} → ${this.money(change.currency, change.after)}. ${this.translate.instant('Change the opening balance?')}`;
+        if (!confirm(text)) return;
+      }
       const existing = this.accountService.byId(this.editingId);
       if (existing) this.accountService.update({ ...existing, ...data, icon: data.icon ?? existing.icon });
     } else {

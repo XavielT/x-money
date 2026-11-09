@@ -1860,4 +1860,13 @@ export const ES: Record<string, string> = {
   'Latest movements': 'Últimos movimientos',
   'No movements in this account yet.': 'Esta cuenta todavía no tiene movimientos.',
   'Show all': 'Ver todos',
+  'Opening balance': 'Saldo con el que empezó la cuenta',
+  'Balance now': 'Saldo ahora',
+  'Changing this changes the current balance. To match your bank, use Reconcile instead.': 'Cambiar esto cambia el saldo actual. Para que coincida con tu banco, usa Conciliar.',
+  'Change the opening balance?': '¿Cambiar el saldo inicial?',
+  '1 capture waiting for your review': '1 captura espera tu revisión',
+  '{n} captures waiting for your review': '{n} capturas esperan tu revisión',
+  'Review': 'Revisar',
+  'Have a screenshot, photo or invoice?': '¿Tienes una captura, foto o factura?',
+  'Capture it': 'Captúrala',
 };

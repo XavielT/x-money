@@ -80,10 +80,17 @@
     <a class="accounts-link" *ngFor="let c of cardService.incompleteCards(); let last = last" (click)="openCard(c, $event)">{{ c.name }}<ng-container *ngIf="!last">, </ng-container></a>
   </p>
 
-  <!-- Account cards, grouped by bank so cards/checking/savings of the same bank sit together -->
+  <!-- Add button: on top, with the new-account form right under it -->
+  <button class="x-btn accounts-add" (click)="openAdd()">{{ 'Add account' | t }}</button>
+  <ng-container *ngIf="showForm() && !editing()" [ngTemplateOutlet]="accountForm"></ng-container>
+
+  <!-- Account cards, grouped by bank so cards/checking/savings of the same bank sit together.
+       The edit form opens right under the card it belongs to, one at a time. -->
+  <ng-container *ngFor="let acc of sortedAccounts()">
   <div
     class="accounts-card x-card"
-    *ngFor="let acc of sortedAccounts()"
+    [class.accounts-card-editing]="showForm() && editing() === acc.id"
+    [attr.data-account-id]="acc.id"
     (click)="openDetail(acc)"
   >
     <app-bank-badge [account]="acc"></app-bank-badge>
@@ -114,6 +121,8 @@
       </button>
     </div>
   </div>
+  <ng-container *ngIf="showForm() && editing() === acc.id" [ngTemplateOutlet]="accountForm"></ng-container>
+  </ng-container>
 
   <!-- Archived accounts keep their history -->
   <div class="accounts-archived" *ngIf="archivedAccounts().length">
@@ -126,11 +135,9 @@
     </div>
   </div>
 
-  <!-- Add button -->
-  <button class="x-btn accounts-add" *ngIf="!showForm()" (click)="openAdd()">{{ 'Add account' | t }}</button>
-
-  <!-- Add / edit form -->
-  <div class="accounts-form x-card" *ngIf="showForm()">
+  <!-- Add / edit form (one template, drawn in one place at a time) -->
+  <ng-template #accountForm>
+  <div class="accounts-form x-card" [class.accounts-form-attached]="!!editing()">
     <h2>{{ (editingId ? 'Edit account' : 'New account') | t }}</h2>
 
     <!-- Type -->
@@ -223,8 +230,12 @@
 
     <!-- Initial balance (not for linked debit cards) -->
     <ng-container *ngIf="!isLinked()">
-      <label class="accounts-form-label">{{ 'Initial balance' | t }}</label>
+      <label class="accounts-form-label">{{ (editing() ? 'Opening balance' : 'Initial balance') | t }}</label>
       <input class="x-input" type="number" inputmode="decimal" step="0.01" [(ngModel)]="formBalance" name="formBalance" />
+      <p class="accounts-form-hint" *ngIf="editing()">
+        {{ 'Balance now' | t }}: <strong>{{ currentBalanceText() }}</strong><br />
+        {{ 'Changing this changes the current balance. To match your bank, use Reconcile instead.' | t }}
+      </p>
     </ng-container>
 
     <label class="accounts-form-check">
@@ -233,12 +244,17 @@
     </label>
 
     <div class="accounts-form-actions">
-      <button class="x-btn" [disabled]="!isValid()" (click)="save()">
-        {{ (editingId ? 'Save changes' : 'Add account') | t }}
-      </button>
-      <button class="x-btn accounts-form-cancel" (click)="cancelForm()">{{ 'Cancel' | t }}</button>
-      <button class="x-btn" *ngIf="editingId" (click)="archive()">{{ 'Archive account' | t }}</button>
-      <button class="x-btn x-btn-danger" *ngIf="editingId" (click)="delete()">{{ 'Delete account' | t }}</button>
+      <div class="accounts-form-main">
+        <button class="x-btn accounts-form-save" [disabled]="!isValid()" (click)="save()">
+          {{ (editingId ? 'Save changes' : 'Add account') | t }}
+        </button>
+        <button class="x-btn accounts-form-cancel" (click)="cancelForm()">{{ 'Cancel' | t }}</button>
+      </div>
+      <div class="accounts-form-danger" *ngIf="editingId">
+        <button class="x-btn accounts-form-cancel" (click)="archive()">{{ 'Archive account' | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="delete()">{{ 'Delete account' | t }}</button>
+      </div>
     </div>
   </div>
+  </ng-template>
 </div>
