@@ -13,6 +13,8 @@ import { TranslateService } from '../../../shared/services/translate.service';
 import { cardCurrencies, effectiveMinimum, isCreditCard } from '../../../shared/domain/cards';
 import { localIso } from '../../../shared/domain/dates';
 import { round2 } from '../../../shared/utils/money';
+import { usualPayer } from '../../../shared/domain/usual-payer';
+import { TransactionService } from '../../../shared/services/transaction.service';
 
 type Choice = 'balance' | 'minimum' | 'other';
 
@@ -79,7 +81,8 @@ export class CardPayComponent {
     private translate: TranslateService,
     public cards: CreditCardService,
     public accountService: AccountService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    private transactions: TransactionService
   ) {
     const found = this.accountService.byId(route.snapshot.paramMap.get('id') ?? '');
     this.card = found && isCreditCard(found) ? found : undefined;
@@ -89,8 +92,13 @@ export class CardPayComponent {
     this.currency.set(query.get('currency') === 'USD' && currencies.includes('USD') ? 'USD' : currencies[0]);
     this.statementId = query.get('statement') ?? '';
     this.cards.ensureStatements();
-    this.fromId.set(this.payers()[0]?.id ?? '');
+    this.fromId.set(this.usualPayerId());
     if (this.balanceAmount() === undefined) this.choice.set('other');
+  }
+
+  // The account this card is usually paid from (most past payments), editable in the form
+  private usualPayerId(): string {
+    return this.card ? usualPayer(this.transactions.transactions(), this.card.id, this.payers().map((a) => a.id)) : '';
   }
 
   currencies(): TransactionCurrency[] {
@@ -104,7 +112,7 @@ export class CardPayComponent {
   setCurrency(c: TransactionCurrency): void {
     this.currency.set(c);
     this.statementId = '';
-    this.fromId.set(this.payers()[0]?.id ?? '');
+    this.fromId.set(this.usualPayerId());
     this.choice.set(this.balanceAmount() === undefined ? 'other' : 'balance');
   }
 

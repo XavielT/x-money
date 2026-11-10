@@ -1,14 +1,14 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home';
 import { TransactionsComponent } from './pages/transactions/transactions';
-import { TransactionFormComponent } from './pages/transaction-form/transaction-form';
 import { SETTINGS_ROUTES } from './pages/settings/settings.routes';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'transactions', component: TransactionsComponent },
-  { path: 'add', component: TransactionFormComponent },
-  { path: 'edit/:id', component: TransactionFormComponent },
+  // the form is the heaviest screen of the first load and is opened on demand (the service worker prefetches it)
+  { path: 'add', loadComponent: () => import('./pages/transaction-form/transaction-form').then((m) => m.TransactionFormComponent) },
+  { path: 'edit/:id', loadComponent: () => import('./pages/transaction-form/transaction-form').then((m) => m.TransactionFormComponent) },
   // secondary screens load on demand (the service worker prefetches them, so they still work offline)
   { path: 'stats', loadComponent: () => import('./pages/stats/stats').then((m) => m.StatsComponent) },
   { path: 'budgets', loadComponent: () => import('./pages/budgets/budgets').then((m) => m.BudgetsComponent) },

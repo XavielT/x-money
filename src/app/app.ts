@@ -17,6 +17,7 @@ import { AuthGateComponent } from '../shared/components/auth-gate/auth-gate';
 import { UpdateBannerComponent } from '../shared/components/update-banner/update-banner';
 import { LinkWizardComponent } from '../shared/components/link-wizard/link-wizard';
 import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banner';
+import { UndoToastComponent } from '../shared/components/undo-toast/undo-toast';
 
 @Component({
   selector: 'app-root',
@@ -31,6 +32,7 @@ import { SyncBannerComponent } from '../shared/components/sync-banner/sync-banne
     UpdateBannerComponent,
     LinkWizardComponent,
     SyncBannerComponent,
+    UndoToastComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',

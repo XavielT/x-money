@@ -25,10 +25,12 @@
   </div>
 
   <!-- Amount -->
-  <label class="transaction-form-label">{{ 'Amount' | t }}</label>
+  <label class="transaction-form-label" for="tf-amount">{{ 'Amount' | t }}</label>
   <div class="transaction-form-amount">
     <span>{{ txCurrency() === 'USD' ? 'US$' : settings.currency() }}</span>
     <input
+      #amountInput
+      id="tf-amount"
       type="number"
       inputmode="decimal"
       step="0.01"
@@ -39,12 +41,20 @@
     />
   </div>
 
-  <!-- Category grid (not for transfers) -->
+  <!-- Currency (dual-currency accounts only): it changes what the amount means, so it stays next to it -->
+  <ng-container *ngIf="showCurrencyToggle()">
+    <div class="transaction-form-toggle transaction-form-currency">
+      <button [class.active-transfer]="txCurrency() === 'DOP'" (click)="setTxCurrency('DOP')">{{ settings.currency() }}</button>
+      <button [class.active-transfer]="txCurrency() === 'USD'" (click)="setTxCurrency('USD')">US$</button>
+    </div>
+  </ng-container>
+
+  <!-- Category grid (not for transfers): the ones you use most first, the rest behind "More" -->
   <ng-container *ngIf="kind() !== 'transfer'">
     <label class="transaction-form-label">{{ 'Category' | t }}</label>
     <div class="transaction-form-categories">
       <button
-        *ngFor="let cat of categoriesForType()"
+        *ngFor="let cat of categoryGrid().shown"
         class="transaction-form-category"
         [class.active]="categoryId() === cat.id"
         [style.border-color]="categoryId() === cat.id ? cat.color : ''"
@@ -54,186 +64,212 @@
         <span class="transaction-form-category-icon">{{ cat.icon }}</span>
         <span class="transaction-form-category-name">{{ cat.name }}</span>
       </button>
-      <button class="transaction-form-category transaction-form-category-new" (click)="toggleNewCategory()">
-        <span class="transaction-form-category-icon">➕</span>
-        <span class="transaction-form-category-name">{{ 'New' | t }}</span>
+      <button class="transaction-form-category transaction-form-category-more" (click)="moreCategoriesOpen.set(true)">
+        <span class="transaction-form-category-icon">⋯</span>
+        <span class="transaction-form-category-name">{{ 'More' | t }}</span>
       </button>
     </div>
 
-    <!-- Inline new category creator -->
-    <div class="transaction-form-newcat x-card" *ngIf="showNewCategory()">
-      <input class="x-input" type="text" maxlength="20" [placeholder]="'Category name' | t" [(ngModel)]="newCatName" name="newCatName" />
-      <div class="transaction-form-newcat-row">
-        <input class="x-input transaction-form-newcat-emoji" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="newCatIcon" name="newCatIcon" />
-        <div class="transaction-form-newcat-emojis">
-          <button *ngFor="let emoji of emojiSuggestions" (click)="newCatIcon = emoji">{{ emoji }}</button>
-        </div>
-      </div>
-      <div class="transaction-form-newcat-colors">
+    <app-bottom-sheet [open]="moreCategoriesOpen()" title="Categories" (closed)="moreCategoriesOpen.set(false)">
+      <div class="transaction-form-categories">
         <button
-          *ngFor="let color of categoryColors"
-          [style.background]="color"
-          [class.active]="newCatColor === color"
-          (click)="newCatColor = color"
-          [attr.aria-label]="'Color ' + color"
-        ></button>
+          *ngFor="let cat of categoryGrid().rest"
+          class="transaction-form-category"
+          [class.active]="categoryId() === cat.id"
+          [style.border-color]="categoryId() === cat.id ? cat.color : ''"
+          [attr.title]="cat.name"
+          (click)="selectCategory(cat.id)"
+        >
+          <span class="transaction-form-category-icon">{{ cat.icon }}</span>
+          <span class="transaction-form-category-name">{{ cat.name }}</span>
+        </button>
+        <button class="transaction-form-category transaction-form-category-new" (click)="toggleNewCategory()">
+          <span class="transaction-form-category-icon">➕</span>
+          <span class="transaction-form-category-name">{{ 'New' | t }}</span>
+        </button>
       </div>
-      <button class="x-btn" [disabled]="!newCatName.trim()" (click)="createCategory()">{{ 'Create category' | t }}</button>
-    </div>
+
+      <!-- Inline new category creator -->
+      <div class="transaction-form-newcat x-card" *ngIf="showNewCategory()">
+        <input class="x-input" type="text" maxlength="20" [placeholder]="'Category name' | t" [(ngModel)]="newCatName" name="newCatName" />
+        <div class="transaction-form-newcat-row">
+          <input class="x-input transaction-form-newcat-emoji" type="text" maxlength="4" placeholder="🏷️" [(ngModel)]="newCatIcon" name="newCatIcon" />
+          <div class="transaction-form-newcat-emojis">
+            <button *ngFor="let emoji of emojiSuggestions" (click)="newCatIcon = emoji">{{ emoji }}</button>
+          </div>
+        </div>
+        <div class="transaction-form-newcat-colors">
+          <button
+            *ngFor="let color of categoryColors"
+            [style.background]="color"
+            [class.active]="newCatColor === color"
+            (click)="newCatColor = color"
+            [attr.aria-label]="'Color ' + color"
+          ></button>
+        </div>
+        <button class="x-btn" [disabled]="!newCatName.trim()" (click)="createCategory()">{{ 'Create category' | t }}</button>
+      </div>
+    </app-bottom-sheet>
   </ng-container>
 
-  <!-- Subcategory and nature (expenses) -->
-  <ng-container *ngIf="kind() === 'expense' && categoryId()">
-    <ng-container *ngIf="subcategories().length">
-      <label class="transaction-form-label">{{ 'Subcategory (optional)' | t }}</label>
-      <select class="x-input" [(ngModel)]="subcategoryId" name="subcategoryId">
-        <option value="">{{ 'None' | t }}</option>
-        <option *ngFor="let sub of subcategories()" [value]="sub.id">{{ sub.icon }} {{ sub.name }}</option>
-      </select>
-    </ng-container>
-    <ng-container *ngIf="!editId && repeat !== 'none'; else natureOverrideBlock">
-      <label class="transaction-form-label">{{ 'This recurring expense is' | t }}</label>
-      <select class="x-input" [(ngModel)]="ruleNature" name="ruleNature">
-        <option value="fixed">{{ 'Fixed (suggested)' | t }}</option>
-        <option value="variable">{{ 'Variable' | t }}</option>
-      </select>
-      <p class="transaction-form-fee-hint">{{ 'A recurring expense is usually a fixed obligation, but you decide.' | t }}</p>
-    </ng-container>
-    <ng-template #natureOverrideBlock>
-      <label class="transaction-form-label">{{ 'Nature of this expense' | t }}</label>
-      <select class="x-input" [(ngModel)]="natureOverride" name="natureOverride">
-        <option value="">{{ (categoryNature() === 'fixed' ? 'Like its category (fixed)' : 'Like its category (variable)') | t }}</option>
-        <option value="fixed">{{ 'Fixed' | t }}</option>
-        <option value="variable">{{ 'Variable' | t }}</option>
-      </select>
-      <p class="transaction-form-fee-hint">{{ 'An expense that repeats is not fixed because of that: you choose.' | t }}</p>
-    </ng-template>
-  </ng-container>
-
-  <!-- Income: source, gross / net and, for sales, cost (all optional) -->
-  <ng-container *ngIf="kind() === 'income'">
-    <label class="transaction-form-label">{{ 'Income source (optional)' | t }}</label>
-    <select class="x-input" [ngModel]="sourceId" (ngModelChange)="sourceChanged($event)" name="sourceId">
-      <option value="">{{ 'Unclassified' | t }}</option>
-      <option *ngFor="let s of activeSources()" [value]="s.id">{{ s.icon }} {{ s.name }}</option>
+  <!-- Account: one tappable row, the picker opens on top of it -->
+  <label class="transaction-form-row x-card">
+    <span class="transaction-form-row-label">{{ (kind() === 'income' ? 'Received in' : kind() === 'transfer' ? 'From' : 'Paid from') | t }}</span>
+    <span class="transaction-form-row-value">{{ accountLabel(accountId) }}</span>
+    <span class="transaction-form-row-arrow" aria-hidden="true">›</span>
+    <select class="transaction-form-row-select" [ngModel]="accountId" (ngModelChange)="accountChanged($event)" name="accountId" [attr.aria-label]="(kind() === 'income' ? 'Received in' : kind() === 'transfer' ? 'From' : 'Paid from') | t">
+      <option *ngFor="let acc of selectableAccounts()" [value]="acc.id">
+        {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
+      </option>
     </select>
+  </label>
 
-    <details class="transaction-form-details" [open]="!!grossAmount || deductions.length || sourceIsCommercial()">
-      <summary>{{ 'Gross and deductions' | t }}</summary>
-      <p class="transaction-form-fee-hint">{{ 'The amount above is what reached your account (the net).' | t }}</p>
-      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="grossAmount" name="grossAmount" [placeholder]="'Gross amount (optional)' | t" />
-      <div class="transaction-form-deduction" *ngFor="let d of deductions; let i = index">
-        <input class="x-input" type="text" maxlength="30" [(ngModel)]="d.name" [name]="'dn' + i" [placeholder]="'Deduction name' | t" />
-        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="d.amount" [name]="'da' + i" placeholder="0.00" />
-        <button (click)="removeDeduction(i)" aria-label="Remove deduction">✕</button>
-      </div>
-      <button class="transaction-form-fee-btn" (click)="addDeduction()">{{ 'Add deduction' | t }}</button>
-      <p class="transaction-form-fee-hint" *ngIf="deductionsGap() !== null && deductionsGap() !== 0">{{ 'The deductions do not explain the whole difference:' | t }} {{ deductionsGap() }}</p>
-    </details>
-
-    <ng-container *ngIf="sourceIsCommercial()">
-      <label class="transaction-form-label">{{ 'Cost of what you sold (optional)' | t }}</label>
-      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="costBasis" name="costBasis" />
-      <label class="transaction-form-label">{{ 'Expenses of this sale (optional)' | t }}</label>
-      <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="saleExpenses" name="saleExpenses" />
-      <p class="transaction-form-fee-hint" *ngIf="saleBenefitPreview() !== null">{{ 'Net benefit of this sale' | t }}: {{ saleBenefitPreview() }} · {{ 'The selling price is revenue, not profit.' | t }}</p>
-      <p class="transaction-form-fee-hint">{{ 'Do you want to track this as a business operation with inventory? That arrives with the business module; for now the sale is recorded here.' | t }}</p>
-    </ng-container>
-  </ng-container>
-
-  <!-- Accounts -->
-  <label class="transaction-form-label">{{ (kind() === 'transfer' ? 'From account' : 'Account') | t }}</label>
-  <select class="x-input" [ngModel]="accountId" (ngModelChange)="accountChanged($event)" name="accountId">
-    <option *ngFor="let acc of selectableAccounts()" [value]="acc.id">
-      {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
-    </option>
-  </select>
-
-  <!-- Currency (dual-currency accounts only) -->
-  <ng-container *ngIf="showCurrencyToggle()">
-    <label class="transaction-form-label">{{ 'Currency' | t }}</label>
-    <div class="transaction-form-toggle">
-      <button [class.active-transfer]="txCurrency() === 'DOP'" (click)="setTxCurrency('DOP')">{{ settings.currency() }}</button>
-      <button [class.active-transfer]="txCurrency() === 'USD'" (click)="setTxCurrency('USD')">US$</button>
-    </div>
-  </ng-container>
-
-  <ng-container *ngIf="kind() === 'transfer'">
-    <label class="transaction-form-label">{{ 'To account' | t }}</label>
-    <select class="x-input" [(ngModel)]="toAccountId" name="toAccountId">
+  <label class="transaction-form-row x-card" *ngIf="kind() === 'transfer'">
+    <span class="transaction-form-row-label">{{ 'To' | t }}</span>
+    <span class="transaction-form-row-value">{{ accountLabel(toAccountId) }}</span>
+    <span class="transaction-form-row-arrow" aria-hidden="true">›</span>
+    <select class="transaction-form-row-select" [(ngModel)]="toAccountId" name="toAccountId" [attr.aria-label]="'To account' | t">
       <option *ngFor="let acc of accountService.activeAccounts()" [value]="acc.id" [disabled]="acc.id === accountId">
         {{ acc.icon }} {{ acc.name }}{{ acc.last4 ? ' ••' + acc.last4 : '' }}
       </option>
     </select>
-  </ng-container>
+  </label>
 
-  <!-- Bank fee / tax -->
-  <ng-container *ngIf="showFeeField()">
-    <label class="transaction-form-label">{{ 'Bank charge (optional)' | t }}</label>
-    <p class="transaction-form-fee-hint">{{ 'Extra amount the bank takes with this movement (tax, fees).' | t }}</p>
-    <div class="transaction-form-fee">
-      <input
-        class="x-input"
-        type="number"
-        inputmode="decimal"
-        step="0.01"
-        min="0"
-        placeholder="0.00"
-        [(ngModel)]="fee"
-        name="fee"
-      />
-      <button class="transaction-form-fee-btn" (click)="applyDgiiFee()" [disabled]="!amount || amount <= 0">
-        {{ settings.taxPercent() | number:'1.2-2' }}%
-      </button>
-    </div>
-    <p class="transaction-form-fee-hint">{{ 'The bank discounts it with the movement (DGII tax, commissions...).' | t }}</p>
-  </ng-container>
+  <!-- Date: today unless you say otherwise -->
+  <label class="transaction-form-row x-card">
+    <span class="transaction-form-row-label">{{ 'Date' | t }}</span>
+    <span class="transaction-form-row-value">{{ isToday() ? ('Today' | t) : dateLabel() }}</span>
+    <span class="transaction-form-row-arrow" aria-hidden="true">›</span>
+    <input class="transaction-form-row-select" type="date" [(ngModel)]="date" name="date" [attr.aria-label]="'Date' | t" />
+  </label>
 
-  <!-- Date -->
-  <label class="transaction-form-label">{{ 'Date' | t }}</label>
-  <input class="x-input" type="date" [(ngModel)]="date" name="date" />
+  <!-- Everything else, folded -->
+  <details class="transaction-form-more" [open]="optionsOpen()" (toggle)="optionsOpen.set($any($event.target).open)">
+    <summary>{{ 'More options' | t }}</summary>
 
-  <!-- Repeat (only for new transactions) -->
-  <ng-container *ngIf="!editId">
-    <label class="transaction-form-label">{{ 'Repeat' | t }}</label>
-    <select class="x-input" [(ngModel)]="repeat" name="repeat">
-      <option value="none">{{ 'Never' | t }}</option>
-      <option value="daily">{{ 'Every day' | t }}</option>
-      <option value="weekly">{{ 'Every week' | t }}</option>
-      <option value="monthly">{{ 'Every month' | t }}</option>
-      <option value="yearly">{{ 'Every year' | t }}</option>
-    </select>
-  </ng-container>
+    <!-- Subcategory and nature (expenses) -->
+    <ng-container *ngIf="kind() === 'expense' && categoryId()">
+      <ng-container *ngIf="subcategories().length">
+        <label class="transaction-form-label">{{ 'Subcategory (optional)' | t }}</label>
+        <select class="x-input" [(ngModel)]="subcategoryId" name="subcategoryId">
+          <option value="">{{ 'None' | t }}</option>
+          <option *ngFor="let sub of subcategories()" [value]="sub.id">{{ sub.icon }} {{ sub.name }}</option>
+        </select>
+      </ng-container>
+      <ng-container *ngIf="!editId && repeat !== 'none'; else natureOverrideBlock">
+        <label class="transaction-form-label">{{ 'This recurring expense is' | t }}</label>
+        <select class="x-input" [(ngModel)]="ruleNature" name="ruleNature">
+          <option value="fixed">{{ 'Fixed (suggested)' | t }}</option>
+          <option value="variable">{{ 'Variable' | t }}</option>
+        </select>
+        <p class="transaction-form-fee-hint">{{ 'A recurring expense is usually a fixed obligation, but you decide.' | t }}</p>
+      </ng-container>
+      <ng-template #natureOverrideBlock>
+        <label class="transaction-form-label">{{ 'Nature of this expense' | t }}</label>
+        <select class="x-input" [(ngModel)]="natureOverride" name="natureOverride">
+          <option value="">{{ (categoryNature() === 'fixed' ? 'Like its category (fixed)' : 'Like its category (variable)') | t }}</option>
+          <option value="fixed">{{ 'Fixed' | t }}</option>
+          <option value="variable">{{ 'Variable' | t }}</option>
+        </select>
+        <p class="transaction-form-fee-hint">{{ 'An expense that repeats is not fixed because of that: you choose.' | t }}</p>
+      </ng-template>
+    </ng-container>
 
-  <!-- Note -->
-  <label class="transaction-form-label">{{ 'Note (optional)' | t }}</label>
-  <input class="x-input" type="text" maxlength="80" [placeholder]="'e.g. Lunch with friends' | t" [(ngModel)]="note" name="note" />
-  <!-- What was bought (captured from a receipt, an invoice or a bank notice): read only, never lost on edit -->
-  <section class="transaction-form-details" *ngIf="details() as d">
-    <label class="transaction-form-label">🧾 {{ 'What was bought' | t }}</label>
-    <ul *ngIf="d.lines?.length">
-      <li *ngFor="let l of d.lines">{{ l.description }}<ng-container *ngIf="l.quantity"> ×{{ l.quantity }}</ng-container><ng-container *ngIf="l.amount !== undefined"> — {{ l.amount | number: '1.2-2' }}</ng-container></li>
-    </ul>
-    <small *ngIf="d.invoiceNumber">{{ 'Invoice' | t }} {{ d.invoiceNumber }}</small>
-    <small *ngIf="d.fiscalNumber">NCF {{ d.fiscalNumber }}</small>
-    <small *ngIf="d.taxId">RNC {{ d.taxId }}</small>
-    <small *ngIf="d.subtotal !== undefined">{{ 'Subtotal' | t }} {{ d.subtotal | number: '1.2-2' }}</small>
-    <small *ngIf="d.tax !== undefined">ITBIS {{ d.tax | number: '1.2-2' }}</small>
-    <small *ngIf="d.reference">{{ 'Reference' | t }} {{ d.reference }}</small>
-    <pre class="transaction-form-original" *ngIf="d.text">{{ d.text }}</pre>
-  </section>
-  @defer (on idle) {
-    <app-ai-category-hint *ngIf="kind() === 'expense'" [note]="note" (picked)="selectCategory($event)"></app-ai-category-hint>
-  }
+    <!-- Income: source, gross / net and, for sales, cost (all optional) -->
+    <ng-container *ngIf="kind() === 'income'">
+      <label class="transaction-form-label">{{ 'Income source (optional)' | t }}</label>
+      <select class="x-input" [ngModel]="sourceId" (ngModelChange)="sourceChanged($event)" name="sourceId">
+        <option value="">{{ 'Unclassified' | t }}</option>
+        <option *ngFor="let s of activeSources()" [value]="s.id">{{ s.icon }} {{ s.name }}</option>
+      </select>
+
+      <details class="transaction-form-details" [open]="!!grossAmount || deductions.length || sourceIsCommercial()">
+        <summary>{{ 'Gross and deductions' | t }}</summary>
+        <p class="transaction-form-fee-hint">{{ 'The amount above is what reached your account (the net).' | t }}</p>
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="grossAmount" name="grossAmount" [placeholder]="'Gross amount (optional)' | t" />
+        <div class="transaction-form-deduction" *ngFor="let d of deductions; let i = index">
+          <input class="x-input" type="text" maxlength="30" [(ngModel)]="d.name" [name]="'dn' + i" [placeholder]="'Deduction name' | t" />
+          <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="d.amount" [name]="'da' + i" placeholder="0.00" />
+          <button (click)="removeDeduction(i)" aria-label="Remove deduction">✕</button>
+        </div>
+        <button class="transaction-form-fee-btn" (click)="addDeduction()">{{ 'Add deduction' | t }}</button>
+        <p class="transaction-form-fee-hint" *ngIf="deductionsGap() !== null && deductionsGap() !== 0">{{ 'The deductions do not explain the whole difference:' | t }} {{ deductionsGap() }}</p>
+      </details>
+
+      <ng-container *ngIf="sourceIsCommercial()">
+        <label class="transaction-form-label">{{ 'Cost of what you sold (optional)' | t }}</label>
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="costBasis" name="costBasis" />
+        <label class="transaction-form-label">{{ 'Expenses of this sale (optional)' | t }}</label>
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="saleExpenses" name="saleExpenses" />
+        <p class="transaction-form-fee-hint" *ngIf="saleBenefitPreview() !== null">{{ 'Net benefit of this sale' | t }}: {{ saleBenefitPreview() }} · {{ 'The selling price is revenue, not profit.' | t }}</p>
+        <p class="transaction-form-fee-hint">{{ 'Do you want to track this as a business operation with inventory? That arrives with the business module; for now the sale is recorded here.' | t }}</p>
+      </ng-container>
+    </ng-container>
+
+    <!-- Bank fee / tax -->
+    <ng-container *ngIf="showFeeField()">
+      <label class="transaction-form-label">{{ 'Bank charge (optional)' | t }}</label>
+      <p class="transaction-form-fee-hint">{{ 'Extra amount the bank takes with this movement (tax, fees).' | t }}</p>
+      <div class="transaction-form-fee">
+        <input
+          class="x-input"
+          type="number"
+          inputmode="decimal"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          [(ngModel)]="fee"
+          name="fee"
+        />
+        <button class="transaction-form-fee-btn" (click)="applyDgiiFee()" [disabled]="!amount || amount <= 0">
+          {{ settings.taxPercent() | number:'1.2-2' }}%
+        </button>
+      </div>
+      <p class="transaction-form-fee-hint">{{ 'The bank discounts it with the movement (DGII tax, commissions...).' | t }}</p>
+    </ng-container>
+
+    <!-- Repeat (only for new transactions) -->
+    <ng-container *ngIf="!editId">
+      <label class="transaction-form-label">{{ 'Repeat' | t }}</label>
+      <select class="x-input" [(ngModel)]="repeat" name="repeat">
+        <option value="none">{{ 'Never' | t }}</option>
+        <option value="daily">{{ 'Every day' | t }}</option>
+        <option value="weekly">{{ 'Every week' | t }}</option>
+        <option value="monthly">{{ 'Every month' | t }}</option>
+        <option value="yearly">{{ 'Every year' | t }}</option>
+      </select>
+    </ng-container>
+
+    <!-- Note -->
+    <label class="transaction-form-label">{{ 'Note (optional)' | t }}</label>
+    <input class="x-input" type="text" maxlength="80" [placeholder]="'e.g. Lunch with friends' | t" [(ngModel)]="note" name="note" />
+    <!-- What was bought (captured from a receipt, an invoice or a bank notice): read only, never lost on edit -->
+    <section class="transaction-form-details" *ngIf="details() as d">
+      <label class="transaction-form-label">🧾 {{ 'What was bought' | t }}</label>
+      <ul *ngIf="d.lines?.length">
+        <li *ngFor="let l of d.lines">{{ l.description }}<ng-container *ngIf="l.quantity"> ×{{ l.quantity }}</ng-container><ng-container *ngIf="l.amount !== undefined"> — {{ l.amount | number: '1.2-2' }}</ng-container></li>
+      </ul>
+      <small *ngIf="d.invoiceNumber">{{ 'Invoice' | t }} {{ d.invoiceNumber }}</small>
+      <small *ngIf="d.fiscalNumber">NCF {{ d.fiscalNumber }}</small>
+      <small *ngIf="d.taxId">RNC {{ d.taxId }}</small>
+      <small *ngIf="d.subtotal !== undefined">{{ 'Subtotal' | t }} {{ d.subtotal | number: '1.2-2' }}</small>
+      <small *ngIf="d.tax !== undefined">ITBIS {{ d.tax | number: '1.2-2' }}</small>
+      <small *ngIf="d.reference">{{ 'Reference' | t }} {{ d.reference }}</small>
+      <pre class="transaction-form-original" *ngIf="d.text">{{ d.text }}</pre>
+    </section>
+    @defer (on idle) {
+      <app-ai-category-hint *ngIf="kind() === 'expense'" [note]="note" (picked)="selectCategory($event)"></app-ai-category-hint>
+    }
+  </details>
 
   <p class="transaction-form-fee-hint" *ngIf="showCardHint()">
     💳 {{ 'Paying a credit card? Use Transfer to the card: as an expense it would be counted twice.' | t }}
   </p>
-  <p class="transaction-form-error" *ngIf="error()" role="alert">{{ errorText() }}</p>
 
-  <!-- Actions -->
+  <!-- Actions: Save stays at the bottom, above the navigation bar -->
   <div class="transaction-form-actions">
-    <button class="x-btn" [disabled]="!isValid()" (click)="save()">
+    <p class="transaction-form-error" *ngIf="error()" role="alert">{{ errorText() }}</p>
+    <button class="x-btn transaction-form-save" [disabled]="!isValid()" (click)="save()">
       {{ (editId ? 'Save changes' : (repeat !== 'none' ? 'Add recurring transaction' : 'Add transaction')) | t }}
     </button>
     <button class="x-btn" *ngIf="editId && isReversible()" (click)="reverse()">{{ 'Reverse' | t }}</button>

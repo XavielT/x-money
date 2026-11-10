@@ -1,5 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, ViewChild, computed, signal } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TransactionCurrency, TransactionKind } from '../../../shared/models/transaction.model';
@@ -21,16 +21,32 @@ import { IncomeService } from '../../../shared/services/income.service';
 import { isCommercialKind } from '../../../shared/models/income-source.model';
 import { saleBenefit } from '../../../shared/domain/income';
 import { round2, sumMoney } from '../../../shared/utils/money';
+import { rankCategories, splitCategories } from '../../../shared/domain/category-usage';
+import { formatAmount } from '../../../shared/domain/describe-change';
+import { BottomSheetComponent } from '../../../shared/components/bottom-sheet/bottom-sheet';
+import { LastAccountService } from '../../../shared/services/last-account.service';
+import { UndoToastService } from '../../../shared/services/undo-toast.service';
+
+// how many categories the grid shows before "More" (the ones used most come first)
+const GRID_CATEGORIES = 8;
 
 @Component({
   selector: 'app-transaction-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AiCategoryHintComponent],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe, AiCategoryHintComponent, BottomSheetComponent],
   templateUrl: './transaction-form.html',
   styleUrl: './transaction-form.scss',
 })
-export class TransactionFormComponent {
+export class TransactionFormComponent implements AfterViewInit {
   editId: string | null = null;
+
+  @ViewChild('amountInput') private amountInput?: ElementRef<HTMLInputElement>;
+
+  // "More options" is folded for a new movement; editing one opens it so nothing is hidden
+  optionsOpen = signal(false);
+  // the sheet with the rest of the categories (and the way to make a new one)
+  moreCategoriesOpen = signal(false);
+  private accountTouched = false;
 
   // What was bought, when the movement being edited came from a capture
   details = () => (this.editId ? this.transactionService.byId(this.editId)?.details : undefined);
@@ -66,6 +82,21 @@ export class TransactionFormComponent {
     return code ? this.translate.instant(TransactionFormComponent.ERRORS[code]) : '';
   }
 
+  accountLabel(id: string): string {
+    const a = this.accountService.byId(id);
+    return a ? `${a.icon} ${a.name}${a.last4 ? ' ••' + a.last4 : ''}` : '';
+  }
+
+  isToday(): boolean {
+    return this.date === this.todayIso();
+  }
+
+  dateLabel(): string {
+    const [y, m, d] = this.date.split('-').map(Number);
+    if (!y || !m || !d) return this.date;
+    return new Date(y, m - 1, d).toLocaleDateString(this.translate.locale(), { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
   // Accounts the movement can use: the active ones, plus the current one if it was archived since
   selectableAccounts(): AccountModel[] {
     const active = this.accountService.activeAccounts();
@@ -97,6 +128,14 @@ export class TransactionFormComponent {
     return kind === 'transfer' ? [] : this.categoryService.ofType(kind);
   });
 
+  // The grid: the categories this user picks most first, the rest behind "More"
+  categoryGrid = computed(() => {
+    const kind = this.kind();
+    if (kind === 'transfer') return { shown: [] as CategoryModel[], rest: [] as CategoryModel[] };
+    const ranked = rankCategories(this.categoriesForType(), this.transactionService.transactions(), kind);
+    return splitCategories(ranked, GRID_CATEGORIES, this.categoryId());
+  });
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -107,12 +146,16 @@ export class TransactionFormComponent {
     private translate: TranslateService,
     public categoryService: CategoryService,
     public accountService: AccountService,
-    public settings: SettingsService
+    public settings: SettingsService,
+    private lastAccount: LastAccountService,
+    private toasts: UndoToastService,
+    private location: Location
   ) {
     this.date = this.todayIso();
     const accounts = this.accountService.activeAccounts();
-    this.accountId = accounts[0]?.id ?? '';
-    this.toAccountId = accounts[1]?.id ?? accounts[0]?.id ?? '';
+    // a new movement starts in the account used last for that kind (the first one when there is none yet)
+    this.accountId = this.lastAccount.pick('expense', accounts.map((a) => a.id));
+    this.toAccountId = this.defaultToAccount();
 
     this.editId = this.route.snapshot.paramMap.get('id');
     if (this.editId) {
@@ -138,6 +181,7 @@ export class TransactionFormComponent {
         this.editId = null;
       }
     }
+    if (this.editId) this.optionsOpen.set(true);
     if (!this.editId) this.syncCurrencyToAccount();
 
     // "Did it arrive?" opens the form preloaded with the source and the expected date
@@ -148,7 +192,27 @@ export class TransactionFormComponent {
       if (date) this.date = date;
       const source = query.get('source');
       if (source) this.sourceChanged(source);
+      if (source || date) this.optionsOpen.set(true);
+      else this.startAccountFor('income');
     }
+  }
+
+  // The amount takes the keyboard as soon as the form opens (a new movement only)
+  ngAfterViewInit(): void {
+    if (!this.editId) setTimeout(() => this.amountInput?.nativeElement.focus());
+  }
+
+  private defaultToAccount(): string {
+    const accounts = this.accountService.activeAccounts();
+    return accounts.find((a) => a.id !== this.accountId)?.id ?? accounts[0]?.id ?? '';
+  }
+
+  // Switching the kind of a new movement moves to the account used last for that kind, unless the user already picked one
+  private startAccountFor(kind: TransactionKind): void {
+    if (this.editId || this.accountTouched) return;
+    this.accountId = this.lastAccount.pick(kind, this.accountService.activeAccounts().map((a) => a.id));
+    this.syncCurrencyToAccount();
+    if (this.toAccountId === this.accountId) this.toAccountId = this.defaultToAccount();
   }
 
   // ----- income source (optional): fills the usual account, category and expected amounts
@@ -200,6 +264,7 @@ export class TransactionFormComponent {
     this.categoryId.set(''); // categories differ per type; transfers have none
     if (kind !== 'income') this.sourceId = '';
     this.showNewCategory.set(false);
+    this.startAccountFor(kind);
   }
 
   // ----- Currency handling -----
@@ -210,7 +275,9 @@ export class TransactionFormComponent {
 
   accountChanged(id: string): void {
     this.accountId = id;
+    this.accountTouched = true;
     this.syncCurrencyToAccount();
+    if (this.toAccountId === id) this.toAccountId = this.defaultToAccount();
   }
 
   private syncCurrencyToAccount(): void {
@@ -250,6 +317,7 @@ export class TransactionFormComponent {
   selectCategory(id: string): void {
     this.categoryId.set(id);
     this.subcategoryId = ''; // a subcategory belongs to one category
+    this.moreCategoriesOpen.set(false);
   }
 
   // Subcategories of the chosen category (at most two levels)
@@ -277,6 +345,7 @@ export class TransactionFormComponent {
     this.newCatName = '';
     this.newCatIcon = '';
     this.showNewCategory.set(false);
+    this.moreCategoriesOpen.set(false);
   }
 
   isValid(): boolean {
@@ -335,7 +404,23 @@ export class TransactionFormComponent {
       this.error.set(result.error);
       return;
     }
-    this.router.navigate(['/transactions']);
+    if (this.editId) {
+      this.router.navigate(['/transactions']);
+      return;
+    }
+    this.afterAdd(result.id);
+  }
+
+  // A new movement: remember the account, say it was saved (with Undo) and go back to where the user was
+  private afterAdd(id: string): void {
+    this.lastAccount.set(this.kind(), this.accountId);
+    const kind = this.kind();
+    const symbol = this.txCurrency() === 'USD' ? 'US$' : this.settings.currency();
+    const text = this.translate.instant(kind === 'income' ? 'Income of {amount} saved' : kind === 'transfer' ? 'Transfer of {amount} saved' : 'Expense of {amount} saved', { amount: formatAmount(Number(this.amount), symbol) });
+    // a recurring rule has no single movement to take back: it is edited or deleted in Settings
+    this.toasts.show(text, id ? () => void this.transactionService.remove(id) : undefined);
+    if (history.length > 1) this.location.back();
+    else void this.router.navigate(['/']);
   }
 
   private buildData(): NewTransaction {
