@@ -187,3 +187,128 @@
   color: var(--main-ultra-light);
   margin-top: 10px;
 }
+
+// The page is the drop area: it lights up while a file is dragged over it
+.capture.over {
+  outline: 2px dashed var(--income);
+  outline-offset: -8px;
+}
+
+// One main action, big; the text alternative beside it
+.capture-main {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 10px;
+
+  .x-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 64px;
+    min-width: 0;
+    text-align: center;
+  }
+}
+
+.capture-primary {
+  flex: 2;
+  font-size: 1.1rem;
+}
+
+.capture-alt {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text);
+}
+
+// Everything else: smaller, in one row
+.capture-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  .x-btn {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+}
+
+// The single status line
+.capture-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  font-size: 0.85rem;
+
+  &[data-kind='error'] {
+    border-color: var(--expense);
+    color: var(--expense);
+  }
+
+  &[data-kind='ok'] {
+    border-color: var(--income);
+    color: var(--income);
+  }
+}
+
+.capture-status-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.capture-retry {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  background: none;
+  border: 0;
+  color: var(--Hub);
+  font-weight: 700;
+}
+
+.capture-textbox {
+  margin-bottom: 12px;
+}
+
+// help folded away
+.capture-how {
+  margin: 4px 0 12px;
+
+  > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--main-ultra-light);
+    cursor: pointer;
+  }
+}
+
+.capture-pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin: 12px 0;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: var(--text);
+}

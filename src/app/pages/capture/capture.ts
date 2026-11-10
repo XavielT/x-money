@@ -59,6 +59,23 @@ export class CaptureComponent implements OnInit, OnDestroy {
   private nextId = 1;
   private unsubscribe: (() => void) | null = null;
 
+  // The text box is folded until "Type or paste" is tapped (or until there is text, e.g. shared from another app)
+  showText = signal(false);
+  textOpen = computed(() => this.showText() || !!this.text().trim());
+  // What the user tried last, so "Try again" repeats exactly that
+  lastAttempt = signal<'send' | 'dictate' | 'files' | null>(null);
+
+  // ONE status line under the main actions: the state and, when something went wrong, the way out
+  status = computed<{ kind: 'busy' | 'error' | 'ok' | 'info'; text: string; retry: boolean; link?: boolean } | null>(() => {
+    if (this.listening()) return { kind: 'busy', text: this.translate.instant('Listening…'), retry: false };
+    if (this.sending()) return { kind: 'busy', text: this.translate.instant('Reading…'), retry: false };
+    if (this.message()) return { kind: 'error', text: this.message(), retry: this.lastAttempt() === 'send' || this.lastAttempt() === 'dictate' };
+    if (this.capture.queueSize() > 0) return { kind: 'info', text: `⏳ ${this.capture.queueSize()} ${this.translate.instant('waiting for the connection')}`, retry: true };
+    if (!this.documentsOn()) return { kind: 'info', text: this.translate.instant('Smart capture is off, so images and PDFs cannot be read. A typed or spoken sentence is still read here, on this device.'), retry: false, link: true };
+    if (this.notice()) return { kind: 'ok', text: this.notice(), retry: false };
+    return null;
+  });
+
   documentsOn = computed(() => !!this.ai.prefs().documentsEnabled);
   maxChars = MAX_TEXT_CHARS;
 
@@ -80,6 +97,22 @@ export class CaptureComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.unsubscribe?.();
     this.speech.stop();
+  }
+
+  // "Try again": repeats the last thing the user did, or looks for the connection again when captures are waiting
+  retry(): void {
+    if (this.capture.queueSize() > 0 && !this.message()) {
+      void this.capture.processQueue();
+      return;
+    }
+    this.message.set('');
+    if (this.lastAttempt() === 'dictate') void this.dictate();
+    else void this.sendAll();
+  }
+
+  openText(): void {
+    this.showText.set(true);
+    setTimeout(() => document.getElementById('capture-text')?.focus());
   }
 
   // ----- inputs
@@ -132,6 +165,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
   }
 
   private async addMany(files: File[]): Promise<void> {
+    this.lastAttempt.set('files');
     this.message.set('');
     for (const f of files) {
       if (this.items().length >= MAX_FILES_AT_ONCE) {
@@ -219,6 +253,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
   // ----- voice and text
 
   async dictate(): Promise<void> {
+    this.lastAttempt.set('dictate');
     this.message.set('');
     this.listening.set(true);
     try {
@@ -240,6 +275,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
 
   async sendAll(): Promise<void> {
     if (this.sending()) return;
+    this.lastAttempt.set('send');
     this.sending.set(true);
     this.message.set('');
     this.notice.set('');

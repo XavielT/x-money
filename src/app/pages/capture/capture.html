@@ -1,32 +1,43 @@
-<div class="x-page capture">
+<div class="x-page capture" [class.over]="dragging()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
   <header class="capture-head">
     <h1 class="x-page-title">{{ 'Capture' | t }}</h1>
     <a routerLink="/capture/review" class="capture-review">{{ 'Review captures' | t }}<span class="capture-badge" *ngIf="capture.drafts.pendingCount() > 0">{{ capture.drafts.pendingCount() }}</span></a>
   </header>
-  <p class="capture-note">{{ 'Pass a screenshot of a bank notice, a deposit, an invoice, or say it. You get a DRAFT to approve: nothing is registered until you approve it.' | t }}</p>
-
-  <div class="x-card capture-off" *ngIf="!documentsOn()">
-    <p>{{ 'Smart capture is off, so images and PDFs cannot be read. A typed or spoken sentence is still read here, on this device.' | t }} <a [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment">{{ 'Turn it on in Settings' | t }}</a></p>
+  <!-- The main action: capture. Everything else is smaller and further down -->
+  <div class="capture-main">
+    <label class="x-btn capture-primary">
+      <span aria-hidden="true">📷</span> {{ 'Take a photo' | t }}
+      <input type="file" accept="image/*" capture="environment" hidden (change)="onFiles($event)" />
+    </label>
+    <button class="x-btn capture-alt" (click)="openText()">✍️ {{ 'Type or paste' | t }}</button>
   </div>
 
-  <p class="capture-message" *ngIf="message()">{{ message() }}</p>
-  <p class="capture-ok" *ngIf="notice()">{{ notice() }} <a routerLink="/capture/review" *ngIf="capture.drafts.pendingCount() > 0">{{ 'Review captures' | t }}</a></p>
-  <p class="capture-note" *ngIf="capture.queueSize() > 0">⏳ {{ capture.queueSize() }} {{ 'waiting for the connection' | t }}</p>
+  <div class="capture-secondary">
+    <label class="x-btn">🖼️ {{ 'Gallery' | t }}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple hidden (change)="onFiles($event)" /></label>
+    <label class="x-btn">📄 {{ 'PDF' | t }}<input type="file" accept="application/pdf" multiple hidden (change)="onFiles($event)" /></label>
+    <button class="x-btn" *ngIf="voiceAvailable() && !listening()" (click)="dictate()">🎤 {{ 'Speak' | t }}</button>
+    <button class="x-btn x-btn-danger" *ngIf="listening()" (click)="stopDictating()">⏹ {{ 'Listening… stop' | t }}</button>
+  </div>
 
-  <div class="capture-drop x-card" [class.over]="dragging()" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)">
-    <div class="capture-actions">
-      <label class="x-btn">🖼️ {{ 'Gallery' | t }}<input type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple hidden (change)="onFiles($event)" /></label>
-      <label class="x-btn">📷 {{ 'Camera' | t }}<input type="file" accept="image/*" capture="environment" hidden (change)="onFiles($event)" /></label>
-      <label class="x-btn">📄 {{ 'PDF' | t }}<input type="file" accept="application/pdf" multiple hidden (change)="onFiles($event)" /></label>
-      <button class="x-btn" *ngIf="voiceAvailable() && !listening()" (click)="dictate()">🎤 {{ 'Speak' | t }}</button>
-      <button class="x-btn x-btn-danger" *ngIf="listening()" (click)="stopDictating()">⏹ {{ 'Listening… stop' | t }}</button>
+  <!-- One status line: what is happening, and the way out when something failed -->
+  <div class="capture-status" *ngIf="status() as s" [attr.data-kind]="s.kind" role="status">
+    <span class="capture-status-text">{{ s.text }}<ng-container *ngIf="s.link"> <a [routerLink]="settingsLinks.features.commands" [fragment]="settingsLinks.features.fragment">{{ 'Turn it on in Settings' | t }}</a></ng-container><ng-container *ngIf="s.kind === 'ok' && capture.drafts.pendingCount() > 0"> <a routerLink="/capture/review">{{ 'Review captures' | t }}</a></ng-container></span>
+    <button class="capture-retry" *ngIf="s.retry" (click)="retry()">{{ 'Try again' | t }}</button>
+  </div>
+
+  <ng-container *ngIf="textOpen()">
+    <div class="capture-textbox">
+      <label class="capture-label" for="capture-text">{{ 'Type, paste or dictate' | t }}</label>
+      <textarea id="capture-text" class="x-input capture-text" rows="4" [maxlength]="maxChars" [ngModel]="text()" (ngModelChange)="text.set($event)" name="capture-text" [placeholder]="'e.g. I spent 1,500 pesos at the corner shop with the Popular card' | t"></textarea>
     </div>
-    <p class="capture-note">{{ 'You can also paste an image (Ctrl+V) or drop it here.' | t }}</p>
-  </div>
+  </ng-container>
 
-  <label class="capture-label" for="capture-text">{{ 'Type, paste or dictate' | t }}</label>
-  <textarea id="capture-text" class="x-input capture-text" rows="4" [maxlength]="maxChars" [ngModel]="text()" (ngModelChange)="text.set($event)" name="capture-text" [placeholder]="'e.g. I spent 1,500 pesos at the corner shop with the Popular card' | t"></textarea>
-  <p class="capture-note" *ngIf="!voiceAvailable()">{{ 'Voice is not available here: use the microphone of your keyboard.' | t }}</p>
+  <details class="capture-how">
+    <summary>{{ 'How it works' | t }}</summary>
+    <p class="capture-note">{{ 'Pass a screenshot of a bank notice, a deposit, an invoice, or say it. You get a DRAFT to approve: nothing is registered until you approve it.' | t }}</p>
+    <p class="capture-note">{{ 'You can also paste an image (Ctrl+V) or drop it here.' | t }}</p>
+    <p class="capture-note" *ngIf="!voiceAvailable()">{{ 'Voice is not available here: use the microphone of your keyboard.' | t }}</p>
+  </details>
 
   <section class="x-card capture-items" *ngIf="items().length">
     <h2>{{ 'What will be sent' | t }}</h2>
@@ -51,7 +62,7 @@
     <p class="capture-note">{{ 'Signatures, legal footers and long numbers are removed before sending.' | t }}</p>
   </section>
 
-  <button class="x-btn capture-send" [disabled]="sending() || (!items().length && !text().trim())" (click)="sendAll()">
+  <button class="x-btn capture-send" *ngIf="items().length || text().trim()" [disabled]="sending()" (click)="sendAll()">
     {{ sending() ? ('Reading…' | t) : (documentsOn() ? ('Send to read' | t) : ('Read on this device' | t)) }}
   </button>
 
@@ -68,6 +79,11 @@
       <button class="x-btn" (click)="closeCover()">{{ 'Done' | t }}</button>
     </div>
   </div>
+
+  <a routerLink="/capture/review" class="x-card capture-pending" *ngIf="capture.drafts.pendingCount() > 0">
+    <span>{{ 'Drafts to review' | t }}</span>
+    <strong>{{ capture.drafts.pendingCount() }} ›</strong>
+  </a>
 
   <label class="capture-skip" *ngIf="documentsOn()">
     <input type="checkbox" [ngModel]="ai.prefs().skipPreview" (ngModelChange)="setSkipPreview($event)" name="skip-preview" />
