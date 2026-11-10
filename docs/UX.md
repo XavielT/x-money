@@ -31,7 +31,43 @@ Un cambio que sume toques a un flujo de esta tabla no se hace.
 - **Editar en su sitio** (2.21.0): `src/shared/ui/reveal.ts` → `revealAndFocus(host, selector)`. El formulario es un `ng-template`
   pintado con `ngTemplateOutlet` en un solo sitio a la vez: como hermano siguiente de la fila editada. Crear = botón arriba de la
   lista y el formulario justo debajo. Ya aplicado en Cuentas, Categorías y Beneficios; la Revisión de capturas ya lo hacía.
-- Secciones con filas de resumen — pendiente (prompt 15).
+- **Ajustes como menú** (2.23.0): `/settings` es una lista de filas de 60 px con icono, título y una línea de estado (`menuStatus`); cada fila
+  abre `/settings/<id>` con carga perezosa, cabecera con «‹» (≥44 px) y título (`app-settings-header`). Los ids son las claves de
+  `SETTINGS_LINKS`; `/settings#<id>` redirige. Reglas de las pantallas: opciones excluyentes de 2–4 valores = control segmentado;
+  5 o más = `select`; lo avanzado y poco usado = un solo `<details class="settings-advanced">` cerrado por pantalla; lo destructivo =
+  bloque «Danger zone» al final de «Tus datos», con la confirmación que ya tenía. Cada control guarda al instante y en el mismo
+  almacén de antes. Una pantalla nueva = una entrada en `SETTINGS_SECTIONS` y su ruta (el compilador la exige).
+- **Mapa de Ajustes** (2.23.0): dónde quedó cada control de la página larga.
+
+| Control de antes | Pantalla |
+|---|---|
+| Módulos («Features») | features |
+| Inteligencia artificial, Captura inteligente (interruptores y consentimientos) | features |
+| Idioma | preferences (control segmentado) |
+| Símbolo de moneda principal | preferences (selector) |
+| Impuesto de transferencia bancaria (%) | preferences |
+| Enlace «Manage accounts» (a /accounts) | preferences (no encajaba en ninguna; es la pantalla más parecida) |
+| Gestor de categorías | categories |
+| Movimientos recurrentes (pausar, editar, borrar) | recurring |
+| Alertas de tarjeta (corte y vencimiento) | alerts |
+| Alertas inteligentes (reglas y umbrales) | alerts |
+| Umbral de aviso de presupuesto, «compras pequeñas» | alerts → Avanzado |
+| Estado de sync, «Sync now», hora cuadrada, cambios pendientes | data (tarjeta de estado) |
+| Último respaldo, «Remind me every», aplazamiento | data (tarjeta de estado) |
+| Exportar respaldo (JSON) | data → «Back up now» en la tarjeta de estado (mismo archivo) |
+| Exportar CSV | data |
+| Versiones en conflicto | data |
+| Historial de cambios | data → plegable «Change history» |
+| Importar respaldo | data → Avanzado |
+| Borrar todos los datos / Quitar datos de este dispositivo | data → Danger zone |
+| Cuenta (correo, dispositivos, contraseña, código de recuperación, invitar, cerrar sesión) | account (contraseña, código e invitar bajo Avanzado) |
+| Aviso para instalar en iPhone | account |
+| Bloqueo con PIN | security (existe, así que la fila se muestra) |
+| Versión y «Check for updates» | about |
+
+- **Historial legible** (2.23.0): `describeChange` (puro) convierte cada tipo de evento en una frase («Expense of RD$350.00 added in Food»); el
+  JSON queda dentro de «Show details». Un tipo desconocido dice «Change in <entidad>». Cada importe lleva el símbolo de su moneda (US$ o el
+  de pesos), nunca mezclados.
 - **Módulos que se activan** (2.22.0): núcleo siempre activo (cuentas y tarjetas, movimientos, presupuestos y gastos fijos, estadísticas,
   Ajustes) y seis módulos con interruptor (Ingresos, Beneficios, Negocio, Préstamos, Objetivos, Alertas inteligentes). Sin elección
   explícita el módulo es automático (encendido si tiene datos; Alertas inteligentes nace encendido). Interruptores en Ajustes →
@@ -85,4 +121,6 @@ Hecha leyendo plantillas y estilos (un agente de solo lectura, verificada por m�
 | M | Cuentas / Categorías | Botones «Editar», «Conciliar» y ✎ ✕ de 6 px de relleno | Objetivos táctiles menores de 44 px (no se tocó: cambia el diseño de la fila) |
 | B | Ingresos | Fila de la tabla de revisión y select de 120 px mínimo | Apretado en 360 px |
 | B | Estados vacíos | Estadísticas, Detalle de cuenta, Tarjeta (estados de cuenta), IA, Insights sin siguiente paso | Solo texto |
-| B | Bundle inicial | 608,12 kB sobre el presupuesto de 600 kB (606,12 kB en 2.20.7; este bloque sumó ~2 kB) | Advertencia que ya existía |
+| M | Ajustes | Buscador de ajustes arriba del menú (opcional, no se hizo en 2.23.0) | Con 9 filas todavía no hace falta; revisar si crecen |
+| M | Ajustes → Datos | La confirmación de «Delete all data» es un solo `confirm()`; podría pedir escribir la palabra | No se debilitó ni se cambió |
+| B | Bundle inicial | 625,43 kB sobre el presupuesto de 600 kB (624,59 kB en 2.22.0, 608,12 kB en 2.21.0; 2.23.0 sumó ~0,8 kB: rutas y dominio del menú) | Advertencia que ya existía |

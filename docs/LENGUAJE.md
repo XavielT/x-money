@@ -47,8 +47,17 @@ Notas:
 ## Pendiente (lo toca otra ronda)
 - Tarjeta, Negocio, Ingresos, Metas e IA: «Statement balance», «Utilization», «Cut rule», «Capital recovered», «Working capital»,
   «Gross profit», «Verifiability», «Viability», el JSON del paso de consentimiento. Ver `docs/UX.md`, «Lenguaje por revisar».
-- Los nombres de eventos del historial de cambios y de los tipos internos (`reconciliation`, `card-payment`, `convert-transfer`…) los
-  traduce el prompt 15 al reescribir el historial.
+- Los eventos del historial de cambios ya se leen como frases (2.23.0, `describeChange`); los tipos internos (`reconciliation`,
+  `card-payment`, `convert-transfer`…) ya no se muestran.
+
+## Términos nuevos (2.23.0)
+| Inglés (clave) | Español | Dónde |
+|---|---|---|
+| Features / Preferences / Categories / Alerts / Your data / Account / App lock / About and updates | Funciones / Preferencias / Categorías / Alertas / Tus datos / Cuenta / Bloqueo de la app / Acerca de y actualizaciones | filas del menú de Ajustes |
+| Advanced | Avanzado | sección plegable, una por pantalla |
+| Danger zone | Zona de peligro | bloque aparte al final de «Tus datos» |
+| Back up now | Respaldar ahora | tarjeta de estado de «Tus datos» |
+| Show details | Ver detalles | historial de cambios, el JSON queda plegado |
 
 ## Prueba que lo guarda
 `src/shared/services/language.spec.ts` falla si una clave vieja del glosario vuelve a una plantilla, a un componente o al mapa ES, o
