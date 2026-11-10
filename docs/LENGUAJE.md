@@ -59,6 +59,17 @@ Notas:
 | Back up now | Respaldar ahora | tarjeta de estado de «Tus datos» |
 | Show details | Ver detalles | historial de cambios, el JSON queda plegado |
 
+## Términos nuevos (2.24.0)
+| Inglés (clave) | Español | Dónde |
+|---|---|---|
+| Paid from / Received in / From / To | Pagado desde / Recibido en / Desde / Hacia | filas de cuenta de Nuevo movimiento |
+| Today | Hoy | fila de fecha |
+| More options | Más opciones | plegable de Nuevo movimiento y de Pagar tarjeta |
+| Expense of {amount} saved (y Income / Transfer) | Gasto de {amount} guardado | aviso con «Undo» |
+| Create your first budget / New budget | Crea tu primer presupuesto / Nuevo presupuesto | Presupuestos |
+| Left / Over budget by | Te queda / Excedido por | cifra de cada presupuesto |
+| Take a photo / Type or paste / How it works / Try again | Tomar foto / Escribir o pegar / Cómo funciona / Reintentar | Captura |
+
 ## Prueba que lo guarda
 `src/shared/services/language.spec.ts` falla si una clave vieja del glosario vuelve a una plantilla, a un componente o al mapa ES, o
 si el mapa ES repite una clave.

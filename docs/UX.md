@@ -12,18 +12,18 @@ Esta ronda (2.21.0 en adelante) no cambia cálculos, reglas de integridad ni dat
 6. 360 px de ancho primero: sin scroll horizontal de la página, objetivos táctiles de 44 px.
 
 ## Tabla de toques (desde Inicio, ruta más corta; no cuentan los toques del teclado ni escribir)
-| Flujo | Objetivo | Medido |
-|---|---|---|
-| Registrar un gasto | 3 (+, categoría, Guardar) | prompt 16 |
-| Registrar un ingreso | 4 | prompt 16 |
-| Transferir entre mis cuentas | 4 | prompt 16 |
-| Pagar una tarjeta | 5 | prompt 16 |
-| Editar una cuenta | 2 (Cuentas, Editar; el formulario sale bajo ella) | prompt 16 |
-| Aprobar un borrador de captura | 3 | prompt 16 |
-| Ver cuánto tengo disponible | 0 (lo primero de Inicio) | prompt 16 |
-| Crear un presupuesto | 3 | prompt 16 |
-| Cambiar el idioma | 3 (Ajustes, Preferencias, idioma) | prompt 16 |
-| Hacer un respaldo | 3 | prompt 16 |
+| Flujo | Objetivo | Real (2.24.0) | Cómo se midió |
+|---|---|---|---|
+| Registrar un gasto | 3 (+, categoría, Guardar) | **3** | `transaction-form.spec`: «+» de Inicio + categoría + Guardar; monto, cuenta y fecha salen por defecto |
+| Registrar un ingreso | 4 | **4** | «+», Income, categoría, Guardar (mismo spec) |
+| Transferir entre mis cuentas | 4 | **3** | «+», Transfer, Guardar: «Desde» y «Hacia» ya vienen puestas (mismo spec) |
+| Pagar una tarjeta | 5 | **3** | Inicio → tarjeta (1) → «Pay card» (2) → «Register payment» (3). Probado solo el último toque (`card-pay.spec`); el paso Inicio → tarjeta → «Pay card» es por estructura, no por prueba |
+| Editar una cuenta | 2 (Cuentas, Editar; el formulario sale bajo ella) | 2 | prompt 13; no se tocó |
+| Aprobar un borrador de captura | 3 | sin medir | `capture-review` no se tocó en el prompt 16 |
+| Ver cuánto tengo disponible | 0 (lo primero de Inicio) | 0 | no se tocó |
+| Crear un presupuesto | 3 | **4** (supera la meta) | Presupuestos (1), «Create your first budget» (2), categoría (3), Guardar (4). Dentro de la pantalla son 3 toques (`budgets.spec`). El botón extra lo exige el estado vacío sin formulario; ver «Cola de mejoras» |
+| Cambiar el idioma | 3 (Ajustes, Preferencias, idioma) | 3 | `settings.spec` (rutas) y estructura de la pantalla; el cambio recarga la app |
+| Hacer un respaldo | 3 | **4** (supera la meta) | engranaje, «Your data», «Back up now», «Yes, I saved it» (2.23.1). Desde el aviso de Inicio son 3 (aviso → «Back up now» → «Yes»). La confirmación evita marcar como hecho un respaldo que nadie guardó |
 
 Un cambio que sume toques a un flujo de esta tabla no se hace.
 
@@ -66,6 +66,22 @@ Un cambio que sume toques a un flujo de esta tabla no se hace.
 | Versión y «Check for updates» | about |
 
 - **Respaldo confirmado** (2.23.1): en el teléfono la hoja de compartir no dice si el archivo llegó a algún sitio, así que «Back up now» pregunta «¿Guardaste o enviaste el archivo?» y solo con «Sí» reinicia el contador del aviso (`BackupService.markSaved`). Cerrar la hoja sin elegir no registra nada; las copias de seguridad previas a importar o cerrar sesión nunca tocan el aviso; en el navegador la descarga cuenta al momento.
+- **Nuevo movimiento en 3 toques** (2.24.0): vista mínima = tipo (segmentado), monto con teclado numérico, categorías (las 8 más usadas
+  primero; «More» abre el resto y «New» en una hoja inferior `app-bottom-sheet`), fila «Paid from / Received in / From» (cuenta recordada
+  por tipo en `device-prefs.lastAccountByType`, opcional), fila «Date» («Today») y **Guardar fijo** (`position: sticky` sobre la barra
+  inferior). Todo lo demás (subcategoría, naturaleza, fuente de ingreso, bruto y deducciones, cargo bancario, repetir, nota, lo comprado,
+  sugerencia de IA) está en «More options», cerrado al crear y abierto al editar. La moneda de una cuenta dual queda junto al monto
+  porque cambia lo que el monto significa. Al guardar un movimiento nuevo: vuelve a donde estabas y sale un aviso con «Undo» ~6 s
+  (`UndoToastService`; deshacer = borrar ese movimiento recién creado; una regla recurrente no tiene «Undo»). Editar no cambia: vuelve a
+  la lista.
+- **Presupuestos que se explican solos** (2.24.0): vacío = una frase y un botón; con presupuestos, «New budget». Crear = categoría
+  (primero las que ya tienen gastos), monto sugerido (`suggestBudgetLimit`: promedio en RD$ de los últimos 3 meses completos desde el
+  primer gasto; es una estimación editable que no se guarda sola) y Guardar. Cada fila lidera con «Left» (o «Over budget by»), con barra y
+  color solo de refuerzo. Editar abre el formulario bajo la fila (`revealAndFocus`). No hay «More options» en Presupuestos: el modelo solo
+  tiene categoría y límite mensual (el umbral de aviso es global, en Ajustes → Alertas).
+- **Captura con jerarquía** (2.24.0): una acción principal grande (foto) con «Type or paste» al lado; galería, PDF y voz en una fila
+  menor; **una sola línea de estado** (leyendo, escuchando, esperando conexión, apagado, error) con «Try again» cuando se puede repetir
+  lo último; la ayuda larga va en «How it works» (cerrado); «Drafts to review (N)» debajo, que lleva a `/capture/review` (no se tocó).
 - **Historial legible** (2.23.0): `describeChange` (puro) convierte cada tipo de evento en una frase («Expense of RD$350.00 added in Food»); el
   JSON queda dentro de «Show details». Un tipo desconocido dice «Change in <entidad>». Cada importe lleva el símbolo de su moneda (US$ o el
   de pesos), nunca mezclados.
@@ -122,6 +138,10 @@ Hecha leyendo plantillas y estilos (un agente de solo lectura, verificada por m�
 | M | Cuentas / Categorías | Botones «Editar», «Conciliar» y ✎ ✕ de 6 px de relleno | Objetivos táctiles menores de 44 px (no se tocó: cambia el diseño de la fila) |
 | B | Ingresos | Fila de la tabla de revisión y select de 120 px mínimo | Apretado en 360 px |
 | B | Estados vacíos | Estadísticas, Detalle de cuenta, Tarjeta (estados de cuenta), IA, Insights sin siguiente paso | Solo texto |
+| M | Presupuestos | Crear desde Inicio cuesta 4 toques (meta 3): el estado vacío exige el botón antes del formulario | Se podría abrir el formulario al entrar si no hay presupuestos, pero el prompt 16 pide «sin formulario hasta tocar el botón» |
+| M | Respaldo | 4 toques desde Ajustes (meta 3) por la confirmación «Yes, I saved it» | Evita dar por hecho un respaldo que no se guardó; el aviso de Inicio lo deja en 3 |
+| B | Nuevo movimiento | «Undo» borra el movimiento (queda «create» y «delete» en el historial); no hay deshacer para una regla recurrente | Aceptable para deshacer inmediato; revisar si se quiere reversa en lugar de borrado |
+| B | Captura | La lista de borradores sigue en `/capture/review`; aquí solo hay el contador | No se rehízo la lista (modelo a imitar, prompt 16) |
 | M | Ajustes | Buscador de ajustes arriba del menú (opcional, no se hizo en 2.23.0) | Con 9 filas todavía no hace falta; revisar si crecen |
 | M | Ajustes → Datos | La confirmación de «Delete all data» es un solo `confirm()`; podría pedir escribir la palabra | No se debilitó ni se cambió |
-| B | Bundle inicial | 625,43 kB sobre el presupuesto de 600 kB (624,59 kB en 2.22.0, 608,12 kB en 2.21.0; 2.23.0 sumó ~0,8 kB: rutas y dominio del menú) | Advertencia que ya existía |
+| B | Bundle inicial | 593,05 kB: bajo el presupuesto de 600 kB por primera vez desde 2.21.0 (625,43 kB en 2.23.0). Se logró cargando `/add` y `/edit/:id` bajo demanda (el formulario nuevo habría subido el inicial a 644 kB) | La advertencia ya no sale |

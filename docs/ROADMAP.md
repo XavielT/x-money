@@ -35,6 +35,8 @@ No cambia cálculos, reglas ni datos; ver `docs/UX.md`.
 
 | 15.1 | «Back up now» pide confirmar que el archivo se guardó antes de reiniciar el aviso de respaldo | 2.23.1 | **hecho** |
 
+| 16 | Flujos cortos: Nuevo movimiento en 3 toques, Presupuestos que se explican solos, Captura con jerarquía, toques medidos | 2.24.0 | **hecho** (sin commitear; pendiente la checklist de pantalla) |
+
 ## Después de la ronda 12 (05/11/2026): versiones 2.19.x
 - **2.19.1–2.19.5**: app real en el teléfono con llave de release; cuentas creadas desde capturas de Banreservas y Popular; arreglos
   de campos de monto que perdían el foco, editor «Tapar partes», banco + últimos 4 en los borradores, impuesto bancario en pagos y
