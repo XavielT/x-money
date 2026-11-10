@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AccountService } from '../../services/account.service';
 import { AUDIT_LIMIT, AuditEvent, AuditLogService, AuditType } from '../../services/audit-log.service';
+import { CategoryService } from '../../services/category.service';
+import { SettingsService } from '../../services/settings.service';
 import { TransactionService } from '../../services/transaction.service';
+import { ChangeDescription, DescribeContext, describeChange } from '../../domain/describe-change';
 import { TranslateService } from '../../services/translate.service';
 
 const LABELS: Record<AuditType, string> = {
@@ -44,7 +47,7 @@ const LABELS: Record<AuditType, string> = {
   'goal-entry': 'Goal contribution or withdrawal',
 };
 
-// Settings -> Change history: read-only list of everything that changed money data
+// Settings -> Your data -> Change history: read-only list of everything that changed money data, one plain sentence each
 // (append-only, capped at 2,000 events). Filter by account and by type.
 @Component({
   selector: 'app-change-history',
@@ -74,8 +77,22 @@ export class ChangeHistoryComponent {
     public audit: AuditLogService,
     public accountService: AccountService,
     private transactions: TransactionService,
+    private categories: CategoryService,
+    private settings: SettingsService,
     private translate: TranslateService
   ) {}
+
+  private ctx: DescribeContext = {
+    t: (key, params) => this.translate.instant(key, params),
+    accountName: (id) => this.accountName(id),
+    categoryName: (id) => (id && this.categories.byId(id)?.name) || '',
+    symbol: (currency) => (currency === 'USD' ? 'US$' : this.settings.currency()),
+  };
+
+  // The sentence shown for an event (never the raw payload; that stays folded under "Show details")
+  describe(e: AuditEvent): ChangeDescription {
+    return describeChange(e, this.ctx);
+  }
 
   label(type: AuditType): string {
     return LABELS[type];
@@ -87,20 +104,6 @@ export class ChangeHistoryComponent {
 
   when(iso: string): string {
     return new Date(iso).toLocaleString(this.translate.locale());
-  }
-
-  // One line: the new value, or "before -> after" for edits
-  summary(e: AuditEvent): string {
-    const pick = (v: unknown): string => {
-      if (!v || typeof v !== 'object') return '';
-      const o = v as Record<string, unknown>;
-      return [o['type'], o['amount'], o['date'], o['note'], o['name']].filter((x) => x !== undefined && x !== '').join(' ');
-    };
-    if (e.type === 'edit') return `${pick(e.before)} → ${pick(e.after)}`;
-    if (e.type === 'convert-transfer') return `${this.accountName(e.accountId)} → ${this.accountName((e.after as { toAccountId?: string })?.toAccountId)}`;
-    if (e.type === 'reconcile' || e.type === 'balance-adjustment') return JSON.stringify(e.after);
-    if (e.type === 'import' || e.type === 'migration' || e.type === 'recurring-post' || e.type === 'audit-trim' || e.type === 'card-config' || e.type === 'statement-bank-figures' || e.type === 'statement-interest' || e.type === 'income-source' || e.type === 'income-classify' || e.type === 'benefit' || e.type === 'category' || e.type === 'budget-move' || e.type === 'budget-move-undo' || e.type === 'bucket' || e.type === 'business-operation' || e.type === 'business-sale' || e.type === 'business-withdrawal' || e.type === 'goal' || e.type === 'goal-entry' || e.type === 'loan' || e.type === 'loan-payment') return JSON.stringify(e.after ?? e.before);
-    return pick(e.before) || pick(e.after);
   }
 
   undo(e: AuditEvent): void {

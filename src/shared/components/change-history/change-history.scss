@@ -52,3 +52,26 @@
   padding: 6px 10px;
   font-size: 0.8rem;
 }
+
+.history-sentence {
+  font-size: 0.9rem;
+}
+
+.history-more {
+  font-size: 0.8rem;
+
+  summary {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--main-ultra-light);
+  }
+
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+  }
+}

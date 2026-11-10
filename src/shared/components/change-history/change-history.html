@@ -1,5 +1,4 @@
 <section class="history">
-  <h2>{{ 'Change history' | t }}</h2>
   <p class="history-hint">{{ 'Everything that changed your money data: created, edited, reversed or deleted movements, reconciliations, imports and migrations. Read only.' | t }}</p>
   <p class="history-hint" *ngIf="trimmed()">{{ 'Only the latest events are kept; older ones were trimmed.' | t }}</p>
 
@@ -18,12 +17,14 @@
   <p class="history-hint" *ngIf="!filtered().length">{{ 'No events yet.' | t }}</p>
 
   <div class="history-event x-card" *ngFor="let e of visible()">
-    <div class="history-row">
-      <strong>{{ label(e.type) | t }}</strong>
-      <small>{{ when(e.at) }}</small>
-    </div>
-    <small class="history-detail">{{ accountName(e.accountId) }}<ng-container *ngIf="accountName(e.accountId)"> · </ng-container>{{ summary(e) }}</small>
-    <small class="history-detail">{{ e.origin }} · {{ e.deviceId.slice(0, 8) }}</small>
+    <ng-container *ngIf="describe(e) as d">
+      <strong class="history-sentence">{{ d.text }}</strong>
+      <small class="history-detail">{{ when(e.at) }} · {{ e.origin }} · {{ e.deviceId.slice(0, 8) }}</small>
+      <details class="history-more" *ngIf="d.details">
+        <summary>{{ 'Show details' | t }}</summary>
+        <pre>{{ d.details }}</pre>
+      </details>
+    </ng-container>
     <button class="history-small" *ngIf="e.type === 'convert-transfer'" (click)="undo(e)">{{ 'Undo conversion' | t }}</button>
   </div>
 
