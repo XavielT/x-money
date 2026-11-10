@@ -28,7 +28,7 @@ export class SyncStatusComponent {
     public auth: AuthService,
     public sync: SyncService,
     public reminder: BackupReminderService,
-    private backup: BackupService,
+    public backup: BackupService,
     private translate: TranslateService
   ) {
     this.reminder.refreshClock();
@@ -39,8 +39,8 @@ export class SyncStatusComponent {
     return this.sync.syncNow();
   }
 
-  backUpNow(): Promise<void> {
-    return this.backup.exportJson();
+  async backUpNow(): Promise<void> {
+    await this.backup.exportJson();
   }
 
   setReminderDays(): void {

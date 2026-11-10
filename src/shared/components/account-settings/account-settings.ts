@@ -125,7 +125,7 @@ export class AccountSettingsComponent {
     if (this.sync.pending() > 0) {
       const syncFirst = confirm(this.translate.instant('You have changes that are not synced yet. OK = sync now. Cancel = export a backup instead.'));
       if (!syncFirst) {
-        await this.backup.exportJson();
+        await this.backup.exportJson({ remember: false });
         return;
       }
       await this.sync.syncNow();

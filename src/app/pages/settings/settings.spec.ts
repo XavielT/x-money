@@ -148,3 +148,66 @@ describe('Settings > Your data', () => {
     expect(danger[0].closest('#danger-zone')).toBeTruthy();
   });
 });
+
+describe('Back up now (2.23.1)', () => {
+  async function backupEnv(native: boolean, share: () => Promise<void>) {
+    const env = await open('/settings/data');
+    const { BackupService } = await import('../../../shared/services/backup.service');
+    const { ExportService } = await import('../../../shared/services/export.service');
+    const backup = TestBed.inject(BackupService);
+    backup.native = () => native;
+    TestBed.inject(ExportService).exportFile = share;
+    return { ...env, backup };
+  }
+  const lastExport = (storage: MemoryStorage) => (storage.get('device-prefs', {}) as { lastExportAt?: number }).lastExportAt;
+
+  it('on the phone the clock does not restart until the user confirms the file was saved', async () => {
+    const { backup, storage, harness } = await backupEnv(true, async () => undefined);
+    expect(await backup.exportJson()).toBe(true);
+    harness.detectChanges();
+    expect(lastExport(storage)).toBeUndefined();
+    expect(backup.awaitingConfirm()).toBe(true);
+    expect(harness.routeNativeElement?.querySelector('.sstat-confirm')).toBeTruthy();
+    backup.markSaved();
+    expect(lastExport(storage)).toBeGreaterThan(0);
+    expect(backup.awaitingConfirm()).toBe(false);
+  });
+
+  it('answering No records nothing', async () => {
+    const { backup, storage } = await backupEnv(true, async () => undefined);
+    await backup.exportJson();
+    backup.dismissConfirm();
+    expect(lastExport(storage)).toBeUndefined();
+    expect(backup.awaitingConfirm()).toBe(false);
+  });
+
+  it('closing the share sheet without choosing records nothing and asks nothing', async () => {
+    const { backup, storage } = await backupEnv(true, async () => {
+      throw new Error('Share canceled');
+    });
+    expect(await backup.exportJson()).toBe(false);
+    expect(lastExport(storage)).toBeUndefined();
+    expect(backup.awaitingConfirm()).toBe(false);
+  });
+
+  it('a real error is not swallowed', async () => {
+    const { backup } = await backupEnv(true, async () => {
+      throw new Error('disk full');
+    });
+    await expect(backup.exportJson()).rejects.toThrow('disk full');
+  });
+
+  it('safety copies (before an import or a sign-out) never touch the reminder', async () => {
+    const { backup, storage } = await backupEnv(true, async () => undefined);
+    await backup.exportJson({ remember: false });
+    expect(lastExport(storage)).toBeUndefined();
+    expect(backup.awaitingConfirm()).toBe(false);
+  });
+
+  it('in a browser the download counts straight away (there is no share sheet to doubt)', async () => {
+    const { backup, storage } = await backupEnv(false, async () => undefined);
+    await backup.exportJson();
+    expect(lastExport(storage)).toBeGreaterThan(0);
+    expect(backup.awaitingConfirm()).toBe(false);
+  });
+});

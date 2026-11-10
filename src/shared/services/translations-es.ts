@@ -2008,4 +2008,6 @@ export const ES: Record<string, string> = {
   'Goal contribution of {amount}': 'Aporte a un objetivo de {amount}',
   'Goal withdrawal': 'Retiro de un objetivo',
   'Change in {entity}': 'Cambio en {entity}',
+  'Did you save or send the file?': '¿Guardaste o enviaste el archivo?',
+  'Yes, I saved it': 'Sí, lo guardé',
 };

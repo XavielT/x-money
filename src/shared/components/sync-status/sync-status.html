@@ -30,6 +30,11 @@
     </div>
     <p class="acct-hint" *ngIf="snoozed() as until">{{ 'Backup reminder paused until' | t }} {{ day(until) }}</p>
     <button class="x-btn" (click)="backUpNow()">{{ 'Back up now' | t }}</button>
+    <div class="sstat-confirm" *ngIf="backup.awaitingConfirm()">
+      <p class="acct-hint">{{ 'Did you save or send the file?' | t }}</p>
+      <button class="x-btn" (click)="backup.markSaved()">{{ 'Yes, I saved it' | t }}</button>
+      <button class="acct-small" (click)="backup.dismissConfirm()">{{ 'No' | t }}</button>
+    </div>
     <div class="acct-row">
       <span>{{ 'Remind me every (days)' | t }}</span>
       <input class="x-input acct-days" type="number" min="1" max="365" [(ngModel)]="reminderDays" (change)="setReminderDays()" name="rd" />

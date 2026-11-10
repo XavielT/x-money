@@ -71,7 +71,7 @@ export class SettingsDataComponent {
       return;
     }
     try {
-      await this.backup.exportJson(); // safety copy of what is there now
+      await this.backup.exportJson({ remember: false }); // safety copy of what is there now
     } catch {
       if (!confirm(this.translate.instant('The safety backup could not be saved. Import anyway?'))) {
         input.value = '';

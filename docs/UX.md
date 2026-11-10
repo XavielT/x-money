@@ -65,6 +65,7 @@ Un cambio que sume toques a un flujo de esta tabla no se hace.
 | Bloqueo con PIN | security (existe, así que la fila se muestra) |
 | Versión y «Check for updates» | about |
 
+- **Respaldo confirmado** (2.23.1): en el teléfono la hoja de compartir no dice si el archivo llegó a algún sitio, así que «Back up now» pregunta «¿Guardaste o enviaste el archivo?» y solo con «Sí» reinicia el contador del aviso (`BackupService.markSaved`). Cerrar la hoja sin elegir no registra nada; las copias de seguridad previas a importar o cerrar sesión nunca tocan el aviso; en el navegador la descarga cuenta al momento.
 - **Historial legible** (2.23.0): `describeChange` (puro) convierte cada tipo de evento en una frase («Expense of RD$350.00 added in Food»); el
   JSON queda dentro de «Show details». Un tipo desconocido dice «Change in <entidad>». Cada importe lleva el símbolo de su moneda (US$ o el
   de pesos), nunca mezclados.
