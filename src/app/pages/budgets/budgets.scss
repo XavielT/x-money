@@ -121,3 +121,99 @@
   font-size: 0.72rem;
   color: var(--main-ultra-light);
 }
+
+.budgets-label {
+  font-size: 0.8rem;
+  color: var(--main-ultra-light);
+}
+
+.budgets-hint {
+  font-size: 0.78rem;
+  color: var(--main-ultra-light);
+}
+
+.budgets-new {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.budgets-empty .x-btn {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.budgets-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .x-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.budgets-ghost {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text);
+}
+
+.budgets-row-edit {
+  min-height: 44px;
+  min-width: 56px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  color: var(--Hub);
+  font-weight: 700;
+}
+
+// the form hangs from the row it edits
+.budgets-row-editing {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.budgets-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+// the main figure of a row; colour only reinforces the words
+.budgets-row-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  span {
+    color: var(--main-ultra-light);
+    font-size: 0.85rem;
+  }
+
+  strong {
+    font-size: 1.25rem;
+  }
+
+  &.over-text strong,
+  &.over-text span {
+    color: var(--expense);
+  }
+
+  &.warn-text strong {
+    color: var(--Hub);
+  }
+}
+
+.budgets-row-warn {
+  font-size: 0.75rem;
+  color: var(--Hub);
+}

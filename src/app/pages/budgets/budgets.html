@@ -6,60 +6,89 @@
     <a routerLink="/fixed" class="x-card">📆 {{ 'Fixed expenses' | t }}</a>
   </div>
 
-  <!-- Add / update budget -->
-  <div class="budgets-form x-card">
-    <select class="x-input" [(ngModel)]="selectedCategoryId" name="category">
+  <!-- Empty state: what a budget is for and ONE button; no form until it is tapped -->
+  <div class="budgets-empty x-card" *ngIf="!rows().length && !creating()">
+    <p>{{ 'Set a limit per category and see how much you have left each month.' | t }}</p>
+    <button class="x-btn" (click)="startCreate()">{{ 'Create your first budget' | t }}</button>
+  </div>
+
+  <button class="x-btn budgets-new" *ngIf="rows().length && !creating()" (click)="startCreate()">+ {{ 'New budget' | t }}</button>
+
+  <!-- Create: category, suggested amount, Save -->
+  <div class="budgets-form x-card" *ngIf="creating()">
+    <label class="budgets-label" for="budget-category">{{ 'Category' | t }}</label>
+    <select id="budget-category" class="x-input" [ngModel]="selectedCategoryId" (ngModelChange)="onCategory($event)" name="category">
       <option value="" disabled>{{ 'Choose category…' | t }}</option>
-      <option *ngFor="let opt of categoryOptions()" [value]="opt.id">{{ opt.label }}</option>
+      <optgroup *ngIf="newOptions().used.length" [label]="'Your categories' | t">
+        <option *ngFor="let opt of newOptions().used" [value]="opt.id">{{ opt.label }}</option>
+      </optgroup>
+      <optgroup *ngIf="newOptions().other.length" [label]="'Other categories' | t">
+        <option *ngFor="let opt of newOptions().other" [value]="opt.id">{{ opt.label }}</option>
+      </optgroup>
     </select>
+    <label class="budgets-label" for="budget-limit">{{ 'Monthly limit' | t }}</label>
     <input
+      id="budget-limit"
       class="x-input"
       type="number"
       inputmode="decimal"
       min="0"
       step="0.01"
-      [placeholder]="'Monthly limit' | t"
+      placeholder="0.00"
       [(ngModel)]="limit"
       name="limit"
     />
-    <button class="x-btn" [disabled]="!selectedCategoryId || !limit || limit <= 0" (click)="saveBudget()">
-      {{ 'Set budget' | t }}
-    </button>
+    <p class="budgets-hint" *ngIf="suggestion()">{{ suggestionText() }}</p>
+    <div class="budgets-form-actions">
+      <button class="x-btn" [disabled]="!selectedCategoryId || !limit || limit <= 0" (click)="saveBudget()">
+        {{ 'Set budget' | t }}
+      </button>
+      <button class="x-btn budgets-ghost" (click)="cancelCreate()">{{ 'Cancel' | t }}</button>
+    </div>
   </div>
 
-  <!-- Empty state -->
-  <div class="budgets-empty x-card" *ngIf="!rows().length">
-    <p>{{ 'No budgets yet. Pick a category and set a monthly limit.' | t }}</p>
-  </div>
+  <!-- Budget list: "Left" is the figure, the bar and the colour only back it up -->
+  <ng-container *ngFor="let row of rows()">
+    <div class="budgets-row x-card" [class.budgets-row-editing]="editingId() === row.budget.id">
+      <div class="budgets-row-head">
+        <span class="budgets-row-icon">{{ row.category?.icon }}</span>
+        <span class="budgets-row-name">{{ row.category?.name || ('Unknown' | t) }}<small class="budgets-row-parent" *ngIf="row.category?.parentId"> · {{ categoryService.byId(row.category!.parentId!)?.name }}</small></span>
+        <button class="budgets-row-edit" (click)="startEdit(row)">{{ 'Edit' | t }}</button>
+      </div>
 
-  <!-- Budget list -->
-  <div class="budgets-row x-card" *ngFor="let row of rows()">
-    <div class="budgets-row-head">
-      <span class="budgets-row-icon">{{ row.category?.icon }}</span>
-      <span class="budgets-row-name">{{ row.category?.name || ('Unknown' | t) }}<small class="budgets-row-parent" *ngIf="row.category?.parentId"> · {{ categoryService.byId(row.category!.parentId!)?.name }}</small></span>
-      <button class="budgets-row-delete" (click)="removeBudget(row.budget.id)" aria-label="Remove budget">✕</button>
+      <p class="budgets-row-left" [class.over-text]="row.status === 'over'" [class.warn-text]="row.status === 'warn'">
+        <span>{{ (row.status === 'over' ? 'Over budget by' : 'Left') | t }}:</span>
+        <strong>{{ settings.currency() }}{{ abs(row.left) | number:'1.2-2' }}</strong>
+      </p>
+
+      <div class="budgets-row-bar">
+        <div
+          class="budgets-row-bar-fill"
+          [class.warn]="row.status === 'warn'"
+          [class.over]="row.status === 'over'"
+          [style.width.%]="row.percent"
+        ></div>
+      </div>
+
+      <div class="budgets-row-numbers">
+        <span>{{ settings.currency() }}{{ row.spent | number:'1.2-2' }} {{ 'spent' | t }}</span>
+        <span>{{ 'limit' | t }} {{ settings.currency() }}{{ row.limit | number:'1.2-2' }}</span>
+      </div>
+
+      <p class="budgets-row-warn" *ngIf="row.status === 'warn'">{{ 'Close to the limit' | t }}</p>
+      <p class="budgets-row-risk" *ngIf="row.risk.status === 'risk'">⚠️ {{ riskText(row) }}</p>
+      <small class="budgets-row-hint" *ngIf="row.limit !== row.budget.monthlyLimit">{{ 'Adjusted this month: moved money.' | t }}</small>
     </div>
 
-    <div class="budgets-row-bar">
-      <div
-        class="budgets-row-bar-fill"
-        [class.warn]="row.status === 'warn'"
-        [class.over]="row.status === 'over'"
-        [style.width.%]="row.percent"
-      ></div>
+    <!-- The form opens right under the row it belongs to -->
+    <div class="budgets-edit x-card" *ngIf="editingId() === row.budget.id">
+      <label class="budgets-label" [for]="'limit-' + row.budget.id">{{ 'Monthly limit' | t }}</label>
+      <input [id]="'limit-' + row.budget.id" class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="limit" name="editLimit" />
+      <div class="budgets-form-actions">
+        <button class="x-btn" [disabled]="!limit || limit <= 0" (click)="saveEdit(row)">{{ 'Save' | t }}</button>
+        <button class="x-btn budgets-ghost" (click)="editingId.set(null)">{{ 'Cancel' | t }}</button>
+        <button class="x-btn x-btn-danger" (click)="removeBudget(row.budget.id)">{{ 'Remove budget' | t }}</button>
+      </div>
     </div>
-
-    <div class="budgets-row-numbers">
-      <span [class.over-text]="row.status === 'over'">
-        {{ settings.currency() }}{{ row.spent | number:'1.2-2' }} {{ 'spent' | t }}
-      </span>
-      <span>{{ 'limit' | t }} {{ settings.currency() }}{{ row.limit | number:'1.2-2' }}</span>
-    </div>
-
-    <p class="budgets-row-over" *ngIf="row.status === 'over'">
-      {{ 'Over budget by' | t }} {{ settings.currency() }}{{ row.spent - row.limit | number:'1.2-2' }}
-    </p>
-    <p class="budgets-row-risk" *ngIf="row.risk.status === 'risk'">⚠️ {{ riskText(row) }}</p>
-    <small class="budgets-row-hint" *ngIf="row.limit !== row.budget.monthlyLimit">{{ 'Adjusted this month: moved money.' | t }}</small>
-  </div>
+  </ng-container>
 </div>
