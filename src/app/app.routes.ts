@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home';
 import { TransactionsComponent } from './pages/transactions/transactions';
 import { TransactionFormComponent } from './pages/transaction-form/transaction-form';
+import { SETTINGS_ROUTES } from './pages/settings/settings.routes';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -11,7 +12,8 @@ export const routes: Routes = [
   // secondary screens load on demand (the service worker prefetches them, so they still work offline)
   { path: 'stats', loadComponent: () => import('./pages/stats/stats').then((m) => m.StatsComponent) },
   { path: 'budgets', loadComponent: () => import('./pages/budgets/budgets').then((m) => m.BudgetsComponent) },
-  { path: 'settings', loadComponent: () => import('./pages/settings/settings').then((m) => m.SettingsComponent) },
+  // Settings: the menu and one screen per section (see settings.routes.ts)
+  ...SETTINGS_ROUTES,
   { path: 'accounts', loadComponent: () => import('./pages/accounts/accounts').then((m) => m.AccountsComponent) },
   { path: 'reconcile/:id', loadComponent: () => import('./pages/reconcile/reconcile').then((m) => m.ReconcileComponent) },
   // heavier pages load on demand to keep the first screen light

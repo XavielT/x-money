@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
       // the Spanish texts load only for Spanish users
       await injector.get(TranslateService).ensureLoaded();
     }),
-    // anchorScrolling: a link to /settings#data lands on that section
+    // anchorScrolling: a link to a section id inside a page scrolls to it (an old /settings#data is redirected by the Settings menu)
     provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled' })),
     provideServiceWorker('xmoney-sw.js', {
       // The Android app ships its files inside the APK: a service worker there can only serve a stale copy

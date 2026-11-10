@@ -1,0 +1,48 @@
+<div class="x-page settings">
+  <app-settings-header title="Recurring transactions" />
+
+  <section class="settings-section">
+    <p class="settings-hint" *ngIf="!recurringService.recurring().length">
+      {{ 'None yet. When adding a transaction, set "Repeat" to make it recurring.' | t }}
+    </p>
+
+    <div class="x-card settings-recurring-card" *ngFor="let rule of recurringService.recurring()">
+      <div class="settings-recurring">
+        <span class="settings-recurring-icon">
+          {{ rule.type === 'transfer' ? '🔁' : (categoryService.byId(rule.categoryId || '')?.icon || '❓') }}
+        </span>
+        <div class="settings-recurring-info">
+          <span>
+            {{ rule.type === 'transfer' ? ('Transfer' | t) : (categoryService.byId(rule.categoryId || '')?.name || ('Unknown' | t)) }}
+            · {{ rule.type === 'income' ? '+' : (rule.type === 'expense' ? '-' : '') }}{{ settingsService.currency() }}{{ rule.amount | number:'1.2-2' }}
+          </span>
+          <small>
+            {{ frequencyLabel(rule.frequency) }} · {{ 'next' | t }} {{ rule.nextDate }}
+            <ng-container *ngIf="!rule.active"> · {{ 'paused' | t }}</ng-container>
+          </small>
+        </div>
+        <button class="settings-recurring-toggle" (click)="startEditRecurring(rule)" aria-label="Edit recurring">✎</button>
+        <button
+          class="settings-recurring-toggle"
+          (click)="recurringService.toggleActive(rule.id)"
+          [attr.aria-label]="rule.active ? 'Pause' : 'Resume'"
+        >
+          {{ rule.active ? '⏸' : '▶' }}
+        </button>
+        <button class="settings-account-delete" (click)="removeRecurring(rule.id)" aria-label="Delete recurring">✕</button>
+      </div>
+
+      <!-- Inline edit -->
+      <div class="settings-recurring-edit" *ngIf="editingRuleId === rule.id">
+        <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [(ngModel)]="editAmount" name="editAmount" />
+        <select class="x-input" [(ngModel)]="editFrequency" name="editFrequency">
+          <option value="daily">{{ 'Every day' | t }}</option>
+          <option value="weekly">{{ 'Every week' | t }}</option>
+          <option value="monthly">{{ 'Every month' | t }}</option>
+          <option value="yearly">{{ 'Every year' | t }}</option>
+        </select>
+        <button class="x-btn" [disabled]="!editAmount || editAmount <= 0" (click)="saveEditRecurring()">{{ 'Save' | t }}</button>
+      </div>
+    </div>
+  </section>
+</div>

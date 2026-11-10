@@ -24,7 +24,7 @@ describe('get-started card', () => {
     expect(root.querySelectorAll('li').length).toBe(3);
     expect(root.querySelectorAll('li.done').length).toBe(0);
     const hrefs = Array.from(root.querySelectorAll('a.gs-step')).map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/accounts?new=1', '/add', '/settings#features']);
+    expect(hrefs).toEqual(['/accounts?new=1', '/add', '/settings/features']);
   });
 
   it('with one account the first step is done and the other two are not', () => {

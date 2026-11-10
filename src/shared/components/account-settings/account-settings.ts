@@ -4,15 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '../../pipes/translate.pipe';
 import { AuthService, SessionInfo } from '../../services/auth.service';
 import { SyncService } from '../../services/sync.service';
-import { ConflictModel, ConflictService } from '../../services/conflict.service';
-import { BackupReminderService } from '../../services/backup-reminder.service';
-import { ExportService } from '../../services/export.service';
-import { SettingsService } from '../../services/settings.service';
+import { BackupService } from '../../services/backup.service';
 import { TranslateService } from '../../services/translate.service';
 import { ApiError } from '../../data-layer/api-client';
 
-// Settings -> Account: who is signed in, sync status, password, recovery code, devices,
-// sign out, and the change history (conflicts). In local-only mode it just says so.
+// Settings -> Account: who is signed in, devices, password, recovery code, invites and sign out.
+// Sync status, backups and conflicting versions live in Settings -> Your data. In local-only mode it just says so.
 @Component({
   selector: 'app-account-settings',
   standalone: true,
@@ -27,28 +24,10 @@ export class AccountSettingsComponent {
   currentPassword = '';
   newPassword = '';
   recoveryPassword = '';
-  reminderDays = 30;
   invite = signal<{ code: string; expiresAt: number } | null>(null);
 
   // iOS Safari has no install prompt: hint only when it can be installed and is not yet
   showIosHint = computed(() => 'standalone' in navigator && !(navigator as { standalone?: boolean }).standalone);
-
-  statusKey = computed(() => {
-    switch (this.sync.status()) {
-      case 'syncing':
-        return 'Syncing…';
-      case 'offline':
-        return 'Offline';
-      case 'error':
-        return this.sync.lastError() === 'account_disabled' ? 'This account is disabled.' : 'Sync error';
-      case 'auth':
-        return 'Sign in again';
-      case 'readonly':
-        return 'Read-only: update X Money';
-      default:
-        return this.sync.pending() ? 'Waiting to sync' : 'Synced';
-    }
-  });
 
   async makeInvite(): Promise<void> {
     this.busy.set(true);
@@ -80,13 +59,9 @@ export class AccountSettingsComponent {
   constructor(
     public auth: AuthService,
     public sync: SyncService,
-    public conflictService: ConflictService,
-    public reminder: BackupReminderService,
-    private exportService: ExportService,
-    private settings: SettingsService,
+    private backup: BackupService,
     private translate: TranslateService
   ) {
-    this.reminderDays = reminder.reminderDays();
     if (auth.mode() === 'signed-in') void this.loadSessions();
   }
 
@@ -146,19 +121,11 @@ export class AccountSettingsComponent {
     });
   }
 
-  syncNow(): Promise<void> {
-    return this.sync.syncNow();
-  }
-
-  setReminderDays(): void {
-    this.reminder.setDays(Number(this.reminderDays));
-  }
-
   async signOut(): Promise<void> {
     if (this.sync.pending() > 0) {
       const syncFirst = confirm(this.translate.instant('You have changes that are not synced yet. OK = sync now. Cancel = export a backup instead.'));
       if (!syncFirst) {
-        await this.exportBackup();
+        await this.backup.exportJson();
         return;
       }
       await this.sync.syncNow();
@@ -169,18 +136,6 @@ export class AccountSettingsComponent {
     }
     const eraseLocal = confirm(this.translate.instant('Also remove this device copy of your financial data? OK = remove (recommended). Cancel = keep it here. Your account data is not deleted.'));
     await this.auth.logout({ eraseLocal });
-  }
-
-  private async exportBackup(): Promise<void> {
-    const stamp = new Date().toISOString().slice(0, 10);
-    await this.exportService.exportFile(`x-money-backup-${stamp}.json`, this.settings.exportData(), 'application/json');
-    this.reminder.markExported();
-  }
-
-  describe(c: ConflictModel): string {
-    const d = (c.data ?? {}) as Record<string, unknown>;
-    const parts = [d['name'], d['amount'], d['date'], d['note']].filter((v) => v !== undefined && v !== '').join(' · ');
-    return `${c.collection} · ${parts || c.recordId}`;
   }
 
   when(ms: number): string {

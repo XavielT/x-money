@@ -78,7 +78,7 @@ describe('backup reminder: where it shows', () => {
     f.detectChanges();
     const root = f.nativeElement as HTMLElement;
     expect(root.querySelector('.bk')).toBeTruthy();
-    expect(root.querySelector('a.bk-now')?.getAttribute('href')).toBe('/settings#data');
+    expect(root.querySelector('a.bk-now')?.getAttribute('href')).toBe('/settings/data');
     (root.querySelector('.bk-later') as HTMLButtonElement).click();
     f.detectChanges();
     expect(root.querySelector('.bk')).toBeNull();

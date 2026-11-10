@@ -311,3 +311,78 @@
   font-size: 0.7rem;
   margin-top: 8px;
 }
+
+// Settings menu
+.smenu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smenu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.smenu-icon {
+  font-size: 1.4rem;
+  width: 32px;
+  text-align: center;
+}
+
+.smenu-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+
+  small {
+    color: var(--text-muted, #8a8f98);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.smenu-arrow {
+  font-size: 1.4rem;
+  opacity: 0.5;
+}
+
+// sub-screens
+.settings-advanced {
+  margin-bottom: 24px;
+  padding: 0 14px;
+
+  > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  > :not(summary) {
+    margin-bottom: 14px;
+  }
+}
+
+.settings-danger {
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid var(--danger, #e5484d);
+  border-radius: 14px;
+
+  h2 {
+    color: var(--danger, #e5484d);
+  }
+}
+
+.settings-select {
+  width: 100%;
+}

@@ -38,7 +38,7 @@ describe('home: shortcuts of the active modules', () => {
     const root = build().nativeElement as HTMLElement;
     const links = Array.from(root.querySelectorAll('.home-links a'));
     expect(links.map((a) => a.textContent?.trim())).toEqual(['🎯 Goals', '+ More']);
-    expect(links[1].getAttribute('href')).toBe('/settings#features');
+    expect(links[1].getAttribute('href')).toBe('/settings/features');
   });
 
   it('with every shortcut module on there is no "+ More"', () => {

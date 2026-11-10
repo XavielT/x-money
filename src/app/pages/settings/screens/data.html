@@ -1,0 +1,37 @@
+<div class="x-page settings">
+  <app-settings-header title="Your data" />
+
+  <section class="settings-section" id="data">
+    <p class="settings-hint" *ngIf="auth.mode() === 'local'">{{ 'Everything is stored only on this device. Export a backup before changing phone.' | t }}</p>
+    <p class="settings-hint" *ngIf="auth.mode() !== 'local'">{{ 'Your data is saved in your account and a copy is kept on this device to work offline. Export a backup regularly: it is your second copy.' | t }}</p>
+    <app-sync-status></app-sync-status>
+    <div class="settings-data">
+      <button class="x-btn" (click)="exportCsv()">{{ 'Export CSV (Excel)' | t }}</button>
+    </div>
+  </section>
+
+  <app-conflict-list></app-conflict-list>
+
+  <details class="settings-advanced x-card" id="data-history">
+    <summary>{{ 'Change history' | t }}</summary>
+    @defer {
+      <app-change-history></app-change-history>
+    }
+  </details>
+
+  <details class="settings-advanced x-card" id="data-advanced">
+    <summary>{{ 'Advanced' | t }}</summary>
+    <p class="settings-hint">{{ 'Import a backup file. It replaces the current data; a safety copy is saved first.' | t }}</p>
+    <label class="x-btn settings-import">
+      {{ 'Import backup' | t }}
+      <input type="file" accept="application/json,.json" (change)="onImportFile($event)" hidden />
+    </label>
+  </details>
+
+  <section class="settings-danger" id="danger-zone">
+    <h2>{{ 'Danger zone' | t }}</h2>
+    <p class="settings-hint" *ngIf="auth.mode() === 'local'">{{ 'This deletes everything stored on this device. It cannot be undone.' | t }}</p>
+    <p class="settings-hint" *ngIf="auth.mode() !== 'local'">{{ 'This removes the copy on this device and signs you out. Your data stays in your account.' | t }}</p>
+    <button class="x-btn x-btn-danger" (click)="wipeData()">{{ (auth.mode() === 'local' ? 'Delete all data' : 'Remove data from this device') | t }}</button>
+  </section>
+</div>

@@ -1,0 +1,38 @@
+<section class="acct sstat">
+  <div class="acct-card x-card sstat-card" [attr.data-tone]="view().tone">
+    <div class="acct-row">
+      <span>{{ 'Sync' | t }}</span>
+      <strong class="sstat-headline" [class.bad]="view().tone === 'warn'">{{ view().headline | t }}</strong>
+    </div>
+    <ng-container *ngIf="auth.mode() !== 'local'">
+      <div class="acct-row">
+        <span>{{ 'Last sync' | t }}</span>
+        <strong>{{ sync.lastSyncAt() ? when(sync.lastSyncAt()!) : ('Never' | t) }}</strong>
+      </div>
+      <div class="acct-row" *ngIf="sync.pending() > 0">
+        <span>{{ 'Changes not synced yet' | t }}</span>
+        <strong>{{ sync.pending() }}</strong>
+      </div>
+      <p class="acct-warn" *ngIf="sync.skewWarning">
+        {{ 'Your clock is off by more than 5 minutes. Fix the date and time of this device.' | t }}
+      </p>
+    </ng-container>
+    <p class="acct-hint sstat-hint" *ngIf="view().hint as h">{{ h | t }}</p>
+    <button class="x-btn" *ngIf="auth.mode() !== 'local'" [disabled]="sync.status() === 'syncing'" (click)="syncNow()">{{ 'Sync now' | t }}</button>
+  </div>
+
+  <div class="acct-card x-card sstat-backup">
+    <div class="acct-row">
+      <span>{{ 'Last backup' | t }}</span>
+      <strong [class.bad]="reminder.due()">
+        {{ reminder.lastExportAt() === null ? ('Never' | t) : day(reminder.lastExportAt()!) + ' · ' + reminder.daysSince() + ' ' + ('days ago' | t) }}
+      </strong>
+    </div>
+    <p class="acct-hint" *ngIf="snoozed() as until">{{ 'Backup reminder paused until' | t }} {{ day(until) }}</p>
+    <button class="x-btn" (click)="backUpNow()">{{ 'Back up now' | t }}</button>
+    <div class="acct-row">
+      <span>{{ 'Remind me every (days)' | t }}</span>
+      <input class="x-input acct-days" type="number" min="1" max="365" [(ngModel)]="reminderDays" (change)="setReminderDays()" name="rd" />
+    </div>
+  </div>
+</section>

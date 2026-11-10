@@ -1,0 +1,48 @@
+<div class="x-page settings">
+  <app-settings-header title="Preferences" />
+
+  <section class="settings-section">
+    <h2>{{ 'Language' | t }}</h2>
+    <div class="settings-currencies">
+      <button [class.active]="translate.lang() === 'en'" (click)="setLanguage('en')">English</button>
+      <button [class.active]="translate.lang() === 'es'" (click)="setLanguage('es')">Español</button>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h2>{{ 'Symbol for your main currency (pesos)' | t }}</h2>
+    <p class="settings-hint">{{ 'It is only the symbol shown for your pesos. Dollars stay as US$.' | t }}</p>
+    <select class="x-input settings-select" [ngModel]="settingsService.currency()" (ngModelChange)="setCurrency($event)" name="currency" [attr.aria-label]="'Symbol for your main currency (pesos)' | t">
+      <option *ngFor="let symbol of currencies" [value]="symbol">{{ symbol }}</option>
+    </select>
+
+    <div class="settings-tax">
+      <label for="tax-percent">{{ 'Bank transfer tax (%)' | t }}</label>
+      <input
+        id="tax-percent"
+        class="x-input"
+        type="number"
+        inputmode="decimal"
+        step="0.01"
+        min="0"
+        max="10"
+        [ngModel]="settingsService.taxPercent()"
+        (ngModelChange)="setTaxPercent($event)"
+        name="taxPercent"
+      />
+    </div>
+    <p class="settings-hint">{{ 'Used by the % button when adding a bank fee. DGII rate: 0.20% since 2026.' | t }}</p>
+  </section>
+
+  <section class="settings-section">
+    <h2>{{ 'Accounts' | t }}</h2>
+    <a routerLink="/accounts" class="settings-link x-card">
+      <span>🏦</span>
+      <div class="settings-link-info">
+        <strong>{{ 'Manage accounts' | t }}</strong>
+        <small>{{ 'Banks, cards, cash and balances' | t }}</small>
+      </div>
+      <span class="settings-link-arrow">›</span>
+    </a>
+  </section>
+</div>

@@ -1,0 +1,30 @@
+<div class="x-page settings">
+  <app-settings-header title="Alerts" />
+
+  <section class="settings-section">
+    <h2>{{ 'Card alerts' | t }}</h2>
+    <p class="settings-hint">{{ 'Cut and due date alerts always show on Home. On the phone you can also get a reminder; it never shows amounts on the lock screen.' | t }}</p>
+    <label class="settings-lock x-card" *ngIf="cardNotices.supported">
+      <span><input type="checkbox" [checked]="cardNotices.enabled()" (change)="toggleCardAlerts($event)" /> {{ 'Remind me of card cut and due dates' | t }}</span>
+    </label>
+    <p class="settings-hint" *ngIf="!cardNotices.supported">{{ 'Phone reminders are available in the Android app. Here the alerts show inside the app.' | t }}</p>
+    <p class="settings-hint" *ngIf="cardNotices.status() === 'denied'">{{ 'Notifications are blocked for X Money. Allow them in the phone settings and try again.' | t }}</p>
+    <p class="settings-hint" *ngIf="cardNotices.status() === 'error'">{{ 'The reminders could not be scheduled. The alerts still show inside the app.' | t }}</p>
+  </section>
+
+  <app-insight-settings></app-insight-settings>
+
+  <details class="settings-advanced x-card" id="alerts-advanced">
+    <summary>{{ 'Advanced' | t }}</summary>
+    <h2>{{ 'Budget alerts' | t }}</h2>
+    <p class="settings-hint">{{ 'A budget shows "risk" when, at the current pace, the month will end above this share of its limit. It is an estimate.' | t }}</p>
+    <div class="settings-lock">
+      <label>{{ "Warn me when I'm on track to spend more than (% of the limit)" | t }}
+        <input class="x-input" type="number" inputmode="numeric" min="10" max="200" [ngModel]="settingsService.budget().riskAt" (ngModelChange)="settingsService.setRiskAt(+$event)" name="riskAt" />
+      </label>
+      <label>{{ 'Count purchases up to this amount as small ones (empty = automatic)' | t }}
+        <input class="x-input" type="number" inputmode="decimal" min="0" step="0.01" [ngModel]="settingsService.antMax() ?? null" (ngModelChange)="setAntMax($event)" name="antMax" />
+      </label>
+    </div>
+  </details>
+</div>
