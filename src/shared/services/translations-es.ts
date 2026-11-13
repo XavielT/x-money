@@ -754,6 +754,7 @@ export const ES: Record<string, string> = {
   'A budget shows "risk" when, at the current pace, the month will end above this share of its limit. It is an estimate.': 'Un presupuesto muestra «riesgo» cuando, al ritmo actual, el mes terminará por encima de este porcentaje de su límite. Es una estimación.',
   'Fixed = the same obligation every period (rent, internet). Variable = it moves with your choices. You choose the nature: an expense that repeats is not fixed because of that.': 'Fijo = la misma obligación cada periodo (alquiler, internet). Variable = se mueve según tus decisiones. Tú eliges la naturaleza: un gasto que se repite no es fijo por eso.',
   'Add subcategory': 'Agregar subcategoría',
+  'Add category': 'Agregar categoría',
   'Subcategory name': 'Nombre de la subcategoría',
   'Add': 'Agregar',
   'Edit category': 'Editar categoría',

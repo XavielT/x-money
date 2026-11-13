@@ -9,6 +9,12 @@
 
   <p class="catman-hint" *ngIf="message()">{{ message() }}</p>
 
+  <form class="catman-new" (ngSubmit)="addTop()">
+    <input class="x-input catman-new-icon" type="text" maxlength="4" [(ngModel)]="newIcon" name="newIcon" placeholder="🏷️" [attr.aria-label]="'Icon (emoji)' | t" />
+    <input class="x-input" type="text" maxlength="24" [(ngModel)]="newName" name="newName" [placeholder]="'Category name' | t" />
+    <button class="x-btn" type="submit" [disabled]="!newName.trim()">{{ 'Add category' | t }}</button>
+  </form>
+
   <div class="catman-list x-card">
     <ng-container *ngFor="let node of tree()">
       <div class="catman-row">

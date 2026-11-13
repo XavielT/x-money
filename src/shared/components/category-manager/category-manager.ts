@@ -50,6 +50,8 @@ export class CategoryManagerComponent {
   fTimesMax: number | null = null;
   fPer: 'week' | 'month' = 'week';
   fParent = '';
+  newName = '';
+  newIcon = '';
   newSubName = '';
   newSubFor = signal<string | null>(null);
 
@@ -136,6 +138,23 @@ export class CategoryManagerComponent {
       return;
     }
     this.editingId.set(null);
+  }
+
+  // New top-level category of the type being shown (expense or income)
+  addTop(): void {
+    const name = this.newName.trim();
+    if (!name) {
+      this.message.set(this.translate.instant(ERROR_TEXT.name));
+      return;
+    }
+    const type = this.type();
+    const color = this.colors[this.categories.ofType(type).length % this.colors.length];
+    const created = this.categories.add(name, this.newIcon.trim() || '🏷️', color, type);
+    this.message.set('');
+    this.newName = '';
+    this.newIcon = '';
+    this.editingId.set(null);
+    setTimeout(() => this.edit(created)); // open it so nature/frequency can be set right away
   }
 
   startSub(c: CategoryModel): void {
