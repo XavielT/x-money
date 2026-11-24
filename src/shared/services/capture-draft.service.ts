@@ -50,6 +50,15 @@ export class CaptureDraftService {
     return true;
   }
 
+  // Only for repairing drafts a bug made: a proposal that was never approved leaves the list without a trace
+  remove(ids: readonly string[]): number {
+    if (this.storage.readOnly()) return 0;
+    const gone = this._drafts().filter((d) => ids.includes(d.id) && d.status !== 'approved');
+    if (!gone.length) return 0;
+    this.commit(this._drafts().filter((d) => !gone.includes(d)));
+    return gone.length;
+  }
+
   update(id: string, patch: Partial<CaptureDraft>): CaptureDraft | undefined {
     if (this.storage.readOnly()) return undefined;
     const current = this.byId(id);

@@ -91,6 +91,7 @@ export class MailCaptureService {
   async scan(): Promise<ScanResult> {
     const prefs = this.capture.prefs();
     if (this.auth.mode() !== 'signed-in') return { ok: false, code: 'no-session' };
+    this.capture.repairLegacyEmailDrafts();
     const senders = cleanSenders(prefs.mailFilter.senders);
     if (!senders.length) return { ok: false, code: 'empty-filter' };
     this._scanning.set(true);

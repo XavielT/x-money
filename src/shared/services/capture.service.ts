@@ -147,6 +147,35 @@ export class CaptureService {
     return undefined;
   };
 
+  // The usual amount of an income source: what it says it pays (expected net), else its last deposit. Never a truth, only a suggestion.
+  private usualIncomeMinor = (sourceId: string): number | undefined => {
+    const expected = this.sources.byId(sourceId)?.expectedNet;
+    if (expected && expected > 0) return Math.round(expected * 100);
+    const last = this.transactions
+      .transactions()
+      .filter((t) => t.type === 'income' && t.incomeSourceId === sourceId && t.status !== 'reversed' && !t.reversalOf)
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+    return last ? Math.round(last.amount * 100) : undefined;
+  };
+
+  // 2.25.1 read every LINE of a bank e-mail on its own (a card ending, a phone number, a day became amounts). Those drafts are
+  // gone and their messages are read again with the right reader. Only the drafts of that reader, only pending ones, once.
+  repairLegacyEmailDrafts(): number {
+    if (this.storage.get<boolean>('capture-legacy-email-repaired', false)) return 0;
+    const bad = this.drafts.drafts().filter((d) => d.source === 'email' && (d.status === 'pending' || d.status === 'duplicate') && d.notes === 'Read on this device, without AI: check every field.');
+    const n = this.drafts.remove(bad.map((d) => d.id));
+    // a payroll notice the AI read ("Payroll deposit credited...") has no amount because the notice has none: it gets the usual one, as an estimate
+    for (const d of this.drafts.pending()) {
+      if (d.kind !== 'income' || d.amountMinor || d.status !== 'pending') continue;
+      const sourceId = d.resolvedIncomeSourceId ?? this.incomeSourceFor([d.counterparty, d.description].filter(Boolean).join(' '));
+      const usual = sourceId ? this.usualIncomeMinor(sourceId) : undefined;
+      if (!sourceId || !usual) continue;
+      this.drafts.update(d.id, { resolvedIncomeSourceId: sourceId, amountMinor: usual, doubts: [...d.doubts.filter((x) => x !== 'amount-missing'), 'amount-estimated'], confidence: { ...d.confidence, amount: 0.3 } });
+    }
+    this.storage.set('capture-legacy-email-repaired', true);
+    return n;
+  }
+
   private build(raw: RawTransaction[], source: CaptureSource, extra: { text?: string; fingerprint?: string; meta?: QueueItem['meta'] }): CaptureDraft[] {
     const now = this.clock();
     // the tax a bank prints in its own notice ("Impuestos: DOP 4.00") is read from the text when the reader did not
@@ -167,6 +196,7 @@ export class CaptureService {
         categoryFor: this.categoryFor,
         categoryByName: this.categoryByName,
         incomeSourceFor: this.incomeSourceFor,
+        usualIncomeMinor: this.usualIncomeMinor,
         bankIdOf: (name) => bankIdOf(name, BANKS_MOCK),
         text: extra.text,
         fileFingerprint: extra.fingerprint,
@@ -402,6 +432,7 @@ export class CaptureService {
     // a field the user fixed is no longer in doubt
     const doubts = new Set(merged.doubts);
     if (patch.amountMinor !== undefined) {
+      doubts.delete('amount-estimated');
       doubts.delete('amount-missing');
       doubts.delete('amount-unverified');
     }

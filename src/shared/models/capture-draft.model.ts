@@ -31,7 +31,8 @@ export type CaptureDoubt =
   | 'balance-missing'
   | 'direction-conflict' // the sign or arrow says money went one way and the type says the other
   | 'kind-inferred' // the type was settled by this device from the sign or the wording, not read as such
-  | 'transfer-pair'; // another draft looks like the other side of the same transfer
+  | 'transfer-pair'
+  | 'amount-estimated'; // the notice names no amount: this is the usual one of the income source, an estimate to confirm // another draft looks like the other side of the same transfer
 
 export interface CaptureLine {
   description: string;

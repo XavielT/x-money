@@ -60,6 +60,7 @@ const DOUBT_LABELS: Record<CaptureDoubt, string> = {
   'direction-conflict': 'The sign or arrow says the money went the other way: choose the type.',
   'kind-inferred': 'The type was chosen from the sign and the wording: check it.',
   'transfer-pair': 'This looks like the other side of another capture: combine them as one transfer.',
+  'amount-estimated': 'The notice shows no amount: this is your usual payroll. Check it against your bank.',
 };
 
 const MISSING_LABELS: Record<MissingField, string> = {

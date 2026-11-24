@@ -1655,6 +1655,7 @@ export const ES: Record<string, string> = {
   'The type was chosen from the sign and the wording: check it.': 'El tipo se eligió por el signo y el texto: revísalo.',
   'This looks like the other side of another capture: combine them as one transfer.': 'Esto parece el otro lado de otra captura: combínalas como una sola transferencia.',
   'The other side looks like': 'El otro lado parece',
+  'The notice shows no amount: this is your usual payroll. Check it against your bank.': 'El aviso no trae el monto: este es tu nómina de siempre. Compáralo con tu banco.',
   'Combine as one transfer': 'Combinar como una sola transferencia',
   'Balance check': 'Comprobar saldo',
   'Choose the account this balance is about.': 'Elige la cuenta de este saldo.',

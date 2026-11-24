@@ -844,3 +844,45 @@ describe('a bank e-mail read without AI (2.25.1)', () => {
     expect(s.drafts.drafts()).toHaveLength(0);
   });
 });
+
+describe('a payroll notice has no amount: the usual one is an estimate (2.25.2)', () => {
+  it('"Payroll deposit credited to the account": the expected net of the payroll source is proposed, marked as an estimate', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'income', description: 'Payroll deposit credited to the account (Notificacion Deposito de Nomina)', accountLast4: '7788' }));
+    const r = await s.capture.submit(image);
+    const d = r.ok ? r.drafts[0] : undefined;
+    expect(d).toMatchObject({ kind: 'income', resolvedIncomeSourceId: 'pay', amountMinor: 3000000 });
+    expect(d!.doubts).toContain('amount-estimated');
+    expect(d!.doubts).not.toContain('amount-missing');
+    expect(s.capture.edit(d!.id, { amountMinor: 1411350 })!.doubts).not.toContain('amount-estimated'); // typing the real one clears it
+  });
+
+  it('an income with no known source stays with the amount empty: nothing is invented', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'income', description: 'Deposito de un cliente', accountLast4: '7788' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0].amountMinor).toBeUndefined();
+    expect(r.ok && r.drafts[0].doubts).toContain('amount-missing');
+  });
+
+  it('the repair removes the drafts the line-by-line reader made, once, and keeps everything else', async () => {
+    const s = session();
+    const base = { createdAt: '2026-11-18T10:00:00Z', status: 'pending' as const, kind: 'unknown' as const, confidence: {}, doubts: [] };
+    s.drafts.add({ ...base, id: 'bad1', source: 'email', notes: 'Read on this device, without AI: check every field.', amountMinor: 423700 });
+    s.drafts.add({ ...base, id: 'ai1', source: 'email', notes: 'The notice shows a purchase.', amountMinor: 16000 });
+    s.drafts.add({ ...base, id: 'txt1', source: 'text', notes: 'Read on this device, without AI: check every field.', amountMinor: 50000 });
+    expect(s.capture.repairLegacyEmailDrafts()).toBe(1);
+    expect(s.drafts.drafts().map((d) => d.id).sort()).toEqual(['ai1', 'txt1']);
+    expect(s.capture.repairLegacyEmailDrafts()).toBe(0); // once
+  });
+
+  it('the repair gives a payroll draft with no amount the usual one, as an estimate', async () => {
+    const s = session();
+    s.drafts.add({ id: 'p1', createdAt: '2026-11-18T10:00:00Z', source: 'email', status: 'pending', kind: 'income', confidence: {}, doubts: ['amount-missing'], description: 'Payroll deposit credited to the account (Notificacion Deposito de Nomina)' });
+    s.capture.repairLegacyEmailDrafts();
+    expect(s.drafts.byId('p1')).toMatchObject({ amountMinor: 3000000, resolvedIncomeSourceId: 'pay' });
+    expect(s.drafts.byId('p1')!.doubts).toEqual(['amount-estimated']);
+  });
+});

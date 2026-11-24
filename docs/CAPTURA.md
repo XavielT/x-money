@@ -245,3 +245,12 @@ estar junto a su moneda (RD$, DOP, US$, «pesos»), la fecha impresa («13/11/20
 correo, el banco sale del remitente, el comercio en mayúsculas después de la fecha se toma como comercio, y el nombre del
 titular nunca es descripción. Un texto sin palabra de movimiento no crea borrador. El lector de frases (voz y texto pegado)
 también ignora teléfonos, terminaciones de tarjeta, fechas, horas, porcentajes y referencias.
+
+### Nómina sin monto y reparación (2.25.2)
+
+El aviso de Popular «Depósito de Nómina» **no trae el monto** (el lector lo dice); el monto solo está en la lista de movimientos del
+banco. Un ingreso asociado a una fuente (con una sola fuente de tipo nómina se asocia sola) y sin monto recibe el monto de siempre
+de esa fuente (su neto esperado, o su último depósito) como **estimación** marcada (`amount-estimated`: «compáralo con tu banco»);
+al escribir el monto real la marca desaparece. Sin fuente conocida el monto sigue vacío: nada se inventa. Además, una vez,
+`repairLegacyEmailDrafts` quita los borradores pendientes que el lector por líneas de 2.25.0 hizo de correos (el siguiente escaneo
+vuelve a leer esos correos con el lector correcto) y estima los de nómina.

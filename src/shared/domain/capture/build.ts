@@ -25,6 +25,8 @@ export interface BuildContext {
   categoryFor: (text: string) => string | undefined;
   categoryByName: (name: string) => string | undefined;
   incomeSourceFor: (text: string) => string | undefined;
+  // the usual amount of an income source, in minor units (its expected net, else its last deposit): only ever a suggestion
+  usualIncomeMinor?: (sourceId: string) => number | undefined;
   bankIdOf?: (name: string | undefined) => string | undefined; // the bank of the catalog a screenshot names
   text?: string; // the text the items were read from (voice, email, pasted): enables the cross check
   fileFingerprint?: string;
@@ -209,6 +211,18 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
     if (!resolvedCategoryId && isBankCharge(text)) resolvedCategoryId = ctx.categoryByName('Bank fees');
   }
   const resolvedIncomeSourceId = kind === 'income' && text ? ctx.incomeSourceFor(text) : undefined;
+  // "Payroll deposit credited to the account" says NO amount (the bank's notice never does): the usual payroll is proposed as an
+  // ESTIMATE, marked so it is checked against the bank (rule 10), never as if the notice had said it
+  if (amountMinor === undefined && kind === 'income' && resolvedIncomeSourceId) {
+    const usual = ctx.usualIncomeMinor?.(resolvedIncomeSourceId);
+    if (usual && usual > 0) {
+      amountMinor = usual;
+      const i = doubts.indexOf('amount-missing');
+      if (i >= 0) doubts.splice(i, 1);
+      doubts.push('amount-estimated');
+      confidence['amount'] = 0.3;
+    }
+  }
   const resolvedGoalId = kind === 'goal_contribution' ? resolveByName(ctx.goals, raw.targetName ?? raw.description)?.id : undefined;
   const resolvedLoanId = kind === 'loan_payment' ? resolveByName(ctx.loans, raw.targetName ?? raw.description)?.id : undefined;
 
