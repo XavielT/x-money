@@ -235,3 +235,13 @@ captura vieja muestra un saldo viejo). Una tarjeta de crédito se compara por lo
 - Aprobar crea **un solo ajuste visible y auditado** (el mismo de Conciliar: no es ingreso ni gasto, regla 9) y marca la cuenta
   como conciliada; si ya coincide, no escribe nada. El saldo inicial de la cuenta nunca se toca.
 - Rechazarlo no cambia nada: la opción para quien prefiera buscar el movimiento que falta.
+
+### Correos del banco sin IA (2.25.1)
+
+Con «Captura inteligente» apagada, un correo del banco pasaba por el lector de frases: se partía por líneas y tomaba el primer
+número de cada una, así que los últimos 4 dígitos de la tarjeta, un teléfono, el día de la fecha o una referencia de 12 dígitos
+salían como montos, y cada línea era un borrador. Ahora un correo es **un solo movimiento** (`readBankText`): el monto debe
+estar junto a su moneda (RD$, DOP, US$, «pesos»), la fecha impresa («13/11/2026», «19 de Noviembre de 2026») manda sobre la del
+correo, el banco sale del remitente, el comercio en mayúsculas después de la fecha se toma como comercio, y el nombre del
+titular nunca es descripción. Un texto sin palabra de movimiento no crea borrador. El lector de frases (voz y texto pegado)
+también ignora teléfonos, terminaciones de tarjeta, fechas, horas, porcentajes y referencias.

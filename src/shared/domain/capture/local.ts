@@ -35,8 +35,8 @@ export function splitSentences(text: string): string[] {
     .split(/\s+y\s+(?=(?:gaste|pague|compre|aporte|transferi|me\s|\d))|[;\n]+/i)
     .map((p) => p.trim())
     .filter(Boolean);
-  const withAmount = parts.filter((p) => amountsInText(p).length > 0);
-  return withAmount.length > 1 ? parts.filter((p) => amountsInText(p).length > 0) : [text.trim()];
+  const withAmount = parts.filter((p) => amountsInText(withoutNonMoney(p)).length > 0);
+  return withAmount.length > 1 ? withAmount : [text.trim()];
 }
 
 // "de mi cuenta de ahorros a la corriente" -> ['ahorros', 'corriente']
@@ -63,10 +63,27 @@ function counterpartyOf(s: string, kind: CaptureKind): string | undefined {
   return m?.[1]?.trim() || undefined;
 }
 
+// Numbers in a sentence that are NOT money: phone numbers, card endings ("terminada en 4237", "** - 6375"), dates, times,
+// percentages and long references. Taking the first number of a bank text used to turn them into amounts.
+const NOT_MONEY: readonly RegExp[] = [
+  /\b\d{3}[-. ]\d{3}[-. ]\d{4}\b/g,
+  /\b(?:terminad[ao]s?\s+en|termina\s+en|ultimos\s+4\s+digitos(?:\s+de)?)\s*\d{4}\b/gi,
+  /[*x•]{2,}[\s-]*\d{4}\b/gi,
+  /\b\d{1,2}\s+de\s+[a-z]+\s+de\s+\d{4}\b/gi,
+  /\b\d{1,2}[/.\-]\d{1,2}[/.\-]\d{2,4}\b/g,
+  /\b\d{1,2}:\d{2}(?::\d{2})?\s*(?:a\.?\s?m\.?|p\.?\s?m\.?)?/gi,
+  /\d+(?:[.,]\d+)?\s*%/g,
+  /\b\d{9,}\b/g,
+];
+
+export function withoutNonMoney(text: string): string {
+  return NOT_MONEY.reduce((t, re) => t.replace(re, ' '), norm(text));
+}
+
 export function readSentence(sentence: string): RawTransaction {
   const s = norm(sentence);
   const kind = kindOfText(sentence);
-  const amounts = amountsInText(sentence);
+  const amounts = amountsInText(withoutNonMoney(sentence));
   const item: RawTransaction = { kind, confidence: { amount: 0.5, kind: 0.4 } };
   if (amounts.length) item.amountText = minorToText(amounts[0]);
   if (/\b(us\$|usd|dolar|dolares)\b/.test(s)) item.currencyHint = 'USD';

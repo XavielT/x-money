@@ -7,7 +7,7 @@ import { bankIdOf } from './bank';
 import { BuildContext, buildDraft } from './build';
 import { parseDate } from './dates';
 import { MAX_PDF_PAGES, checkFile, clampRedaction, fitSize, minimizeText, sniffType, stripHtml } from './files';
-import { kindOfText, readTextLocally, splitSentences } from './local';
+import { kindOfText, readTextLocally, splitSentences, withoutNonMoney } from './local';
 import { cleanSenders, parseSenderText } from './mail';
 import { dedupeKey, findDuplicate, normalizeMerchant } from './merchant';
 import { accountSpecOf, missingFor, planApproval } from './plan';
@@ -578,5 +578,18 @@ describe('the bank tax of a transfer to a third party (an expense) is kept (2.20
 
   it('an invoice purchase never takes the bank tax (its ITBIS is data, not a charge)', () => {
     expect(buildDraft({ ...raw, kind: 'invoice_purchase' }, ctx()).bankFeeMinor).toBeUndefined();
+  });
+});
+
+describe('the offline reader never takes a phone, a card ending, a date or a reference for money (2.25.1)', () => {
+  it('only the real amount is read', () => {
+    expect(readTextLocally('gaste 500 en gasolina con la tarjeta terminada en 4237 el 13/11/2026 llamando al 809-000-0000')).toHaveLength(1);
+    expect(readTextLocally('gaste 500 en gasolina con la tarjeta terminada en 4237 el 13/11/2026')[0].amountText).toBe('500.00');
+  });
+
+  it('a line with only a phone number or a reference is not a movement', () => {
+    expect(withoutNonMoney('llamando al 809-544-5555')).not.toMatch(/\d{3}/);
+    expect(withoutNonMoney('referencia 243521559489')).not.toMatch(/\d{5}/);
+    expect(withoutNonMoney('19 de Noviembre de 2026 - 2:52 PM')).not.toMatch(/\d/);
   });
 });

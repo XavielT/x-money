@@ -2,7 +2,7 @@
 // notices, not captured from a bank: the reader is tolerant by design and anything it cannot read is left
 // for the user in the tray. A real notification that is read wrong must be added here as a fixture.
 import { describe, expect, it } from 'vitest';
-import { BankNotification, cardDigitsIn, localDateOf, readBankNotification } from './notification';
+import { BankNotification, bankOfSender, cardDigitsIn, localDateOf, readBankNotification, readBankText } from './notification';
 
 const POPULAR = 'com.popular.app.android';
 const BR = 'com.banreservas.tubancoappmobile';
@@ -94,3 +94,32 @@ describe('the amount printed after its currency (2.25.0)', () => {
   });
 });
 
+// 2.25.1: what the offline reader did to real bank e-mails (card ending, phone number, day and reference read as amounts, one
+// draft per line). The wordings are invented; only their SHAPE comes from the phone.
+describe('a bank e-mail is ONE movement, read by its currency (2.25.1)', () => {
+  const popular = 'Gracias por utilizar su Tarjeta Debito Digital/QR, terminada en 4237.\nRD$160.00 Peso dominicano 13/11/2026 SHELL AV LUPERON...\nPara mas informacion llamando al 809-000-0000.';
+  const banreservas = 'JUAN PEREZ, Cuenta de ahorro DOP ** - 1234\n19 de Noviembre de 2026 - 2:52 PM\nCobro impuesto DGII 0.20% DOP 3.90\nReferencia 243521559489';
+
+  it('a debit card notice: the amount is the one next to RD$, never the card ending or the phone number', () => {
+    const r = readBankText({ text: popular, bankName: 'Banco Popular', dateIso: '2026-11-18' })!;
+    expect(r).toMatchObject({ kind: 'expense', amountText: 'RD$160.00', currencyHint: 'DOP', accountLast4: '4237', dateText: '13/11/2026', counterparty: 'SHELL AV LUPERON' });
+  });
+
+  it('a bank charge: amount with DOP, the printed long date, and no digits of the account or the reference as an amount', () => {
+    const r = readBankText({ text: banreservas, bankName: 'Banreservas', dateIso: '2026-11-24' })!;
+    expect(r).toMatchObject({ kind: 'expense', amountText: 'DOP 3.90', dateText: '19 de Noviembre de 2026' });
+    expect(r.description).not.toMatch(/PEREZ/); // the holder's name is not a description
+  });
+
+  it('a text with no movement wording is not a draft, and a notice with no amount waits with the amount empty', () => {
+    expect(readBankText({ text: 'Llame al 809-000-0000 para mas informacion', dateIso: '2026-11-18' })).toBeNull();
+    const r = readBankText({ text: 'Se realizo una transferencia desde su cuenta terminada en 1234', dateIso: '2026-11-18' })!;
+    expect(r.amountText).toBeUndefined();
+  });
+
+  it('the bank is named by the sender domain', () => {
+    expect(bankOfSender('notificaciones@banreservas.com')).toBe('Banreservas');
+    expect(bankOfSender('<notificaciones@popularenlinea.com>')).toBe('Banco Popular');
+    expect(bankOfSender('promo@example.com')).toBeUndefined();
+  });
+});

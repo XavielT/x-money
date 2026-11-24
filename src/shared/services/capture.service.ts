@@ -10,7 +10,7 @@ import { minimizeText } from '../domain/capture/files';
 import { readTextLocally } from '../domain/capture/local';
 import { purchaseDetailsOf } from '../domain/capture/details';
 import { bankTaxInText } from '../domain/capture/fee';
-import { BankNotification, readBankNotification } from '../domain/capture/notification';
+import { BankNotification, bankOfSender, localDateOf, readBankNotification, readBankText } from '../domain/capture/notification';
 import { foldBankCharges, isPayroll } from '../domain/capture/direction';
 import { rematchAccount } from '../domain/capture/rematch';
 import { combinePatch, findTransferPair } from '../domain/capture/transfer-pair';
@@ -265,6 +265,12 @@ export class CaptureService {
   }
 
   private finishLocal(text: string, source: CaptureSource, original: CaptureOriginal, fingerprint?: string, meta?: QueueItem['meta']): SubmitResult {
+    if (source === 'email') {
+      // a bank e-mail is ONE notice, never a list of lines (a phone number or a card ending is not a movement)
+      const sent = meta?.sentAt ? Date.parse(meta.sentAt) : NaN;
+      const one = readBankText({ text, bankName: bankOfSender(meta?.sender), dateIso: Number.isFinite(sent) ? localDateOf(sent) : localIso(this.clock()) });
+      return one ? this.finish(this.build([one], source, { text, fingerprint, meta }), original) : { ok: false, code: 'unreadable' };
+    }
     const raw = readTextLocally(text);
     return this.finish(this.build(raw, source, { text, fingerprint, meta }), original);
   }

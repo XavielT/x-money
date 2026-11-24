@@ -826,3 +826,21 @@ describe('reconciling with the bank balance (2.25.0)', () => {
     expect(r.ok && r.drafts[0].kind).toBe('unknown');
   });
 });
+
+describe('a bank e-mail read without AI (2.25.1)', () => {
+  const mail = (text: string, sender = 'notificaciones@popularenlinea.com') => ({ source: 'email' as const, payload: { mode: 'text', text } as CapturePayload, original: { kind: 'text' as const, text }, meta: { sender, sentAt: '2026-11-18T14:00:00.000Z', messageId: 'm-' + text.length } });
+
+  it('one e-mail is ONE draft, with its own amount, card, merchant and date; the phone number makes nothing', async () => {
+    const s = session();
+    const r = await s.capture.submit(mail('Gracias por utilizar su Tarjeta Debito Digital/QR, terminada en 4237.\nRD$160.00 Peso dominicano 13/11/2026 SHELL AV LUPERON...\nPara mas informacion llamando al 809-000-0000.'));
+    expect(r.ok && r.drafts).toHaveLength(1);
+    expect(r.ok && r.drafts[0]).toMatchObject({ kind: 'expense', amountMinor: 16000, currency: 'DOP', occurredAt: '2026-11-13', accountLast4: '4237', counterparty: 'SHELL AV LUPERON' });
+  });
+
+  it('an e-mail that is not a movement leaves no draft', async () => {
+    const s = session();
+    const r = await s.capture.submit(mail('Actualice su clave llamando al 809-000-0000 o visitando nuestra pagina'));
+    expect(r).toEqual({ ok: false, code: 'unreadable' });
+    expect(s.drafts.drafts()).toHaveLength(0);
+  });
+});
