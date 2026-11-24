@@ -8,6 +8,7 @@ import { BuildContext, buildDraft } from './build';
 import { decideKind, foldBankCharges, parentReference, trimEllipsis } from './direction';
 import { findDuplicate } from './merchant';
 import { bankBalanceOf, pendingEffect } from './balance-check';
+import { siblingAccountPatches } from './rematch';
 import { combinePatch, findTransferPair } from './transfer-pair';
 import { missingFor } from './plan';
 import { RawTransaction } from './schema';
@@ -305,5 +306,40 @@ describe('payroll in English or Spanish (2.25.4)', () => {
     expect(isPayroll('Notificación Depósito de Nómina')).toBe(true);
     expect(isPayroll('Salary payment')).toBe(true);
     expect(isPayroll('Supermercado')).toBe(false);
+  });
+});
+
+describe('one screenshot, one account; and several bank charges add up (2.25.5)', () => {
+  const row = (over: Partial<RawTransaction>): RawTransaction => ({ kind: 'expense', confidence: {}, ...over });
+
+  it('the tax and the commission of one payment are ONE fee', () => {
+    const out = foldBankCharges([
+      row({ description: 'PAGOS AL INSTANTE', amountText: '- DOP 6,690.00', reference: '243537925783' }),
+      row({ description: 'COBRO IMP DGII 0.20%', amountText: '- DOP 13.38', reference: '9243537925783' }),
+      row({ description: 'COMISION PAGO AL INS', amountText: '- DOP 100.00', reference: '8243537925783' }),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].bankFeeText).toBe('113.38');
+  });
+
+  const d = (over: Partial<CaptureDraft>): CaptureDraft => ({ id: 'x', createdAt: '2026-11-24T10:00:00Z', source: 'image', status: 'pending', kind: 'expense', confidence: {}, doubts: ['account-ambiguous'], fileFingerprint: 'f1', ...over });
+
+  it('choosing the account of one row settles the rows of the same file that wait for one', () => {
+    const chosen = d({ id: 'a', resolvedAccountId: 'acc1' });
+    const patches = siblingAccountPatches(chosen, 'acc1', [
+      chosen,
+      d({ id: 'b' }),
+      d({ id: 'c', kind: 'internal_transfer', direction: 'in' }), // receives: it is the destination
+      d({ id: 'e', resolvedAccountId: 'other' }), // already chosen: never replaced
+      d({ id: 'f', fileFingerprint: 'f2' }), // another screenshot
+      d({ id: 'g', status: 'approved' }),
+    ]);
+    expect(patches.map((p) => p.id)).toEqual(['b', 'c']);
+    expect(patches[0].patch).toMatchObject({ resolvedAccountId: 'acc1', doubts: [] });
+    expect(patches[1].patch).toMatchObject({ resolvedToAccountId: 'acc1' });
+  });
+
+  it('a draft with no file fingerprint has no siblings', () => {
+    expect(siblingAccountPatches(d({ id: 'a', fileFingerprint: undefined }), 'acc1', [d({ id: 'b' })])).toEqual([]);
   });
 });

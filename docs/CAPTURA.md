@@ -264,3 +264,12 @@ borrador que ya tiene monto no se toca, y sin fuente nada se inventa.
 
 El detector de nómina (`isPayroll`) reconoce también las palabras en inglés `payroll` y `salary` (2.25.4): la IA describe el aviso como
 «Payroll deposit credited to the account», sin la palabra «nómina», y por eso su fuente no se encontraba.
+
+### Probado con capturas reales en el teléfono (2.25.5)
+
+Con tres capturas reales (lista de Popular con la nómina, lista de ahorro de Banreservas con su balance y lista de Banreservas con
+transferencias propias) el lector leyó bien la nómina (RD$14,113.50, 13 nov), las transferencias propias como transferencias, los
+cargos como gastos, el pago ya registrado como duplicado y el balance como comprobación de saldo (diferencia de RD$14,703.72).
+Dos mejoras: **una cuenta elegida para una fila se aplica a las demás filas de la misma captura** (`siblingAccountPatches`; antes cada
+fila de Popular pedía la cuenta por separado) y **varios cargos del banco de un mismo pago se suman en un solo cargo** (el impuesto
+de 13.38 y la comisión de 100.00 de un pago son 113.38, no un borrador aparte).

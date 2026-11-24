@@ -268,6 +268,8 @@ export class CaptureReviewComponent {
 
   setField(d: CaptureDraft, patch: Partial<CaptureDraft>): void {
     this.capture.edit(d.id, patch);
+    // the account chosen for one row of a screenshot is the account of the rest of its rows
+    if (patch.resolvedAccountId) this.capture.applyAccountToSiblings(d.id);
   }
 
   setCurrency(d: CaptureDraft, c: TransactionCurrency): void {

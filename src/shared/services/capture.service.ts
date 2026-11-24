@@ -12,7 +12,7 @@ import { purchaseDetailsOf } from '../domain/capture/details';
 import { bankTaxInText } from '../domain/capture/fee';
 import { BankNotification, bankOfSender, localDateOf, readBankNotification, readBankText } from '../domain/capture/notification';
 import { foldBankCharges, isPayroll } from '../domain/capture/direction';
-import { rematchAccount } from '../domain/capture/rematch';
+import { rematchAccount, siblingAccountPatches } from '../domain/capture/rematch';
 import { combinePatch, findTransferPair } from '../domain/capture/transfer-pair';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
@@ -462,6 +462,16 @@ export class CaptureService {
     }
     const dedupe = dedupeKey(merged);
     return this.drafts.update(id, { ...patch, doubts: [...doubts], dedupeKey: dedupe });
+  }
+
+  // The user chose the account of one row: the other rows of the same screenshot that wait for one get it (see siblingAccountPatches)
+  applyAccountToSiblings(id: string): number {
+    const d = this.drafts.byId(id);
+    const accountId = d?.resolvedAccountId;
+    if (!d || !accountId) return 0;
+    const patches = siblingAccountPatches(d, accountId, this.drafts.drafts());
+    for (const p of patches) this.drafts.update(p.id, p.patch);
+    return patches.length;
   }
 
   reject(id: string): boolean {

@@ -5,7 +5,7 @@
 // until the user picks (`direction-conflict`); when there was no type, the evidence picks it and the tray says so
 // (`kind-inferred`).
 import { CaptureKind } from '../../models/capture-draft.model';
-import { Direction, signOf } from './amount';
+import { Direction, parseMovementAmount, signOf } from './amount';
 import { RawTransaction } from './schema';
 
 const flat = (s: string | undefined): string => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -91,8 +91,13 @@ export function foldBankCharges(items: readonly RawTransaction[]): RawTransactio
     const parents = items.map((p, j) => ({ p, j })).filter(({ p, j }) => j !== i && digits(p.reference) === parent && !isBankCharge([p.counterparty, p.description].filter(Boolean).join(' ')));
     if (parents.length !== 1) return;
     const { p, j } = parents[0];
-    if (p.kind === 'income' || directionOf(p) === 'in' || out[j].bankFeeText) return; // a charge is taken on money that LEAVES
-    out[j].bankFeeText = row.amountText.replace(/^\s*[-−–+]\s*/, '');
+    if (p.kind === 'income' || directionOf(p) === 'in') return; // a charge is taken on money that LEAVES
+    // the tax (0.20%) and the commission of one payment both hang from its reference: they ADD UP as one fee
+    const before = out[j].bankFeeText ? parseMovementAmount(out[j].bankFeeText!) : null;
+    const now = parseMovementAmount(row.amountText);
+    if (before && before.ok && now.ok) out[j].bankFeeText = ((before.minor + now.minor) / 100).toFixed(2);
+    else if (!before) out[j].bankFeeText = row.amountText.replace(/^\s*[-−–+]\s*/, '');
+    else return;
     folded.add(i);
   });
   return out.filter((_, i) => !folded.has(i));

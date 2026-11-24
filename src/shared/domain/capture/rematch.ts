@@ -23,3 +23,23 @@ export function rematchAccount(d: CaptureDraft, accounts: readonly AccountModel[
   if (d.kind === 'card_payment' && account?.type === 'card' && account.cardKind === 'credit') return { resolvedToAccountId: found.accountId };
   return { resolvedAccountId: found.accountId };
 }
+
+// The rows of ONE screenshot are about the same account (its title says so once). When the user picks it for one row, the other
+// rows of that same file that still wait for an account get it too. A row that RECEIVES a transfer or a card payment keeps it as the
+// destination. Never replaces what is already chosen. Pure.
+export function siblingAccountPatches(chosen: CaptureDraft, accountId: string, drafts: readonly CaptureDraft[]): { id: string; patch: Partial<CaptureDraft> }[] {
+  if (!chosen.fileFingerprint) return [];
+  const out: { id: string; patch: Partial<CaptureDraft> }[] = [];
+  for (const d of drafts) {
+    if (d.id === chosen.id || d.fileFingerprint !== chosen.fileFingerprint || d.status !== 'pending' || NO_ACCOUNT.includes(d.kind)) continue;
+    const receives = d.direction === 'in' && (d.kind === 'internal_transfer' || d.kind === 'card_payment');
+    if (receives) {
+      if (d.resolvedToAccountId) continue;
+      out.push({ id: d.id, patch: { resolvedToAccountId: accountId, doubts: d.doubts.filter((x) => x !== 'account-ambiguous' && x !== 'account-missing') } });
+    } else {
+      if (d.resolvedAccountId) continue;
+      out.push({ id: d.id, patch: { resolvedAccountId: accountId, doubts: d.doubts.filter((x) => x !== 'account-ambiguous' && x !== 'account-missing') } });
+    }
+  }
+  return out;
+}
