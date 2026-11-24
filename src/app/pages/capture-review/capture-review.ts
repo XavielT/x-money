@@ -124,6 +124,11 @@ export class CaptureReviewComponent {
       this.accounts.accounts();
       untracked(() => this.capture.rematch());
     });
+    // and when the user creates or edits an income source, the payroll notices that wait for it get their usual amount (an estimate)
+    effect(() => {
+      this.sources.active();
+      untracked(() => this.capture.estimateWaitingIncome());
+    });
   }
 
   t(key: string): string {

@@ -886,3 +886,25 @@ describe('a payroll notice has no amount: the usual one is an estimate (2.25.2)'
     expect(s.drafts.byId('p1')!.doubts).toEqual(['amount-estimated']);
   });
 });
+
+describe('a payroll source created AFTER the notice arrived settles the waiting notice (2.25.3)', () => {
+  it('estimateWaitingIncome gives the usual amount once, as an estimate, and never touches a draft that has an amount', () => {
+    const s = session();
+    const base = { createdAt: '2026-11-18T10:00:00Z', source: 'email' as const, status: 'pending' as const, kind: 'income' as const, confidence: {}, description: 'Payroll deposit credited to the account (Notificacion Deposito de Nomina)' };
+    s.drafts.add({ ...base, id: 'w1', doubts: ['amount-missing'] });
+    s.drafts.add({ ...base, id: 'w2', doubts: [], amountMinor: 1411350 });
+    expect(s.capture.estimateWaitingIncome()).toBe(1);
+    expect(s.drafts.byId('w1')).toMatchObject({ amountMinor: 3000000, resolvedIncomeSourceId: 'pay' });
+    expect(s.drafts.byId('w1')!.doubts).toEqual(['amount-estimated']);
+    expect(s.drafts.byId('w2')!.amountMinor).toBe(1411350);
+    expect(s.capture.estimateWaitingIncome()).toBe(0); // nothing left to settle
+  });
+
+  it('with no source nothing is invented', () => {
+    storage.seed({ incomeSources: [] });
+    const s = session();
+    s.drafts.add({ id: 'w3', createdAt: '2026-11-18T10:00:00Z', source: 'email', status: 'pending', kind: 'income', confidence: {}, doubts: ['amount-missing'], description: 'Payroll deposit credited to the account' });
+    expect(s.capture.estimateWaitingIncome()).toBe(0);
+    expect(s.drafts.byId('w3')!.amountMinor).toBeUndefined();
+  });
+});

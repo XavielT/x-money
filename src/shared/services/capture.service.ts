@@ -164,16 +164,25 @@ export class CaptureService {
     if (this.storage.get<boolean>('capture-legacy-email-repaired', false)) return 0;
     const bad = this.drafts.drafts().filter((d) => d.source === 'email' && (d.status === 'pending' || d.status === 'duplicate') && d.notes === 'Read on this device, without AI: check every field.');
     const n = this.drafts.remove(bad.map((d) => d.id));
-    // a payroll notice the AI read ("Payroll deposit credited...") has no amount because the notice has none: it gets the usual one, as an estimate
+    this.estimateWaitingIncome();
+    this.storage.set('capture-legacy-email-repaired', true);
+    return n;
+  }
+
+  // A payroll notice ("Payroll deposit credited...") has no amount because the notice has none. A waiting income draft with no amount
+  // whose source is known (or is the only payroll source) gets that source's usual amount, as a marked ESTIMATE. It runs whenever the
+  // sources change, so creating the payroll source also settles the notices that were already waiting. Returns how many it settled.
+  estimateWaitingIncome(): number {
+    let done = 0;
     for (const d of this.drafts.pending()) {
       if (d.kind !== 'income' || d.amountMinor || d.status !== 'pending') continue;
       const sourceId = d.resolvedIncomeSourceId ?? this.incomeSourceFor([d.counterparty, d.description].filter(Boolean).join(' '));
       const usual = sourceId ? this.usualIncomeMinor(sourceId) : undefined;
       if (!sourceId || !usual) continue;
       this.drafts.update(d.id, { resolvedIncomeSourceId: sourceId, amountMinor: usual, doubts: [...d.doubts.filter((x) => x !== 'amount-missing'), 'amount-estimated'], confidence: { ...d.confidence, amount: 0.3 } });
+      done++;
     }
-    this.storage.set('capture-legacy-email-repaired', true);
-    return n;
+    return done;
   }
 
   private build(raw: RawTransaction[], source: CaptureSource, extra: { text?: string; fingerprint?: string; meta?: QueueItem['meta'] }): CaptureDraft[] {

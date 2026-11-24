@@ -254,3 +254,10 @@ de esa fuente (su neto esperado, o su último depósito) como **estimación** ma
 al escribir el monto real la marca desaparece. Sin fuente conocida el monto sigue vacío: nada se inventa. Además, una vez,
 `repairLegacyEmailDrafts` quita los borradores pendientes que el lector por líneas de 2.25.0 hizo de correos (el siguiente escaneo
 vuelve a leer esos correos con el lector correcto) y estima los de nómina.
+
+### La nómina que espera su fuente (2.25.3)
+
+Si el aviso de nómina llegó **antes** de crear la fuente de ingreso, el borrador quedaba sin monto para siempre (la reparación de 2.25.2
+corre una sola vez). Ahora `estimateWaitingIncome` corre cada vez que cambian las fuentes (al abrir la bandeja y al crear o editar una
+fuente): un ingreso pendiente **sin monto** cuya fuente se conoce recibe el monto de siempre de esa fuente como estimación marcada. Un
+borrador que ya tiene monto no se toca, y sin fuente nada se inventa.
