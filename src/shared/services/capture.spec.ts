@@ -10,6 +10,7 @@ import { account, transaction } from '../testing/builders';
 import { AiGateway, GatewayResult, GatewayUsage } from '../ai/ai-gateway';
 import { AI_GATEWAY, AiService } from '../ai/ai.service';
 import { CAPTURE_DAILY_LIMIT, AiWireRequest } from '../ai/ai.types';
+import { CaptureDraft } from '../models/capture-draft.model';
 import { AccountService } from './account.service';
 import { AuditLogService } from './audit-log.service';
 import { AuthService } from './auth.service';
@@ -503,13 +504,13 @@ describe('creating accounts from a screenshot', () => {
     expect(s.accounts.accounts().find((a) => a.last4 === '1002')).toMatchObject({ currency: 'USD', initialBalance: 250, type: 'savings' });
   });
 
-  it('an account you already have (same bank and last 4 digits) waits for an explicit decision; the balance is not overwritten', async () => {
+  it('an account you already have (same bank and last 4 digits) is a balance check, never a second account; its opening balance is not overwritten', async () => {
     const s = session();
     on(s.ai);
     const [d] = await screenshot(s, account({ bankName: 'Banco Popular', accountName: 'Corriente', accountType: 'checking', accountLast4: '7788', balanceText: 'RD$ 999.00', currencyHint: 'DOP' }));
-    expect(s.drafts.byId(d.id)).toMatchObject({ status: 'duplicate', duplicateOf: { type: 'account', id: 'k1' } });
-    expect(s.capture.approve(d.id)).toEqual({ ok: false, error: 'duplicate-decision' });
-    expect(s.accounts.byId('k1')!.initialBalance).toBe(100000); // untouched
+    expect(s.drafts.byId(d.id)).toMatchObject({ status: 'pending', kind: 'balance_check', resolvedAccountId: 'k1' });
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    expect(s.accounts.byId('k1')!.initialBalance).toBe(100000); // untouched: the difference is an adjustment movement
     expect(s.accounts.accounts().filter((a) => a.last4 === '7788')).toHaveLength(1);
   });
 
@@ -697,5 +698,131 @@ describe('the bank tax printed in the notice reaches the account (2.20.5)', () =
     gateway.next = async () => reply(item({ amountText: 'DOP 2,000.00', dateText: '07/11/2026', accountLast4: '7788' }), item({ amountText: 'DOP 300.00', dateText: '07/11/2026', accountLast4: '7788' }));
     const r = await s.capture.submit(text(email));
     expect(r.ok && r.drafts.map((d) => d.bankFeeMinor)).toEqual([undefined, undefined]);
+  });
+});
+
+// 2.25.0: lists of movements from a bank app. Synthetic rows; no real data.
+describe('a list of movements: direction, payroll and the two sides of a transfer', () => {
+  it('a payroll deposit with no sign becomes income of the payroll source, and approving it registers the amount', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'unknown', direction: 'in', amountText: 'RD$14,113.50', dateText: '13 nov 2026', description: 'PAGO NOMINA 1RA DE...', accountLast4: '7788', reference: '' }));
+    const r = await s.capture.submit(image);
+    const d = r.ok ? r.drafts[0] : undefined;
+    expect(d).toMatchObject({ kind: 'income', amountMinor: 1411350, direction: 'in', resolvedAccountId: 'k1', resolvedIncomeSourceId: 'pay', occurredAt: '2026-11-13' });
+    expect(s.capture.approve(d!.id).ok).toBe(true);
+    expect(s.tx.transactions()[0]).toMatchObject({ type: 'income', amount: 14113.5, accountId: 'k1', incomeSourceId: 'pay' });
+  });
+
+  it('an expense printed with a minus keeps its amount', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: '- DOP 414.20', dateText: 'Noviembre 04, 2026', counterparty: 'PAYPAL *SPOTIFY', accountLast4: '7788', categoryCandidate: 'groceries' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0]).toMatchObject({ kind: 'expense', amountMinor: 41420, direction: 'out' });
+    expect(r.ok && r.drafts[0].doubts).not.toContain('amount-missing');
+  });
+
+  it('both sides of one transfer are flagged, combined into ONE transfer, and the balances move once', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () =>
+      reply(
+        item({ kind: 'expense', direction: 'out', amountText: '-RD$6,000.00', dateText: '20 nov 2026', description: 'Pago ACH MB a 96072', accountLast4: '7788' }),
+        item({ kind: 'income', direction: 'in', amountText: '+ DOP 6,000.00', dateText: 'Noviembre 20, 2026', description: 'TRANSFERENCIA ACH DE', accountHint: 'Cuenta de ahorros' })
+      );
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts.every((d) => d.doubts.includes('transfer-pair'))).toBe(true);
+    const out = r.ok ? r.drafts[0] : undefined;
+    const before = { k1: s.tx.accountBalance('k1', 'DOP'), s1: s.tx.accountBalance('s1', 'DOP') };
+    expect(s.capture.combineAsTransfer(out!.id)).toBe(true);
+    expect(s.drafts.byId(out!.id)).toMatchObject({ kind: 'internal_transfer', resolvedAccountId: 'k1', resolvedToAccountId: 's1' });
+    expect(s.drafts.byId(r.ok ? r.drafts[1].id : '')?.status).toBe('rejected'); // the other side is history, not a second movement
+    expect(s.capture.approve(out!.id).ok).toBe(true);
+    expect(s.tx.transactions()).toHaveLength(1);
+    expect(s.tx.transactions()[0]).toMatchObject({ type: 'transfer', amount: 6000, accountId: 'k1', toAccountId: 's1' });
+    expect(s.tx.accountBalance('k1', 'DOP')).toBe(before.k1 - 6000);
+    expect(s.tx.accountBalance('s1', 'DOP')).toBe(before.s1 + 6000);
+  });
+
+  it('"not the same" removes the flag and it is not raised again', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () =>
+      reply(
+        item({ kind: 'expense', direction: 'out', amountText: '-RD$6,000.00', dateText: '20 nov 2026', description: 'Pago ACH MB a 96072', accountLast4: '7788' }),
+        item({ kind: 'income', direction: 'in', amountText: '+ DOP 6,000.00', dateText: '20 nov 2026', description: 'TRANSFERENCIA ACH DE', accountHint: 'Cuenta de ahorros' })
+      );
+    const r = await s.capture.submit(image);
+    const id = r.ok ? r.drafts[0].id : '';
+    s.capture.unpair(id);
+    expect(s.capture.linkPairs()).toBe(0);
+    expect(s.drafts.byId(id)?.doubts).not.toContain('transfer-pair');
+  });
+
+  it('a leg of a transfer the user already registered waits as a duplicate instead of becoming income', async () => {
+    storage.seed({ transactions: [transaction({ id: 't-old', type: 'transfer', amount: 6000, date: '2026-11-20', accountId: 'k1', toAccountId: 's1' })] });
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'income', direction: 'in', amountText: '+ DOP 6,000.00', dateText: '20 nov 2026', description: 'TRANSFERENCIA ACH DE', accountHint: 'Cuenta de ahorros' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0]).toMatchObject({ status: 'duplicate', duplicateOf: { type: 'transaction', id: 't-old' } });
+  });
+});
+
+describe('reconciling with the bank balance (2.25.0)', () => {
+  const account = (over: Record<string, unknown>) => item({ kind: 'account_setup', ...over });
+  const screenshot = async (s: ReturnType<typeof session>, ...items: Record<string, unknown>[]) => {
+    gateway.next = async () => reply(...items);
+    const r = await s.capture.submit({ ...image, fingerprint: crypto.randomUUID() });
+    return (r as { drafts: CaptureDraft[] }).drafts;
+  };
+  const check = (balance: string | undefined, over: Record<string, unknown> = {}) => account({ bankName: 'Banco Popular', accountName: 'Corriente', accountType: 'checking', accountLast4: '7788', balanceText: balance, currencyHint: 'DOP', ...over });
+
+  it('the difference between the bank and the app becomes ONE visible, audited adjustment that is not income or expense', async () => {
+    const s = session();
+    on(s.ai);
+    expect(s.tx.accountBalance('k1', 'DOP')).toBe(100000);
+    const [d] = await screenshot(s, check('RD$ 99,250.00'));
+    expect(d.kind).toBe('balance_check');
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    expect(s.tx.accountBalance('k1', 'DOP')).toBe(99250);
+    const adj = s.tx.transactions().filter((t) => t.origin === 'adjustment');
+    expect(adj).toHaveLength(1);
+    expect(adj[0]).toMatchObject({ type: 'expense', amount: 750, accountId: 'k1' });
+    expect(s.accounts.byId('k1')!.reconciledAt).toBeDefined();
+  });
+
+  it('when the app already matches the bank nothing is written, only the account is marked as checked', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, check('RD$ 100,000.00'));
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    expect(s.tx.transactions()).toHaveLength(0);
+    expect(s.accounts.byId('k1')!.reconciledAt).toBeDefined();
+  });
+
+  it('a credit card is compared by what is OWED', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, account({ bankName: 'Banco Popular', accountType: 'credit_card', accountLast4: '4242', balanceText: 'RD$ 1,200.00', currencyHint: 'DOP' }));
+    expect(d).toMatchObject({ kind: 'balance_check', resolvedAccountId: 'c1' });
+    expect(s.capture.approve(d.id).ok).toBe(true);
+    expect(s.tx.accountBalance('c1', 'DOP')).toBe(-1200);
+  });
+
+  it('without the balance it cannot be approved', async () => {
+    const s = session();
+    on(s.ai);
+    const [d] = await screenshot(s, check(undefined));
+    expect(s.capture.approve(d.id)).toMatchObject({ ok: false, missing: ['balance'] });
+  });
+
+  it('the model can never ask for a balance check itself', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'balance_check', amountText: 'RD$ 5.00' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0].kind).toBe('unknown');
   });
 });

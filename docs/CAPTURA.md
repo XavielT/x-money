@@ -195,3 +195,43 @@ no se vuelven a procesar. Cada aviso es solo un borrador.
 
 **Es por dispositivo:** el interruptor de captura, el de correo y los remitentes se guardan en cada teléfono (no se
 sincronizan). Para que el iPhone lo haga solo hay que encenderlos también allí (Ajustes → Captura inteligente).
+
+## Listas de movimientos de la app del banco (2.25.0)
+
+Una captura de «Últimos movimientos» trae una fila por movimiento. Lo que el lector transcribe y lo que decide el
+dispositivo:
+
+- **El signo es la dirección, no un error** (`parseMovementAmount`, `signOf`): `- DOP 540.00` conserva su monto y sale de la
+  cuenta; `+ DOP 1,000.00` entra; un monto sin signo (Popular no lo pone en los ingresos) deja la dirección abierta y la
+  deciden la flecha o el texto. Antes, un gasto impreso con «-» llegaba con el monto vacío.
+- **La referencia no es un monto**: un número largo sin separadores (≥ 9 dígitos) se rechaza como monto.
+- **El tipo sale de la evidencia** (`direction.ts`, `decideKind`): sin tipo, dirección «sale» = gasto, «entra» = ingreso, y la
+  bandeja avisa «el tipo se eligió por el signo y el texto». Si el signo contradice el tipo, el borrador queda **sin tipo** y
+  no se puede aprobar hasta que elijas (`direction-conflict`). Transferencia propia = transferencia (regla 1); pago de tarjeta
+  = pago de tarjeta; dinero que **entra a una tarjeta de crédito** nunca es ingreso; nómina/salario/sueldo/quincena que
+  entra = ingreso y, con una sola fuente de tipo «nómina», se asocia a ella.
+- **Impuesto del banco en su propia fila** (`COBRO IMP DGII 0.20%`, referencia con un 9 delante de la del movimiento) se
+  pliega al movimiento como «Impuesto o comisión» (misma regla de 2.20.5). Sin padre exacto queda como gasto en «Bank fees».
+- **Las dos caras de una transferencia** (`transfer-pair.ts`): mismo monto y moneda, direcciones opuestas, ≤ 2 días, y que una
+  diga que es transferencia. Si hay exactamente un candidato la bandeja ofrece «Combinar como una sola transferencia»; «No es
+  la misma» lo recuerda. Nunca se combina sola. Si ya registraste esa transferencia, la fila de una de sus patas espera como
+  duplicada (`transfer-leg`) en vez de volverse ingreso o gasto.
+- Filas cortadas por el borde de la pantalla, encabezados, tarjetas de balance y botones no son movimientos; las
+  descripciones cortadas con «...» pierden los puntos y no se completan.
+
+Para que el lector nuevo funcione hay que **desplegar la función `xmoney-ai`** (cambió su instrucción y `maxOutputTokens` pasó
+de 2000 a 3500); eso lo aplica Xaviel.
+
+
+### Conciliar con el saldo del banco (2.25.0)
+
+Si la captura trae «Balance disponible» de una cuenta que **ya tienes** (mismo banco y últimos 4 dígitos), ya no se propone una
+cuenta nueva: se crea un borrador **«Comprobar saldo»** (`balance_check`, solo lo crea el dispositivo, el modelo no puede pedirlo).
+La bandeja muestra *El banco dice · Tu app dice · Diferencia* al día indicado (por defecto hoy, marcado como supuesto: una
+captura vieja muestra un saldo viejo). Una tarjeta de crédito se compara por lo que **debes**.
+
+- Las capturas que esperan en la bandeja se suman aparte (`balance-check.ts`, `pendingEffect`): primero se aprueban y luego se
+  comprueba; lo que queda es lo que de verdad falta.
+- Aprobar crea **un solo ajuste visible y auditado** (el mismo de Conciliar: no es ingreso ni gasto, regla 9) y marca la cuenta
+  como conciliada; si ya coincide, no escribe nada. El saldo inicial de la cuenta nunca se toca.
+- Rechazarlo no cambia nada: la opción para quien prefiera buscar el movimiento que falta.

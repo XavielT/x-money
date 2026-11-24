@@ -27,7 +27,7 @@ export function dedupeKey(d: Pick<CaptureDraft, 'currency' | 'amountMinor' | 'oc
   return [d.currency ?? '?', d.amountMinor, d.occurredAt, tail, normalizeMerchant(d.counterparty)].join('|');
 }
 
-export type DuplicateMatch = { why: 'same-file' | 'same-transaction' | 'manual-entry' | 'existing-account'; of: { type: 'draft' | 'transaction' | 'account'; id: string } };
+export type DuplicateMatch = { why: 'same-file' | 'same-transaction' | 'manual-entry' | 'existing-account' | 'transfer-leg'; of: { type: 'draft' | 'transaction' | 'account'; id: string } };
 
 const WEIGHTLESS: ReadonlySet<string> = new Set(['rejected', 'failed']);
 
@@ -63,6 +63,22 @@ export function findDuplicate(draft: CaptureDraft, drafts: readonly CaptureDraft
         (!draft.resolvedAccountId || t.accountId === draft.resolvedAccountId)
     );
     if (hit) return { why: 'manual-entry', of: { type: 'transaction', id: hit.id } };
+  }
+  // one leg of a transfer the user already registered: the bank lists it as money leaving one account and entering the other,
+  // so an income or an expense draft of the same amount is that transfer seen from one side, never a new movement (rule 1)
+  if (draft.amountMinor && draft.occurredAt && (draft.kind === 'income' || draft.kind === 'expense')) {
+    const currency = draft.currency ?? 'DOP';
+    const acc = draft.resolvedAccountId;
+    const leg = transactions.find((t) => {
+      if (t.type !== 'transfer' || t.status === 'reversed' || t.reversalOf) return false;
+      if (Math.round(t.amount * 100) !== draft.amountMinor || (t.currency ?? 'DOP') !== currency) return false;
+      if (Math.abs(daysBetween(t.date, draft.occurredAt!)) > 2) return false;
+      if (!acc) return true;
+      const entered = t.toAccountId === acc;
+      const left = t.accountId === acc;
+      return draft.direction === 'in' ? entered : draft.direction === 'out' ? left : entered || left;
+    });
+    if (leg) return { why: 'transfer-leg', of: { type: 'transaction', id: leg.id } };
   }
   return null;
 }

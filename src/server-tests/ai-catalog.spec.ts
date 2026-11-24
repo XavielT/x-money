@@ -36,7 +36,7 @@ describe('the catalog of the app and the whitelist of the server agree', () => {
         expect(COMMON_RULES[locale]).toBeTruthy();
       }
       expect(f.maxOutputTokens).toBeGreaterThan(0);
-      expect(f.maxOutputTokens).toBeLessThanOrEqual(id === 'capture_parse' ? 2000 : 1000);
+      expect(f.maxOutputTokens).toBeLessThanOrEqual(id === 'capture_parse' ? 3500 : 1000);
       expect(f.maxInputChars).toBeLessThanOrEqual(id === 'capture_parse' ? 7_200_000 : 6000);
     }
     expect(new Set(Object.keys(FEATURES).map((id) => featureOf(id)!.instructions('en'))).size).toBe(Object.keys(FEATURES).length); // no two share the same text

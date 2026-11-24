@@ -25,6 +25,7 @@ export type MissingField =
   | 'account-type'
   | 'account-name'
   | 'balance'
+  | 'balance-account' // a balance check needs the account it is about
   | 'already-approved';
 
 // The account a screenshot of a bank product creates. The balance is the OPENING balance: nothing is written
@@ -64,6 +65,7 @@ export function accountSpecOf(d: CaptureDraft): NewAccountSpec {
 
 export type CaptureOp =
   | { t: 'new-account'; account: NewAccountSpec }
+  | { t: 'balance-check'; accountId: string; currency: TransactionCurrency; date: string; bankBalance: number }
   | { t: 'transaction'; tx: { type: 'expense' | 'income' | 'transfer'; amount: number; accountId: string; toAccountId?: string; currency: TransactionCurrency; date: string; categoryId?: string; incomeSourceId?: string; note?: string; details?: PurchaseDetails; fee?: number } }
   | { t: 'card-payment'; cardId: string; fromAccountId: string; amount: number; date: string; currency: TransactionCurrency; note?: string; fee?: number }
   | { t: 'goal-entry'; goalId: string; amount: number; date: string; note?: string }
@@ -103,6 +105,16 @@ export function missingFor(d: CaptureDraft, ctx: Pick<PlanContext, 'accounts' | 
     if (d.balanceMinor !== undefined && majorOf(d.balanceMinor) > (ctx.largeAbove ?? 50_000_000) && !ctx.confirmLarge) out.push('confirm-large');
     return out;
   }
+  if (d.kind === 'balance_check') {
+    // the bank's balance for an account you already have: the account, the figure, the currency and the day it was true
+    const acc = ctx.accounts.find((a) => a.id === d.resolvedAccountId && !a.archived);
+    if (!acc) out.push('balance-account');
+    if (d.balanceMinor === undefined || d.balanceMinor < 0) out.push('balance');
+    if (!d.currency) out.push('currency');
+    else if (acc && !accepts(acc, d.currency)) out.push('currency-mismatch');
+    if (!d.occurredAt || !isValidIsoDate(d.occurredAt)) out.push('date');
+    return out;
+  }
   if (d.kind === 'unknown') out.push('kind');
   if (!d.amountMinor || d.amountMinor <= 0) out.push('amount');
   if (!d.currency) out.push('currency');
@@ -131,6 +143,12 @@ export function planApproval(d: CaptureDraft, ctx: PlanContext): { ok: true; ops
   const missing = missingFor(d, ctx);
   if (missing.length) return { ok: false, missing };
   if (d.kind === 'account_setup') return { ok: true, ops: [{ t: 'new-account', account: accountSpecOf(d) }] };
+  if (d.kind === 'balance_check') {
+    const acc = ctx.accounts.find((a) => a.id === d.resolvedAccountId);
+    const owed = d.accountType === 'credit_card' || (acc?.type === 'card' && acc.cardKind === 'credit');
+    const v = majorOf(d.balanceMinor!);
+    return { ok: true, ops: [{ t: 'balance-check', accountId: d.resolvedAccountId!, currency: d.currency!, date: d.occurredAt!, bankBalance: owed ? -v : v }] };
+  }
   const amount = majorOf(d.amountMinor!);
   const currency = d.currency!;
   const date = d.occurredAt!;

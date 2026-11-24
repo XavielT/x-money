@@ -4,7 +4,8 @@
 import { AccountModel } from '../../models/account.model';
 import { CaptureDoubt, CaptureDraft, CaptureKind, CaptureLine, CaptureSource, MAX_LINES } from '../../models/capture-draft.model';
 import { TransactionCurrency } from '../../models/transaction.model';
-import { DEFAULT_LARGE_AMOUNT, parseAmount } from './amount';
+import { DEFAULT_LARGE_AMOUNT, parseAmount, parseMovementAmount } from './amount';
+import { decideKind, isBankCharge, trimEllipsis } from './direction';
 import { parseDate } from './dates';
 import { dedupeKey } from './merchant';
 import { last4Of, resolveAccount, resolveByName } from './resolve';
@@ -54,7 +55,35 @@ function buildAccountDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   const last4 = last4Of(raw.accountLast4);
   const bankId = ctx.bankIdOf?.(raw.bankName);
   const twin = last4 ? ctx.accounts.find((a) => !a.archived && a.last4 === last4 && (!bankId || !a.bankId || a.bankId === bankId)) : undefined;
-  if (twin) doubts.push('account-exists');
+  if (twin) {
+    // the balance of an account you already have is not a new account: it is a CHECK of your own numbers against the bank's
+    const cur: TransactionCurrency | undefined = currency ?? (twin.currency === 'DOP' || twin.currency === 'USD' ? twin.currency : undefined);
+    const check: CaptureDraft = {
+      id: ctx.newId(),
+      createdAt: ctx.nowIso,
+      source: ctx.source,
+      status: 'pending',
+      kind: 'balance_check',
+      currency: cur,
+      occurredAt: ctx.today,
+      bankName: raw.bankName,
+      accountLast4: last4,
+      accountType: raw.accountType ?? (twin.type === 'card' && twin.cardKind === 'credit' ? 'credit_card' : undefined),
+      accountName: twin.name,
+      balanceMinor: balance && balance.ok ? balance.minor : undefined,
+      resolvedAccountId: twin.id,
+      confidence: { ...raw.confidence },
+      notes: raw.notes,
+      // the day the screenshot was taken is not on it: today is assumed and the user can change it (an old screenshot shows an old balance)
+      doubts: [...doubts.filter((d) => d !== 'kind-unknown' && (d !== 'currency-ambiguous' || !cur)), 'date-assumed'],
+      fileFingerprint: ctx.fileFingerprint,
+      sender: ctx.sender,
+      sentAt: ctx.sentAt,
+      messageId: ctx.messageId,
+    };
+    for (const k of Object.keys(check) as (keyof CaptureDraft)[]) if (check[k] === undefined) delete check[k];
+    return check;
+  }
   const draft: CaptureDraft = {
     id: ctx.newId(),
     createdAt: ctx.nowIso,
@@ -85,11 +114,16 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   if (raw.kind === 'account_setup') return buildAccountDraft(raw, ctx);
   const doubts: CaptureDoubt[] = [];
   const confidence: Record<string, number> = { ...raw.confidence };
-  const kind: CaptureKind = raw.kind;
+  // the type is settled with the direction the document shows (sign, arrow): see direction.ts
+  const decided = decideKind(raw);
+  let kind: CaptureKind = decided.kind;
+  const direction = decided.direction ?? undefined;
+  if (decided.conflict) doubts.push('direction-conflict');
   if (kind === 'unknown') doubts.push('kind-unknown');
+  else if (decided.inferred) doubts.push('kind-inferred');
 
-  // ----- amount (the code converts, the model only transcribes)
-  const parsed = raw.amountText ? parseAmount(raw.amountText, raw.currencyHint, { largeAbove: ctx.largeAbove ?? DEFAULT_LARGE_AMOUNT }) : null;
+  // ----- amount (the code converts, the model only transcribes). A printed sign is the direction, not a refusal.
+  const parsed = raw.amountText ? parseMovementAmount(raw.amountText, raw.currencyHint, { largeAbove: ctx.largeAbove ?? DEFAULT_LARGE_AMOUNT }) : null;
   let amountMinor: number | undefined;
   let currency: TransactionCurrency | undefined;
   if (parsed && parsed.ok) {
@@ -120,25 +154,41 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   const hint = [raw.accountHint, raw.bankName].filter(Boolean).join(' ');
   const main = resolveAccount(ctx.accounts, raw.accountLast4 ?? last4Of(raw.accountLast4), currency ?? raw.currencyHint, hint || undefined, ctx.bankNameOf);
   const toHint = raw.toAccountHint;
+  const mainAccount = main.status === 'resolved' ? ctx.accounts.find((x) => x.id === main.accountId) : undefined;
+  // money that ENTERS a credit card is a payment (or a refund the user decides), never income
+  if (isCard(mainAccount) && direction === 'in' && kind === 'income' && !decided.conflict) {
+    kind = 'card_payment';
+    if (!doubts.includes('kind-inferred')) doubts.push('kind-inferred');
+  }
   const needsTo = kind === 'internal_transfer' || kind === 'card_payment';
+  // the account of the screenshot RECEIVES the money of a transfer that entered it: it is the destination, the other one is the origin
+  const receiving = kind === 'internal_transfer' && direction === 'in';
   let resolvedAccountId: string | undefined;
   let resolvedToAccountId: string | undefined;
-  if (kind === 'card_payment' && !raw.toAccountLast4 && !toHint && main.status === 'resolved') {
-    // the document names one account only: for a card payment it is the card
-    const a = ctx.accounts.find((x) => x.id === main.accountId);
-    if (isCard(a)) resolvedToAccountId = main.accountId;
-    else resolvedAccountId = main.accountId;
-  } else if (main.status === 'resolved') {
-    resolvedAccountId = main.accountId;
-  } else if (main.status === 'ambiguous') {
-    doubts.push('account-ambiguous');
+  if (receiving) {
+    if (main.status === 'resolved') resolvedToAccountId = main.accountId;
+    else if (main.status === 'ambiguous') doubts.push('account-ambiguous');
+    else doubts.push('account-missing');
+    const from = resolveAccount(ctx.accounts.filter((a) => a.id !== resolvedToAccountId), raw.toAccountLast4, currency ?? raw.currencyHint, toHint, ctx.bankNameOf);
+    if (from.status === 'resolved') resolvedAccountId = from.accountId;
+    else if (from.status === 'ambiguous') doubts.push('account-ambiguous');
+  } else {
+    if (kind === 'card_payment' && !raw.toAccountLast4 && !toHint && main.status === 'resolved') {
+      // the document names one account only: for a card payment it is the card
+      if (isCard(mainAccount)) resolvedToAccountId = main.accountId;
+      else resolvedAccountId = main.accountId;
+    } else if (main.status === 'resolved') {
+      resolvedAccountId = main.accountId;
+    } else if (main.status === 'ambiguous') {
+      doubts.push('account-ambiguous');
+    }
+    if (needsTo && !resolvedToAccountId) {
+      const to = resolveAccount(ctx.accounts.filter((a) => a.id !== resolvedAccountId), raw.toAccountLast4, currency ?? raw.currencyHint, toHint, ctx.bankNameOf);
+      if (to.status === 'resolved') resolvedToAccountId = to.accountId;
+      else if (to.status === 'ambiguous') doubts.push('account-ambiguous');
+    }
+    if (!resolvedAccountId && main.status === 'none') doubts.push('account-missing');
   }
-  if (needsTo && !resolvedToAccountId) {
-    const to = resolveAccount(ctx.accounts.filter((a) => a.id !== resolvedAccountId), raw.toAccountLast4, currency ?? raw.currencyHint, toHint, ctx.bankNameOf);
-    if (to.status === 'resolved') resolvedToAccountId = to.accountId;
-    else if (to.status === 'ambiguous') doubts.push('account-ambiguous');
-  }
-  if (!resolvedAccountId && main.status === 'none') doubts.push('account-missing');
 
   // currency: named in the text, else the account's when it only has one, else the user chooses
   if (!currency) {
@@ -149,10 +199,14 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   }
 
   // ----- category, income source, goal, loan: the user's own words first, then the model's candidate
-  const text = [raw.counterparty, raw.description].filter(Boolean).join(' ');
+  const counterparty = trimEllipsis(raw.counterparty);
+  const description = trimEllipsis(raw.description);
+  const text = [counterparty, description].filter(Boolean).join(' ');
   let resolvedCategoryId: string | undefined;
   if (kind === 'expense' || kind === 'invoice_purchase') {
     resolvedCategoryId = (text && ctx.categoryFor(text)) || (raw.categoryCandidate ? ctx.categoryByName(raw.categoryCandidate) : undefined);
+    // what the bank takes by itself (DGII 0.20%, commissions, monthly charges) is a bank fee, whatever the model guessed
+    if (!resolvedCategoryId && isBankCharge(text)) resolvedCategoryId = ctx.categoryByName('Bank fees');
   }
   const resolvedIncomeSourceId = kind === 'income' && text ? ctx.incomeSourceFor(text) : undefined;
   const resolvedGoalId = kind === 'goal_contribution' ? resolveByName(ctx.goals, raw.targetName ?? raw.description)?.id : undefined;
@@ -169,7 +223,7 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   // and carries it too, but a plain purchase must never turn a receipt figure (the 18% ITBIS) into a "bank fee": for an
   // expense only a plausible bank tax is kept (DGII is 0.20%; up to 2% of the amount).
   const feeKind = kind === 'internal_transfer' || kind === 'card_payment' || kind === 'expense';
-  let fee = feeKind && raw.bankFeeText ? parseAmount(raw.bankFeeText, currency) : null;
+  let fee = feeKind && raw.bankFeeText ? parseMovementAmount(raw.bankFeeText, currency) : null;
   if (fee && fee.ok && kind === 'expense' && (amountMinor === undefined || fee.minor * 50 > amountMinor)) fee = null;
 
   const draft: CaptureDraft = {
@@ -178,12 +232,13 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
     source: ctx.source,
     status: 'pending',
     kind,
+    direction,
     amountMinor,
     currency,
     occurredAt,
     occurredTime: date?.time,
-    counterparty: raw.counterparty,
-    description: raw.description,
+    counterparty,
+    description,
     bankName: raw.bankName,
     accountLast4: raw.accountLast4,
     reference: raw.reference,

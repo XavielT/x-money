@@ -522,8 +522,11 @@ describe('a screenshot of a bank account creates the account (account_setup)', (
   it('an account with the same last 4 digits is flagged as already existing', () => {
     const mine = account({ id: 'k1', name: 'Mi cuenta', type: 'bank', bankId: 'popular', last4: '7788' });
     const d = buildDraft(checking, acctCtx({ accounts: [mine] }));
-    expect(d.doubts).toContain('account-exists');
-    expect(findDuplicate(d, [], [], [mine])).toEqual({ why: 'existing-account', of: { type: 'account', id: 'k1' } });
+    // 2.25.0: it is not a second account but a CHECK of the balance against the movements you already have
+    expect(d).toMatchObject({ kind: 'balance_check', resolvedAccountId: 'k1', balanceMinor: 5234075 });
+    expect(d.doubts).toContain('date-assumed');
+    const asSetup = { ...d, kind: 'account_setup' as const };
+    expect(findDuplicate(asSetup, [], [], [mine])).toEqual({ why: 'existing-account', of: { type: 'account', id: 'k1' } });
     expect(findDuplicate(d, [], [], [{ ...mine, bankId: 'banreservas' }])).toBeNull(); // another bank, same digits: not the same account
     expect(findDuplicate(d, [], [], [{ ...mine, archived: true }])).toBeNull();
   });

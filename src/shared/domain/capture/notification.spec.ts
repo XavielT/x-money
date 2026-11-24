@@ -80,3 +80,17 @@ describe('cardDigitsIn', () => {
 describe('localDateOf', () => {
   it('uses the phone calendar day', () => expect(localDateOf(at)).toBe('2026-11-06'));
 });
+
+describe('the amount printed after its currency (2.25.0)', () => {
+  const note = (text: string) => ({ pkg: 'com.popular.app.android', title: 'Popular', text, postedAt: Date.parse('2026-11-13T09:00:00') });
+
+  it('"14,113.50 pesos" is read, and the payroll deposit is income', () => {
+    const r = readBankNotification(note('Se acredito la nomina por 14,113.50 pesos en su cuenta.'));
+    expect(r).toMatchObject({ kind: 'income', amountText: '14,113.50 pesos', currencyHint: 'DOP' });
+  });
+
+  it('a balance printed that way is still not the movement', () => {
+    expect(readBankNotification(note('Deposito acreditado. Balance disponible 9,000.00 pesos'))).toBeNull();
+  });
+});
+

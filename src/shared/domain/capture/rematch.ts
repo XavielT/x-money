@@ -9,7 +9,7 @@ import { resolveAccount } from './resolve';
 
 const WAITING: readonly CaptureDraft['status'][] = ['pending', 'duplicate'];
 // kinds that name no account of their own
-const NO_ACCOUNT: readonly CaptureDraft['kind'][] = ['account_setup', 'goal_contribution'];
+const NO_ACCOUNT: readonly CaptureDraft['kind'][] = ['account_setup', 'balance_check', 'goal_contribution'];
 
 export function rematchAccount(d: CaptureDraft, accounts: readonly AccountModel[], bankNameOf: (a: AccountModel) => string): Partial<CaptureDraft> | null {
   if (!WAITING.includes(d.status) || NO_ACCOUNT.includes(d.kind)) return null;

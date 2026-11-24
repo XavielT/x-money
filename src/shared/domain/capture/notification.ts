@@ -26,12 +26,15 @@ export const isBankPackage = (pkg: string): boolean => pkg in BANK_OF_PACKAGE;
 const norm = (s: string): string => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 const AMOUNT = /(?:rd\s*\$|us\s*\$|usd|dop|\$)\s*(\d[\d.,]*\d|\d)/gi;
+// the amount followed by its currency ("14,113.50 pesos", "6,000.00 DOP"): some notices print it that way
+const AMOUNT_AFTER = /(\d[\d.,]*\d|\d)\s*(?:pesos|dop|rd\s*\$|usd|us\s*\$)(?![a-z])/gi;
 const BALANCE_WORDS = /(balance|saldo|disponible|limite|credito disponible)/;
 
 // The first amount that is not a balance ("... Balance disponible RD$ 5,000.00" is not the movement)
 function amountOf(original: string): string | undefined {
   const flat = norm(original);
-  for (const m of original.matchAll(AMOUNT)) {
+  const found = [...original.matchAll(AMOUNT), ...original.matchAll(AMOUNT_AFTER)].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  for (const m of found) {
     const start = m.index ?? 0;
     if (BALANCE_WORDS.test(flat.slice(Math.max(0, start - 28), start))) continue;
     return m[0].replace(/\s+/g, ' ').trim();

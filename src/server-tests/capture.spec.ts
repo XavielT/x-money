@@ -279,3 +279,18 @@ describe('account screenshots on the server (account_setup)', () => {
     expect(CAPTURE_FEATURES['capture_parse'].instructions('en')).toMatch(/bankFeeText/);
   });
 });
+
+describe('movement lists (2.25.0): the direction travels, the reference is not an amount', () => {
+  it('keeps "in" and "out" and drops anything else', () => {
+    const out = JSON.parse(finalizeCapture(JSON.stringify({ transactions: [{ kind: 'unknown', direction: 'in', amountText: 'RD$14,113.50' }, { kind: 'expense', direction: 'sideways', amountText: '- DOP 5.00' }] }))!);
+    expect(out.transactions[0].direction).toBe('in');
+    expect(out.transactions[1].direction).toBeUndefined();
+    expect(out.transactions[1].amountText).toBe('- DOP 5.00'); // the sign is kept as printed: the device reads it
+  });
+
+  it('the instructions teach the rows of a bank app: reference, sign, arrow, headers, cut rows', () => {
+    const text = CAPTURE_FEATURES['capture_parse'].instructions('en');
+    for (const word of ['REFERENCE', 'direction', 'arrow', 'group header', 'cut by the edge', 'OWN accounts', 'COBRO IMP DGII']) expect(text).toContain(word);
+  });
+});
+

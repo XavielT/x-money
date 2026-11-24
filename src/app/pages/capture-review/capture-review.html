@@ -23,10 +23,12 @@
       <input type="checkbox" [checked]="marked().has(d.id)" (click)="$event.stopPropagation()" (change)="toggleMark(d.id)" [disabled]="d.status === 'duplicate'" [attr.aria-label]="'Mark' | t" />
       <div class="review-main">
         <b>{{ d.counterparty || d.accountName || d.description || (d.status === 'duplicate' && d.kind === 'unknown' ? ('Same file as an earlier capture' | t) : (kindLabel(d.kind) | t)) }}</b>
-        <small *ngIf="d.kind !== 'account_setup'">{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
+        <small *ngIf="d.kind !== 'account_setup' && d.kind !== 'balance_check'">{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
         <small *ngIf="d.kind === 'account_setup'">{{ accountSub(d) }}</small>
+        <small *ngIf="d.kind === 'balance_check'">{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}</small>
+        <small *ngIf="d.kind === 'balance_check' && check(d) as c">{{ c.difference === 0 ? ('Matches your app' | t) : (('Difference' | t) + ': ' + money(c.difference, c.currency)) }}</small>
       </div>
-      <strong class="review-amount" [class.doubt]="d.kind === 'account_setup' ? d.balanceMinor === undefined : (!d.amountMinor || d.doubts.includes('amount-unverified'))">{{ amountLabel(d) }}</strong>
+      <strong class="review-amount" [class.doubt]="d.kind === 'account_setup' || d.kind === 'balance_check' ? d.balanceMinor === undefined : (!d.amountMinor || d.doubts.includes('amount-unverified'))">{{ amountLabel(d) }}</strong>
     </div>
 
     <ul class="review-doubts" *ngIf="d.doubts.length">
@@ -42,16 +44,55 @@
       <p class="review-note" *ngIf="d.notes">{{ 'The reader says:' | t }} {{ d.notes | t }}</p>
       <p class="review-note" *ngIf="addsText(d) as adds">🧾 {{ 'Another draft is the same purchase. Registering this one also keeps what it has and this one lacks:' | t }} {{ adds }}.</p>
 
+      <div class="review-dup" *ngIf="d.status === 'pending' && d.pairedWith">
+        <p>{{ 'The other side looks like' | t }}: {{ pairLabel(d) }}.</p>
+        <button class="x-btn" (click)="combine(d)">{{ 'Combine as one transfer' | t }}</button>
+        <button class="x-btn" (click)="notSame(d)">{{ 'Not the same' | t }}</button>
+      </div>
+
       <div class="review-dup" *ngIf="d.status === 'duplicate'">
         <p>{{ 'This looks the same as' | t }} {{ duplicateOfLabel(d) }}.</p>
         <button class="x-btn" (click)="registerAnyway(d)">{{ 'Register anyway' | t }}</button>
       </div>
 
-      <label>{{ 'Type' | t }}
+      <label *ngIf="d.kind !== 'balance_check'">{{ 'Type' | t }}
         <select class="x-input" [ngModel]="d.kind" (ngModelChange)="setField(d, { kind: $event })" [name]="'kind-' + d.id">
           <option *ngFor="let k of kinds" [value]="k">{{ kindLabel(k) | t }}</option>
         </select>
       </label>
+
+      <!-- the balance of an account you already have, against your own numbers -->
+      <ng-container *ngIf="d.kind === 'balance_check'">
+        <label>{{ 'Account' | t }}
+          <select class="x-input" [ngModel]="d.resolvedAccountId || ''" (ngModelChange)="setField(d, { resolvedAccountId: $event || undefined })" [name]="'bacc-' + d.id" [class.hl]="!d.resolvedAccountId">
+            <option value="">{{ 'Choose' | t }}</option>
+            <option *ngFor="let a of accounts.activeAccounts()" [value]="a.id">{{ a.name }}{{ a.last4 ? ' ·' + a.last4 : '' }}</option>
+          </select>
+        </label>
+        <div class="review-two">
+          <label>{{ (d.accountType === 'credit_card' ? 'Amount owed according to the bank' : 'Balance according to the bank') | t }}
+            <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="balanceOf(d)" (ngModelChange)="setBalance(d, $event)" [name]="'bbal-' + d.id" [class.hl]="d.balanceMinor === undefined" />
+          </label>
+          <label>{{ 'Currency' | t }}
+            <select class="x-input" [ngModel]="d.currency || ''" (ngModelChange)="setCurrency(d, $event)" [name]="'bcur-' + d.id" [class.hl]="!d.currency">
+              <option value="" disabled>{{ 'Choose' | t }}</option>
+              <option value="DOP">RD$</option>
+              <option value="USD">US$</option>
+            </select>
+          </label>
+        </div>
+        <label>{{ 'Day this balance was true' | t }}
+          <input class="x-input" type="date" [ngModel]="d.occurredAt" (ngModelChange)="setField(d, { occurredAt: $event })" [name]="'bdate-' + d.id" [class.hl]="d.doubts.includes('date-assumed')" />
+        </label>
+        <div class="review-invoice" *ngIf="check(d) as c">
+          <small>{{ 'The bank says' | t }}: {{ money(c.bank, c.currency) }}{{ c.bank < 0 ? ' (' + ('owed' | t) + ')' : '' }}</small>
+          <small>{{ 'Your app says' | t }}: {{ money(c.app, c.currency) }}{{ c.app < 0 ? ' (' + ('owed' | t) + ')' : '' }}</small>
+          <small><b>{{ 'Difference' | t }}: {{ c.difference === 0 ? '0.00' : (c.difference > 0 ? '+' : '−') + money(c.difference, c.currency) }}</b></small>
+          <small *ngIf="c.waiting !== 0">{{ 'Captures waiting in this tray would change this account by' | t }} {{ c.waiting > 0 ? '+' : '−' }}{{ money(c.waiting, c.currency) }}: {{ 'approve them first, then check again.' | t }} <ng-container *ngIf="c.left === 0">{{ 'They explain the whole difference.' | t }}</ng-container><ng-container *ngIf="c.left !== 0">{{ 'Still unexplained after them' | t }}: {{ c.left > 0 ? '+' : '−' }}{{ money(c.left, c.currency) }}.</ng-container></small>
+          <small *ngIf="c.difference !== 0 && c.waiting === 0">{{ 'Approving creates a visible adjustment for the difference (it is not income or expense). If you would rather find the missing movement, reject this and review the account.' | t }}</small>
+          <small *ngIf="c.difference === 0">{{ 'Nothing to adjust: approving only marks the account as checked.' | t }}</small>
+        </div>
+      </ng-container>
 
       <!-- a screenshot of a bank account or card: the account itself -->
       <ng-container *ngIf="d.kind === 'account_setup'">
@@ -91,7 +132,7 @@
         <small class="review-note">{{ 'Only the last 4 digits are kept. The balance becomes the opening balance: no movement is created.' | t }}</small>
       </ng-container>
 
-      <ng-container *ngIf="d.kind !== 'account_setup'">
+      <ng-container *ngIf="d.kind !== 'account_setup' && d.kind !== 'balance_check'">
       <div class="review-two">
         <label>{{ 'Amount' | t }}
           <input class="x-input" type="number" inputmode="decimal" step="0.01" min="0" [ngModel]="amountOf(d)" (ngModelChange)="setAmount(d, $event)" [name]="'amount-' + d.id" [class.hl]="!d.amountMinor || d.doubts.includes('amount-unverified')" />

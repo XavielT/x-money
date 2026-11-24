@@ -86,6 +86,44 @@ export function parseAmount(text: string, hint?: TransactionCurrency | null, opt
   return { ok: true, minor, currency: currencyOf(source) ?? hint ?? null, needsConfirm: minor / 100 > limit };
 }
 
+// ---- an amount printed on a MOVEMENT row of a bank app: the sign is information, not an error.
+// "- DOP 540.00", "-RD$500.00", "RD$ -500.00" and "(500.00)" leave the account; "+ DOP 1,000.00" enters it; "RD$14,113.50"
+// carries no sign (some apps print none on incoming money), so the direction stays open and the arrow or the wording decides.
+export type Direction = 'in' | 'out';
+
+export type MovementAmount =
+  | { ok: true; minor: number; currency: TransactionCurrency | null; needsConfirm: boolean; direction: Direction | null }
+  | { ok: false; reason: AmountRejection | 'reference' };
+
+const MINUS_BEFORE = /(^|[\s(:])[-−–]\s*(?:[A-Za-z]{0,3}\$?\s*)?$|(?:\$|\b(?:dop|rd|usd|us))\s*[-−–]\s*$/i;
+const PLUS_BEFORE = /(^|[\s(:])\+\s*(?:[A-Za-z]{0,3}\$?\s*)?$|(?:\$|\b(?:dop|rd|usd|us))\s*\+\s*$/i;
+
+// The direction a printed amount states by itself (a sign or parentheses), or null when it states none
+export function signOf(text: string): Direction | null {
+  const source = (text ?? '').trim();
+  const idx = source.search(NUMBER_TOKEN);
+  if (idx < 0) return null;
+  const before = source.slice(0, idx);
+  if (MINUS_BEFORE.test(before) || /^\s*\(/.test(before)) return 'out';
+  if (PLUS_BEFORE.test(before)) return 'in';
+  return null;
+}
+
+// Like parseAmount, but a sign is read as the direction instead of being refused, so an expense printed as "- DOP 540.00"
+// keeps its amount. A long bare run of digits (a bank reference such as 243345091375) is never an amount.
+export function parseMovementAmount(text: string, hint?: TransactionCurrency | null, options: ParseAmountOptions = {}): MovementAmount {
+  const source = (text ?? '').trim();
+  if (!source) return { ok: false, reason: 'empty' };
+  const matches = source.match(NUMBER_TOKEN);
+  if (!matches) return { ok: false, reason: 'invalid' };
+  if (/^\d{9,}$/.test(matches[0])) return { ok: false, reason: 'reference' };
+  const minor = minorFromNumberToken(matches[0]);
+  if (minor === null) return { ok: false, reason: 'invalid' };
+  if (minor === 0) return { ok: false, reason: 'zero' };
+  const limit = options.largeAbove ?? DEFAULT_LARGE_AMOUNT;
+  return { ok: true, minor, currency: currencyOf(source) ?? hint ?? null, needsConfirm: minor / 100 > limit, direction: signOf(source) };
+}
+
 // Whole minor units to major units, exact (minor is an integer)
 export const majorOf = (minor: number): number => Math.round(minor) / 100;
 

@@ -6,7 +6,9 @@ import { ACCOUNT_SETUP_TYPES, AccountSetupType, CAPTURE_KINDS, CaptureDoubt, Cap
 import { BANKS_MOCK } from '../../../shared/data/banks';
 import { TransactionCurrency } from '../../../shared/models/transaction.model';
 import { majorOf, minorOf } from '../../../shared/domain/capture/amount';
+import { bankBalanceOf, pendingEffect } from '../../../shared/domain/capture/balance-check';
 import { MissingField, missingFor } from '../../../shared/domain/capture/plan';
+import { subMoney } from '../../../shared/utils/money';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { AccountService } from '../../../shared/services/account.service';
 import { whatOthersAdd } from '../../../shared/domain/capture/details';
@@ -15,6 +17,7 @@ import { CategoryService } from '../../../shared/services/category.service';
 import { GoalService } from '../../../shared/services/goal.service';
 import { IncomeSourceService } from '../../../shared/services/income-source.service';
 import { LoanService } from '../../../shared/services/loan.service';
+import { ReconciliationService } from '../../../shared/services/reconciliation.service';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 const KIND_LABELS: Record<CaptureKind, string> = {
@@ -26,6 +29,7 @@ const KIND_LABELS: Record<CaptureKind, string> = {
   goal_contribution: 'Goal contribution',
   invoice_purchase: 'Invoice purchase',
   account_setup: 'New account',
+  balance_check: 'Balance check',
   unknown: 'Not recognized',
 };
 
@@ -53,6 +57,9 @@ const DOUBT_LABELS: Record<CaptureDoubt, string> = {
   'possible-duplicate': 'This looks like something already registered.',
   'account-exists': 'You already have an account with these last 4 digits.',
   'balance-missing': 'The balance could not be read: enter it (0 is fine).',
+  'direction-conflict': 'The sign or arrow says the money went the other way: choose the type.',
+  'kind-inferred': 'The type was chosen from the sign and the wording: check it.',
+  'transfer-pair': 'This looks like the other side of another capture: combine them as one transfer.',
 };
 
 const MISSING_LABELS: Record<MissingField, string> = {
@@ -73,6 +80,7 @@ const MISSING_LABELS: Record<MissingField, string> = {
   'account-type': 'Choose the type of account.',
   'account-name': 'Give the account a name.',
   balance: 'Enter the opening balance (0 is fine).',
+  'balance-account': 'Choose the account this balance is about.',
 };
 
 // The review tray: where every capture waits. The user edits, approves or rejects; there is no
@@ -85,7 +93,7 @@ const MISSING_LABELS: Record<MissingField, string> = {
   styleUrl: './capture-review.scss',
 })
 export class CaptureReviewComponent {
-  kinds = CAPTURE_KINDS;
+  kinds = CAPTURE_KINDS.filter((k) => k !== 'balance_check'); // only this device makes a balance check
   accountTypes = ACCOUNT_SETUP_TYPES;
   banks = BANKS_MOCK.filter((b) => b.id !== 'other');
   open = signal<string | null>(null);
@@ -106,7 +114,8 @@ export class CaptureReviewComponent {
     public sources: IncomeSourceService,
     public goals: GoalService,
     public loans: LoanService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private reconciliation: ReconciliationService
   ) {
     // when the tray opens, and whenever the user's accounts change (a card added after its notice arrived),
     // drafts that were waiting for an account that did not exist get it
@@ -183,8 +192,23 @@ export class CaptureReviewComponent {
     this.capture.edit(d.id, { accountLast4: digits.length === 4 ? digits : undefined });
   }
 
+  // Bank balance against the app's own, as of the day the balance was true. `left` is what would still differ once the captures
+  // that wait in this tray are approved (a transfer or a purchase not registered yet explains part of any difference).
+  check(d: CaptureDraft): { bank: number; app: number; difference: number; waiting: number; left: number; currency: TransactionCurrency } | null {
+    const acc = this.accounts.byId(d.resolvedAccountId ?? '');
+    const bank = bankBalanceOf(d, acc);
+    if (!acc || bank === null || !d.currency || !d.occurredAt) return null;
+    const v = this.reconciliation.view(acc.id, d.currency, d.occurredAt, bank);
+    const waiting = pendingEffect(this.capture.drafts.pending(), acc.id, d.currency);
+    return { bank, app: v.calculated, difference: v.difference, waiting, left: subMoney(v.difference, waiting), currency: d.currency };
+  }
+
+  money(v: number, c: TransactionCurrency | undefined): string {
+    return (c === 'USD' ? 'US$' : 'RD$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   amountLabel(d: CaptureDraft): string {
-    if (d.kind === 'account_setup') {
+    if (d.kind === 'account_setup' || d.kind === 'balance_check') {
       if (d.balanceMinor === undefined) return '?';
       const sym = d.currency === 'USD' ? 'US$' : d.currency === 'DOP' ? 'RD$' : '';
       return sym + (d.balanceMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -251,7 +275,7 @@ export class CaptureReviewComponent {
     this.notice.set('');
     const r = this.capture.approve(d.id, { confirmLarge: this.confirmLarge().has(d.id) });
     if (r.ok) {
-      this.notice.set(this.t(d.kind === 'account_setup' ? 'Account created. Its balance is the opening balance: you can edit or archive it in Accounts.' : 'Registered. You can reverse it from the history like any movement.'));
+      this.notice.set(this.t(d.kind === 'balance_check' ? 'Done. If there was a difference, it is an adjustment you can see in the history.' : d.kind === 'account_setup' ? 'Account created. Its balance is the opening balance: you can edit or archive it in Accounts.' : 'Registered. You can reverse it from the history like any movement.'));
       this.open.set(null);
     } else if ('missing' in r) this.message.set(r.missing.map((m) => this.t(MISSING_LABELS[m])).join(' '));
     else this.message.set(this.t(r.error === 'duplicate-decision' ? 'Decide first about the possible duplicate.' : 'It could not be registered: check the fields.'));
@@ -273,6 +297,22 @@ export class CaptureReviewComponent {
 
   registerAnyway(d: CaptureDraft): void {
     this.capture.registerAnyway(d.id);
+  }
+
+  // the other side of the same transfer, to show next to the button
+  pairLabel(d: CaptureDraft): string {
+    const o = d.pairedWith ? this.capture.drafts.byId(d.pairedWith) : undefined;
+    if (!o) return '';
+    return [o.counterparty || o.description || this.kindLabel(o.kind), o.occurredAt, o.amountMinor ? (o.amountMinor / 100).toFixed(2) : ''].filter(Boolean).join(' · ');
+  }
+
+  combine(d: CaptureDraft): void {
+    this.capture.combineAsTransfer(d.id);
+    this.open.set(d.id);
+  }
+
+  notSame(d: CaptureDraft): void {
+    this.capture.unpair(d.id);
   }
 
   duplicateOfLabel(d: CaptureDraft): string {

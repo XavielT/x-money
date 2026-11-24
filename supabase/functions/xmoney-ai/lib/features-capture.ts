@@ -55,6 +55,7 @@ function normalizeItem(raw: unknown): Record<string, unknown> | null {
     if (s) out[k] = s;
   }
   if (raw['currencyHint'] === 'DOP' || raw['currencyHint'] === 'USD') out['currencyHint'] = raw['currencyHint'];
+  if (raw['direction'] === 'in' || raw['direction'] === 'out') out['direction'] = raw['direction'];
   if ((ACCOUNT_TYPES as readonly unknown[]).includes(raw['accountType'])) out['accountType'] = raw['accountType'];
   const a = digits4(raw['accountLast4']);
   if (a) out['accountLast4'] = a;
@@ -109,7 +110,18 @@ const INSTRUCTIONS =
   'for a transfer or a card payment receipt also "bankFeeText" (the tax or commission the bank charged on it, exactly as printed, for example "DOP 1.50"; it is NOT part of the amount), ' +
   'for invoices also "invoiceNumber", "taxId" (RNC), "fiscalNumber" (NCF), "taxAmountText" (ITBIS), "subtotalText" and up to 30 "lines" ({"description","quantity","amountText"}), ' +
   'and "confidence" (an object with a number from 0 to 1 for each field you filled). ' +
-  'A screenshot of a BANK ACCOUNT or CARD (the app of a bank, a statement header, a card page) is not a transaction: answer one entry per account with kind "account_setup", "bankName", "accountName" (the product name as shown), "accountType" (checking | savings | payroll | credit_card | debit_card | other), "accountLast4" (ONLY the last 4 digits; never write the full number), "balanceText" (the current or available balance exactly as printed; for a credit card the amount OWED), "creditLimitText" for credit cards, and "currencyHint". Never include the holder\'s name. ' +
+  '"direction" ("in" if money ENTERED the account the document is about, "out" if it LEFT; omit it if you cannot tell). ' +
+  'A screenshot of a LIST of movements (the transactions screen of a bank app: rows with a description, a long number under it, group headers with a date and an amount on the right) is NOT an account: answer ONE transaction per row that is fully visible, in the order shown. For each row: ' +
+  '(1) "amountText" is ONLY the amount at the right of THAT row, with its sign and currency exactly as printed ("- DOP 540.00", "+ DOP 1,000.00", "-RD$500.00", "RD$14,113.50"). ' +
+  '(2) The long number under the description (for example 243345091375) is the REFERENCE: put it in "reference", never in "amountText". An account number, card digits, a phone number, a balance ("Balance disponible"), a percentage ("0.20%") or a count are never the amount of a row. ' +
+  '(3) "direction": decide it from, in this order, the printed sign (+ / -), the arrow icon (arrow pointing down or lower-left = "in"; arrow pointing up or upper-right = "out"), then the colour (red = "out"; blue or green = "in"). Some apps print NO sign on money that entered: an amount with no minus whose arrow points in is "in". Never decide the direction from the description alone. ' +
+  '(4) "kind": "income" ONLY for money that entered from someone else (payroll, a deposit, a transfer from another person or company). A transfer between the OWN accounts of the user ("TRANSFERENCIA PROPIA", "MB desde ...", an ACH to or from another account of the user) is "internal_transfer". Paying a credit card ("PAGO TARJETA 7108", or "PAGO RECIBIDO VIA ..." on a card page) is "card_payment". Purchases, bank taxes ("COBRO IMP DGII 0.20%") and commissions are "expense". If you are not sure, "unknown": the direction still travels in "direction". ' +
+  '(5) "dateText": the date of the group header the row sits under (for example "Noviembre 13, 2026"), or the date printed in the row ("13 nov 2026"); repeat it for every row of the group. ' +
+  '(6) A description cut by the app with "..." is copied as visible, without the dots; never complete a name or guess the rest. ' +
+  '(7) "accountLast4" and "accountHint" describe the account at the top of the screenshot (its title or number), the same for every row. ' +
+  '(8) A row cut by the edge of the screen (no complete description or no amount visible), a header, a balance card, a button ("Ver todos", "Volver arriba") or a menu is NOT a transaction: skip it and say in "notes" that one row was cut. ' +
+  '(9) A bank tax or commission that has its OWN row (for example "COBRO IMP DGII 0.20%") is its own transaction with its own reference; do not merge it with another row. If the movements screen also shows the account balance ("Balance disponible"), add ONE extra entry of kind "account_setup" for that account with "bankName", "accountName", "accountType", "accountLast4", "balanceText" and "currencyHint"; the balance is never a transaction. ' +
+  'A screenshot of a BANK ACCOUNT or CARD that shows NO movement rows (the account card of a bank app, a statement header) is not a transaction: answer one entry per account with kind "account_setup", "bankName", "accountName" (the product name as shown), "accountType" (checking | savings | payroll | credit_card | debit_card | other), "accountLast4" (ONLY the last 4 digits; never write the full number), "balanceText" (the current or available balance exactly as printed; for a credit card the amount OWED), "creditLimitText" for credit cards, and "currencyHint". Never include the holder\'s name. ' +
   'If a field cannot be read with certainty, OMIT it and say what you could not read in "notes". Never invent amounts, dates or references. Never output a number you computed.';
 
 const LANGUAGE: Record<Locale, string> = { es: ' Write "notes" in Spanish.', en: ' Write "notes" in English.' };
@@ -118,7 +130,7 @@ export const CAPTURE_FEATURES: Record<string, FeatureDef> = {
   capture_parse: {
     id: 'capture_parse',
     tier: 'smart', // a model with vision: chosen by the server secrets, never by the client
-    maxOutputTokens: 2000,
+    maxOutputTokens: 3500,
     maxInputChars: 7_200_000, // 5 MB of file in base64 plus the envelope
     instructions: (locale) => INSTRUCTIONS + LANGUAGE[locale],
     checkInput: checkCaptureInput,

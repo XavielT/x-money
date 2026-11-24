@@ -12,6 +12,7 @@ export interface RawLine {
 
 export interface RawTransaction {
   kind: CaptureKind;
+  direction?: 'in' | 'out'; // money entering or leaving the account the document is about (arrow, sign, colour): independent of kind
   amountText?: string;
   currencyHint?: 'DOP' | 'USD';
   dateText?: string;
@@ -68,13 +69,14 @@ function digits4(v: unknown): string | undefined {
 function item(raw: unknown): RawTransaction | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
-  const kind = CAPTURE_KINDS.includes(r['kind'] as CaptureKind) ? (r['kind'] as CaptureKind) : 'unknown';
+  const kind = CAPTURE_KINDS.includes(r['kind'] as CaptureKind) && r['kind'] !== 'balance_check' ? (r['kind'] as CaptureKind) : 'unknown'; // a balance check is only ever made here
   const out: RawTransaction = { kind, confidence: {} };
   for (const [k, max] of STRING_FIELDS) {
     const s = clean(r[k], max);
     if (s) (out as unknown as Record<string, unknown>)[k] = s;
   }
   if (r['currencyHint'] === 'DOP' || r['currencyHint'] === 'USD') out.currencyHint = r['currencyHint'];
+  if (r['direction'] === 'in' || r['direction'] === 'out') out.direction = r['direction'];
   if (ACCOUNT_SETUP_TYPES.includes(r['accountType'] as AccountSetupType)) out.accountType = r['accountType'] as AccountSetupType;
   const l4 = digits4(r['accountLast4']);
   if (l4) out.accountLast4 = l4;

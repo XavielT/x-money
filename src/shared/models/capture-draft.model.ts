@@ -5,13 +5,13 @@ import { TransactionCurrency } from './transaction.model';
 
 export type CaptureSource = 'image' | 'pdf' | 'voice' | 'text' | 'email' | 'notification';
 export type CaptureStatus = 'queued' | 'pending' | 'approved' | 'rejected' | 'duplicate' | 'failed';
-export type CaptureKind = 'expense' | 'income' | 'card_payment' | 'internal_transfer' | 'loan_payment' | 'goal_contribution' | 'invoice_purchase' | 'account_setup' | 'unknown';
+export type CaptureKind = 'expense' | 'income' | 'card_payment' | 'internal_transfer' | 'loan_payment' | 'goal_contribution' | 'invoice_purchase' | 'account_setup' | 'balance_check' | 'unknown';
 
 // What kind of account a screenshot of a bank product shows (account_setup)
 export type AccountSetupType = 'checking' | 'savings' | 'payroll' | 'credit_card' | 'debit_card' | 'other';
 export const ACCOUNT_SETUP_TYPES: readonly AccountSetupType[] = ['checking', 'savings', 'payroll', 'credit_card', 'debit_card', 'other'];
 
-export const CAPTURE_KINDS: readonly CaptureKind[] = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'account_setup', 'unknown'];
+export const CAPTURE_KINDS: readonly CaptureKind[] = ['expense', 'income', 'card_payment', 'internal_transfer', 'loan_payment', 'goal_contribution', 'invoice_purchase', 'account_setup', 'balance_check', 'unknown'];
 
 // Why a field is highlighted in the tray
 export type CaptureDoubt =
@@ -28,7 +28,10 @@ export type CaptureDoubt =
   | 'sender-mismatch' // email whose sender is not in the user's filter
   | 'possible-duplicate'
   | 'account-exists' // an account with the same bank and last 4 digits already exists
-  | 'balance-missing';
+  | 'balance-missing'
+  | 'direction-conflict' // the sign or arrow says money went one way and the type says the other
+  | 'kind-inferred' // the type was settled by this device from the sign or the wording, not read as such
+  | 'transfer-pair'; // another draft looks like the other side of the same transfer
 
 export interface CaptureLine {
   description: string;
@@ -42,6 +45,9 @@ export interface CaptureDraft {
   source: CaptureSource;
   status: CaptureStatus;
   kind: CaptureKind;
+  direction?: 'in' | 'out'; // money entering or leaving the account of the document (sign, arrow, colour)
+  pairedWith?: string; // id of the draft that looks like the other side of this transfer
+  notPairedWith?: string[]; // drafts the user said are NOT the other side (never proposed again)
 
   // proposed fields (the user can edit all of them)
   amountMinor?: number; // whole cents, calculated here from the text the model read
@@ -61,6 +67,9 @@ export interface CaptureDraft {
   bankFeeMinor?: number; // transfer / card payment: the bank's tax or commission, charged to the paying account on top of the amount
   subtotalMinor?: number;
   lines?: CaptureLine[]; // at most 30
+  // balance_check (made by this device, never by the model): the balance a bank app shows for an account you already have.
+  // It uses resolvedAccountId, balanceMinor, currency and occurredAt (the day the balance was true), and writes no movement
+  // unless the user approves an audited adjustment for the difference.
   // account_setup: a screenshot of a bank account or card creates the account (nothing is written until approved).
   // Only the last 4 digits of the number are ever kept. For a credit card the balance is what is OWED.
   accountType?: AccountSetupType;

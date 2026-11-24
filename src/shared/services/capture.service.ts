@@ -11,13 +11,16 @@ import { readTextLocally } from '../domain/capture/local';
 import { purchaseDetailsOf } from '../domain/capture/details';
 import { bankTaxInText } from '../domain/capture/fee';
 import { BankNotification, readBankNotification } from '../domain/capture/notification';
+import { foldBankCharges, isPayroll } from '../domain/capture/direction';
 import { rematchAccount } from '../domain/capture/rematch';
+import { combinePatch, findTransferPair } from '../domain/capture/transfer-pair';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
 import { RawTransaction, parseCaptureOutput } from '../domain/capture/schema';
 import { localIso } from '../domain/dates';
 import { AccountService } from './account.service';
 import { AuditLogService } from './audit-log.service';
+import { ReconciliationService } from './reconciliation.service';
 import { BusinessService } from './business.service';
 import { CaptureDraftService } from './capture-draft.service';
 import { CategoryService } from './category.service';
@@ -101,7 +104,8 @@ export class CaptureService {
     private loans: LoanService,
     private business: BusinessService,
     private audit: AuditLogService,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private reconciliation: ReconciliationService
   ) {
     const saved = this.storage.get<Partial<CapturePrefs>>('capture-prefs', {});
     this._prefs.set({ ...DEFAULT_CAPTURE_PREFS, ...saved, mailFilter: { ...DEFAULT_CAPTURE_PREFS.mailFilter, ...(saved.mailFilter ?? {}) } });
@@ -134,7 +138,13 @@ export class CaptureService {
     if (target && this.sources.byId(target)?.active) return target;
     const words = new Set(normalizeMerchant(text).split(' ').filter((w) => w.length >= 3));
     const hit = this.sources.active().filter((s) => normalizeMerchant(s.name).split(' ').some((w) => w.length >= 3 && words.has(w)));
-    return hit.length === 1 ? hit[0].id : undefined; // exactly one, never the closest
+    if (hit.length === 1) return hit[0].id; // exactly one, never the closest
+    // "PAGO NOMINA 1RA DE..." names no source of the user, but it IS the payroll: with exactly one payroll source, that is it
+    if (!hit.length && isPayroll(text)) {
+      const payroll = this.sources.active().filter((s) => s.kind === 'payroll');
+      if (payroll.length === 1) return payroll[0].id;
+    }
+    return undefined;
   };
 
   private build(raw: RawTransaction[], source: CaptureSource, extra: { text?: string; fingerprint?: string; meta?: QueueItem['meta'] }): CaptureDraft[] {
@@ -142,7 +152,8 @@ export class CaptureService {
     // the tax a bank prints in its own notice ("Impuestos: DOP 4.00") is read from the text when the reader did not
     // return it; only when the text holds ONE movement, so a tax is never attached to the wrong one
     const localTax = raw.length === 1 && extra.text ? bankTaxInText(extra.text) : undefined;
-    return raw.map((r0) => {
+    // a list of movements: the bank's tax rows are folded into the movement they were charged on
+    return foldBankCharges(raw).map((r0) => {
       const r = localTax && !r0.bankFeeText ? { ...r0, bankFeeText: localTax } : r0;
       const draft = buildDraft(r, {
         source,
@@ -263,7 +274,49 @@ export class CaptureService {
     const withNotes = notes ? list.map((d) => ({ ...d, notes: d.notes ?? notes })) : list;
     for (const d of withNotes) this.drafts.add(d);
     this.saveOriginal(withNotes.map((d) => d.id), original);
-    return { ok: true, drafts: withNotes };
+    this.linkPairs();
+    return { ok: true, drafts: withNotes.map((n) => this.drafts.byId(n.id) ?? n) }; // as read, with the pair flags
+  }
+
+  // ---------- both sides of one transfer
+
+  // Marks the pending drafts that look like the two sides of the same transfer. Idempotent; it only flags, it never combines.
+  linkPairs(): number {
+    let linked = 0;
+    const all = this.drafts.pending();
+    for (const first of all) {
+      const d = this.drafts.byId(first.id); // fresh: an earlier turn of this loop may have flagged it
+      if (!d || d.pairedWith) continue;
+      const other = findTransferPair(d, all);
+      const fresh = other ? this.drafts.byId(other.id) : undefined;
+      if (!other || !fresh || fresh.pairedWith) continue;
+      for (const [a, b] of [[d, fresh], [fresh, d]] as const) {
+        this.drafts.update(a.id, { pairedWith: b.id, doubts: a.doubts.includes('transfer-pair') ? a.doubts : [...a.doubts, 'transfer-pair'] });
+      }
+      linked++;
+    }
+    return linked;
+  }
+
+  // The user's tap: the two sides become ONE transfer (or card payment). The absorbed side goes to the history as rejected.
+  combineAsTransfer(id: string): boolean {
+    const a = this.drafts.byId(id);
+    const b = a?.pairedWith ? this.drafts.byId(a.pairedWith) : undefined;
+    if (!a || !b || a.status !== 'pending' || b.status !== 'pending') return false;
+    const plan = combinePatch(a, b);
+    if (!plan) return false;
+    if (!this.edit(plan.keep, plan.patch)) return false;
+    this.drafts.update(plan.absorb, { pairedWith: undefined, notes: 'Combined with the other side of the same transfer.' });
+    this.reject(plan.absorb);
+    return true;
+  }
+
+  // The user says these are not the same transfer: the flag goes away and is not raised again for this pair
+  unpair(id: string): void {
+    const a = this.drafts.byId(id);
+    if (!a?.pairedWith) return;
+    const other = this.drafts.byId(a.pairedWith);
+    for (const d of [a, other]) if (d) this.drafts.update(d.id, { pairedWith: undefined, doubts: d.doubts.filter((x) => x !== 'transfer-pair'), notPairedWith: [...(d.notPairedWith ?? []), d === a ? a.pairedWith! : a.id] });
   }
 
   private enqueue(input: { source: CaptureSource; payload: CapturePayload; original: CaptureOriginal; fingerprint?: string; meta?: QueueItem['meta'] }): SubmitResult {
@@ -356,7 +409,11 @@ export class CaptureService {
       doubts.delete('account-ambiguous');
       doubts.delete('account-missing');
     }
-    if (patch.kind && patch.kind !== 'unknown') doubts.delete('kind-unknown');
+    if (patch.kind && patch.kind !== 'unknown') {
+      doubts.delete('kind-unknown');
+      doubts.delete('kind-inferred');
+      doubts.delete('direction-conflict');
+    }
     const dedupe = dedupeKey(merged);
     return this.drafts.update(id, { ...patch, doubts: [...doubts], dedupeKey: dedupe });
   }
@@ -447,6 +504,14 @@ export class CaptureService {
         });
         return { ok: true, id: 'account:' + id };
       }
+      case 'balance-check': {
+        // the app's own figure is never edited: a difference becomes a visible, audited adjustment (the same one as Reconcile)
+        const view = this.reconciliation.view(op.accountId, op.currency, op.date, op.bankBalance);
+        const adj = this.reconciliation.createAdjustment(op.accountId, op.currency, op.date, view.difference);
+        if (adj && !adj.ok) return { ok: false, error: adj.error };
+        this.accounts.setReconciledAt(op.accountId, op.date);
+        return { ok: true, id: 'account:' + op.accountId };
+      }
       case 'transaction': {
         const r = this.transactions.add({ ...op.tx });
         return r.ok ? { ok: true, id: r.id } : { ok: false, error: r.error };
@@ -498,4 +563,4 @@ ${n.text}`.trim());
   }
 }
 
-const op0Entity = (op: CaptureOp): 'transaction' | 'goal' | 'loan' | 'business' | 'account' => (op.t === 'new-account' ? 'account' : op.t === 'goal-entry' ? 'goal' : op.t === 'loan-payment' ? 'loan' : op.t === 'business-purchase' ? 'business' : 'transaction');
+const op0Entity = (op: CaptureOp): 'transaction' | 'goal' | 'loan' | 'business' | 'account' => (op.t === 'new-account' || op.t === 'balance-check' ? 'account' : op.t === 'goal-entry' ? 'goal' : op.t === 'loan-payment' ? 'loan' : op.t === 'business-purchase' ? 'business' : 'transaction');
