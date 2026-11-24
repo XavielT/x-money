@@ -10,7 +10,8 @@ import { RawTransaction } from './schema';
 
 const flat = (s: string | undefined): string => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-export const PAYROLL_RE = /\b(nomina|salario|sueldo|quincena)\b/;
+// the AI writes its descriptions in English ("Payroll deposit credited to the account"), the bank in Spanish
+export const PAYROLL_RE = /\b(nomina|salario|sueldo|quincena|payroll|salary)\b/;
 const REFUND_RE = /\b(devolucion|reverso|reversado|reembolso|anulacion)\b/;
 // money between the user's OWN accounts is a transfer, never income or expense (rule 1)
 const OWN_TRANSFER_RE = /\b(?:transferencia|transf|traspaso)\.?\s+(?:propia|entre\s+(?:mis\s+)?cuentas)\b/;

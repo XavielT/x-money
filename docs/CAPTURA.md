@@ -261,3 +261,6 @@ Si el aviso de nómina llegó **antes** de crear la fuente de ingreso, el borrad
 corre una sola vez). Ahora `estimateWaitingIncome` corre cada vez que cambian las fuentes (al abrir la bandeja y al crear o editar una
 fuente): un ingreso pendiente **sin monto** cuya fuente se conoce recibe el monto de siempre de esa fuente como estimación marcada. Un
 borrador que ya tiene monto no se toca, y sin fuente nada se inventa.
+
+El detector de nómina (`isPayroll`) reconoce también las palabras en inglés `payroll` y `salary` (2.25.4): la IA describe el aviso como
+«Payroll deposit credited to the account», sin la palabra «nómina», y por eso su fuente no se encontraba.

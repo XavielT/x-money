@@ -297,3 +297,13 @@ describe('balance-check: the pending captures explain part of a difference (2.25
     expect(pendingEffect(drafts, 'a', 'DOP')).toBe(798);
   });
 });
+
+describe('payroll in English or Spanish (2.25.4)', () => {
+  it('the AI wording counts as payroll', async () => {
+    const { isPayroll } = await import('./direction');
+    expect(isPayroll('Payroll deposit credited to the account')).toBe(true);
+    expect(isPayroll('Notificación Depósito de Nómina')).toBe(true);
+    expect(isPayroll('Salary payment')).toBe(true);
+    expect(isPayroll('Supermercado')).toBe(false);
+  });
+});

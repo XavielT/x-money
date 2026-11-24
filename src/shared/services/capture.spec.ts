@@ -908,3 +908,12 @@ describe('a payroll source created AFTER the notice arrived settles the waiting 
     expect(s.drafts.byId('w3')!.amountMinor).toBeUndefined();
   });
 });
+
+describe('the English description of a payroll notice finds the payroll source (2.25.4)', () => {
+  it('"Payroll deposit credited to the account" (no Spanish word) is the payroll and gets the usual amount', () => {
+    const s = session();
+    s.drafts.add({ id: 'e1', createdAt: '2026-11-18T10:00:00Z', source: 'email', status: 'pending', kind: 'income', confidence: {}, doubts: ['amount-missing'], description: 'Payroll deposit credited to the account' });
+    expect(s.capture.estimateWaitingIncome()).toBe(1);
+    expect(s.drafts.byId('e1')).toMatchObject({ amountMinor: 3000000, resolvedIncomeSourceId: 'pay' });
+  });
+});
