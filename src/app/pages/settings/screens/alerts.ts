@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { InsightSettingsComponent } from '../../../../shared/components/insight-settings/insight-settings';
 import { SettingsHeaderComponent } from '../../../../shared/components/settings-header/settings-header';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
+import { IncomeNoticeService } from '../../../../shared/services/income-notice.service';
 import { CardNoticeService } from '../../../../shared/services/card-notice.service';
 import { SettingsService } from '../../../../shared/services/settings.service';
 
@@ -18,11 +19,23 @@ import { SettingsService } from '../../../../shared/services/settings.service';
 export class SettingsAlertsComponent {
   constructor(
     public settingsService: SettingsService,
-    public cardNotices: CardNoticeService
+    public cardNotices: CardNoticeService,
+    public incomeNotices: IncomeNoticeService
   ) {}
 
   setAntMax(value: number | null): void {
     this.settingsService.setAntMax(value && value > 0 ? Number(value) : undefined);
+  }
+
+  // Device reminders on the morning an income is expected (payroll...). The system permission is asked only here.
+  async toggleIncomeAlerts(event: Event): Promise<void> {
+    const on = (event.target as HTMLInputElement).checked;
+    if (on) {
+      const granted = await this.incomeNotices.enable();
+      if (!granted) (event.target as HTMLInputElement).checked = false;
+    } else {
+      await this.incomeNotices.disable();
+    }
   }
 
   // Device reminders for card cut and due dates. The system permission is asked only here.

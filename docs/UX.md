@@ -165,3 +165,6 @@ Origen: Xaviel (25/11/2026): «muchas veces tengo que elegir "Otros", por ejempl
 
 ## Cuadrar con el banco cada mes (2.26.3)
 Inicio muestra un aviso cuando una cuenta de banco, de ahorro o una tarjeta de crédito lleva 30 días o más sin cuadrarse (o nunca se cuadró y ya tiene movimientos): nombra una cuenta a la vez, la que lleva más tiempo, y «Cuadrar con el banco» abre su pantalla. «Después» lo calla 7 días en el dispositivo. Solo recuerda; no crea ni cambia nada. Efectivo, tarjetas de débito, cuentas archivadas y cuentas sin movimientos nunca aparecen (`domain/match-due.ts`).
+
+## Aviso del día del ingreso (2.26.4)
+Ajustes → Avisos tiene «Avisos de ingresos» (apagado por defecto, solo en el teléfono): a las 9:00 del día en que se espera un ingreso (por ejemplo la nómina del 13 y del 28) llega un aviso sin montos. No registra nada: confirmas con «Yes, it arrived» en Inicio. Fechas en `domain/income-notices.ts`, programación en `IncomeNoticeService` (se carga solo si el usuario lo encendió).

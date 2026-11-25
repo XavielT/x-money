@@ -57,6 +57,9 @@ export class App {
     if (Capacitor.isNativePlatform() && this.storage.get<{ smartAlerts?: boolean }>('device-prefs', {}).smartAlerts) {
       void import('../shared/services/insight-notice.service').then((m) => this.injector.get(m.InsightNoticeService));
     }
+    if (Capacitor.isNativePlatform() && this.storage.get<{ incomeAlerts?: boolean }>('device-prefs', {}).incomeAlerts) {
+      void import('../shared/services/income-notice.service').then((m) => this.injector.get(m.IncomeNoticeService));
+    }
     if (Capacitor.isNativePlatform()) {
       // Android hardware back: navigate back inside the app, exit only from Home
       CapacitorApp.addListener('backButton', () => {

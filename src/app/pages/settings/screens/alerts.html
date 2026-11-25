@@ -12,6 +12,17 @@
     <p class="settings-hint" *ngIf="cardNotices.status() === 'error'">{{ 'The reminders could not be scheduled. The alerts still show inside the app.' | t }}</p>
   </section>
 
+  <section class="settings-section">
+    <h2>{{ 'Income alerts' | t }}</h2>
+    <p class="settings-hint">{{ 'The day an income is expected (your payroll), the phone reminds you to confirm it. It never shows amounts, and nothing is registered until you confirm.' | t }}</p>
+    <label class="settings-lock x-card" *ngIf="incomeNotices.supported">
+      <span><input type="checkbox" [checked]="incomeNotices.enabled()" (change)="toggleIncomeAlerts($event)" /> {{ 'Remind me when an income is expected' | t }}</span>
+    </label>
+    <p class="settings-hint" *ngIf="!incomeNotices.supported">{{ 'Phone reminders are available in the Android app. Here the alerts show inside the app.' | t }}</p>
+    <p class="settings-hint" *ngIf="incomeNotices.status() === 'denied'">{{ 'Notifications are blocked for X Money. Allow them in the phone settings and try again.' | t }}</p>
+    <p class="settings-hint" *ngIf="incomeNotices.status() === 'error'">{{ 'The reminders could not be scheduled. The alerts still show inside the app.' | t }}</p>
+  </section>
+
   <app-insight-settings></app-insight-settings>
 
   <details class="settings-advanced x-card" id="alerts-advanced">
