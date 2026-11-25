@@ -954,7 +954,7 @@ describe('the category of a captured purchase (2.26.0)', () => {
   it('a place it does not know keeps the reader\'s candidate, and with none it stays for the user', async () => {
     const s = session();
     on(s.ai);
-    gateway.next = async () => reply(shell({ counterparty: 'CIRASOL SANTO DOMINGO', categoryCandidate: 'groceries' }), shell({ counterparty: 'AURELIA NABO' }));
+    gateway.next = async () => reply(shell({ counterparty: 'CIRASOL SANTO DOMINGO', categoryCandidate: 'groceries' }), shell({ counterparty: 'ALGO RARO SDQ' }));
     const r = await s.capture.submit(image);
     expect(r.ok && r.drafts.map((d) => d.resolvedCategoryId)).toEqual(['cat-groceries', undefined]);
   });

@@ -42,6 +42,7 @@ const EXPENSE: readonly Rule[] = [
   { id: 'cat-sports', keywords: ['smart fit', 'smartfit', 'gimnasio*', 'gym'] },
   { id: 'cat-health', keywords: ['farmacia*', 'farm', 'gbc', 'hidalgos', 'clinica*', 'hospital*', 'laborat*', 'medic*', 'dental*', 'dentist*', 'odont*'] },
   { id: 'cat-restaurants', keywords: ['mcdonald*', 'burger king', 'wendy*', 'pizza hut', 'kfc', 'subway', 'papa john*', 'domino*', 'teriyaki', 'restaurante*', 'restaurant*', 'cafeteria*', 'pica pollo', 'sushi'] },
+  { id: 'cat-food', keywords: ['naboa*', 'aurelia nabo', 'chimi*', 'fritura*', 'yaniqueque*', 'comedor*'] },
   { id: 'cat-going-out', keywords: ['liquor*', 'licor*', 'bar', 'cerveceria*', 'discoteca*'] },
   { id: 'cat-groceries', keywords: ['jumbo', 'sirena', 'supermercado*', 'super mercado*', 'pricesmart', 'plaza lama', 'bravo', 'sm bravo', 'hiper ole', 'hiperole', 'carrefour', 'la cadena', 'colmado*', 'minimarket', 'mini market'] },
   { id: 'cat-vehicle-maintenance', keywords: ['taller*', 'repuesto*', 'lubricante*', 'gomera*', 'neumatic*', 'car wash', 'lavadero*'] },

@@ -27,6 +27,10 @@ describe('what a place is known for (no AI)', () => {
     expect(hintFor('DLO*TEMU.COM SANTO DOMINGO')?.categoryId).toBe('cat-shopping');
   });
 
+  it('street food places are Food', () => {
+    for (const text of ['AURELIA NABO', 'Naboa Aurelia', 'Chimi Don Pepe', 'Comedor Maria']) expect(hintFor(text)?.categoryId, text).toBe('cat-food');
+  });
+
   it('the first rule wins: "uber eats" is delivery, plain "uber" is transport', () => {
     expect(hintFor('UBER*EATS SANTO DOMINGO')?.categoryId).toBe('cat-delivery');
     expect(hintFor('UBER TRIP')?.categoryId).toBe('cat-transport');
@@ -45,7 +49,7 @@ describe('what a place is known for (no AI)', () => {
   });
 
   it('what it does not know it leaves alone: never a guess', () => {
-    for (const text of ['CIRASOL SANTO DOMINGO', 'AURELIA NABO', 'Algo raro', '', undefined]) expect(hintFor(text)).toBeNull();
+    for (const text of ['CIRASOL SANTO DOMINGO', 'Algo raro', '', undefined]) expect(hintFor(text)).toBeNull();
     expect(hintFor('Supermercado Shellfish')?.categoryId).toBe('cat-groceries'); // a word is a whole word: "shellfish" is not "shell"
     expect(hintFor('JUMBO', 'income')).toBeNull();
   });
@@ -61,7 +65,7 @@ describe('the expenses filed under "Other", by place', () => {
     t('SHELL AV LUPERON · ref 1', 400, '2026-11-18'),
     t('SHELL AV LUPERON · ref 2', 160, '2026-11-16'),
     t('ESTACION TOTAL ENERGY CHA', 1000, '2026-11-11'),
-    t('AURELIA NABO', 330, '2026-11-19'),
+    t('CIRASOL SANTO DOMINGO', 330, '2026-11-19'),
     t('MB a 0842189607 Daisy', 500, '2026-11-06'),
     t('MB a 0842189607 Daisy', 1000, '2026-11-21'),
     t('JUMBO LUPERON', 183.68, '2026-11-18', { categoryId: 'cat-groceries' }), // already filed: not here
@@ -76,7 +80,7 @@ describe('the expenses filed under "Other", by place', () => {
       ['MB a 0842189607 Daisy', 2, 1500, 'cat-sent-people'],
       ['ESTACION TOTAL ENERGY CHA', 1, 1000, 'cat-fuel'],
       ['SHELL AV LUPERON', 2, 560, 'cat-fuel'],
-      ['AURELIA NABO', 1, 330, undefined],
+      ['CIRASOL SANTO DOMINGO', 1, 330, undefined],
     ]);
     expect(g[2].ids).toHaveLength(2);
   });
