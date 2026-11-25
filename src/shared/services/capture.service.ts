@@ -12,6 +12,7 @@ import { purchaseDetailsOf } from '../domain/capture/details';
 import { bankTaxInText } from '../domain/capture/fee';
 import { BankNotification, bankOfSender, localDateOf, readBankNotification, readBankText } from '../domain/capture/notification';
 import { foldBankCharges, isPayroll } from '../domain/capture/direction';
+import { unreadAmounts } from '../domain/capture/unread';
 import { rematchAccount, siblingAccountPatches } from '../domain/capture/rematch';
 import { hintFor } from '../domain/merchant-categories';
 import { combinePatch, findTransferPair } from '../domain/capture/transfer-pair';
@@ -68,7 +69,8 @@ export interface CapturePrefs {
 
 export const DEFAULT_CAPTURE_PREFS: CapturePrefs = { saveReceipts: false, mailEnabled: false, mailFilter: { senders: [], subjectWords: [] }, includePdf: false, notificationsEnabled: false };
 
-export type SubmitResult = { ok: true; drafts: CaptureDraft[]; queued?: boolean } | { ok: false; code: AiFailure | 'unreadable' | 'write' };
+// `unread`: amounts (minor units) that are in the text that was sent but in no draft that came back: the reader skipped them
+export type SubmitResult = { ok: true; drafts: CaptureDraft[]; queued?: boolean; unread?: number[] } | { ok: false; code: AiFailure | 'unreadable' | 'write' };
 
 // What happened to one bank notification: a new draft, ignored because it is not a movement, or already handled
 export type NotificationOutcome = 'draft' | 'skipped' | 'seen' | 'error';
@@ -622,7 +624,10 @@ ${n.text}`.trim());
   async captureText(text: string, source: 'voice' | 'text' = 'text'): Promise<SubmitResult> {
     const reduced = minimizeText(text);
     if (!reduced) return { ok: false, code: 'unreadable' };
-    return this.submit({ source, payload: { mode: 'text', text: reduced }, original: { kind: 'text', text: reduced } });
+    const r = await this.submit({ source, payload: { mode: 'text', text: reduced }, original: { kind: 'text', text: reduced } });
+    if (!r.ok || r.queued) return r;
+    const unread = unreadAmounts(reduced, r.drafts);
+    return unread.length ? { ...r, unread } : r;
   }
 }
 

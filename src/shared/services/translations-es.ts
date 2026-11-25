@@ -431,6 +431,7 @@ export const ES: Record<string, string> = {
   '{n} moved to': '{n} movidos a',
   'Mark all ready': 'Marcar todas las listas',
   'expenses are filed under Other. Put them where they belong': 'gastos están en Otros. Ponlos donde corresponden',
+  'The reader did not return these amounts from your text: {list}. Send them again.': 'El lector no devolvió estos montos de tu texto: {list}. Envíalos de nuevo.',
   'Fuel': 'Combustible',
   'Parking & tolls': 'Parqueo y peajes',
   'Phone & top-ups': 'Teléfono y recargas',

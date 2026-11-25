@@ -959,3 +959,22 @@ describe('the category of a captured purchase (2.26.0)', () => {
     expect(r.ok && r.drafts.map((d) => d.resolvedCategoryId)).toEqual(['cat-groceries', undefined]);
   });
 });
+
+describe('a reader that skips a row says so (2.26.1)', () => {
+  it('a pasted list where one amount came back and one did not: the result names the missing amount', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: 'DOP 2,500.00', dateText: '14/11/2026', counterparty: 'felix', accountLast4: '7788' }));
+    const r = await s.capture.captureText('Popular 7788 | 14/11/2026 + DOP 2,500.00 felix | 21/11/2026 - DOP 1,000.00 Daisy');
+    expect(r.ok && r.drafts).toHaveLength(1);
+    expect(r.ok && r.unread).toEqual([100000]);
+  });
+
+  it('when everything was read there is no warning', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ amountText: 'DOP 2,500.00', dateText: '14/11/2026', counterparty: 'felix', accountLast4: '7788' }));
+    const r = await s.capture.captureText('Popular 7788 | 14/11/2026 + DOP 2,500.00 felix');
+    expect(r.ok && r.unread).toBeUndefined();
+  });
+});

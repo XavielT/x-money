@@ -282,6 +282,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
     let drafts = 0;
     let queued = 0;
     const failures: string[] = [];
+    let unread: number[] = [];
     try {
       for (const item of [...this.items()]) {
         const prepared: Prepared | null = item.file ? await prepareFile(item.file, item.redactions) : null;
@@ -301,6 +302,7 @@ export class CaptureComponent implements OnInit, OnDestroy {
         if (r.ok) {
           drafts += r.queued ? 0 : r.drafts.length;
           queued += r.queued ? 1 : 0;
+          if (r.unread?.length) unread = r.unread;
           this.text.set('');
         } else failures.push(this.reason(r.code));
       }
@@ -310,6 +312,8 @@ export class CaptureComponent implements OnInit, OnDestroy {
     if (failures.length) this.message.set([...new Set(failures)].join(' '));
     if (drafts) this.notice.set(this.translate.instant('{n} draft(s) waiting for your review.', { n: String(drafts) }));
     else if (queued) this.notice.set(this.translate.instant('No connection: the capture waits on this device and is read when the connection returns.'));
+    // a reader can skip a row of a long list: say which amounts were in the text and are in no draft
+    if (unread.length) this.message.set(this.translate.instant('The reader did not return these amounts from your text: {list}. Send them again.', { list: unread.map((m) => (m / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })).join(', ') }));
   }
 
   reason(code: AiFailure | 'unreadable' | 'write'): string {

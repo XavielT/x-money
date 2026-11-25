@@ -273,3 +273,10 @@ cargos como gastos, el pago ya registrado como duplicado y el balance como compr
 Dos mejoras: **una cuenta elegida para una fila se aplica a las demás filas de la misma captura** (`siblingAccountPatches`; antes cada
 fila de Popular pedía la cuenta por separado) y **varios cargos del banco de un mismo pago se suman en un solo cargo** (el impuesto
 de 13.38 y la comisión de 100.00 de un pago son 113.38, no un borrador aparte).
+
+### Un lector que se salta una fila lo dice (2.26.1)
+
+Al pegar una lista de movimientos como texto, el lector (IA o local) puede devolver menos filas de las que enviaste sin avisar (probado
+el 25/11/2026: 7 de 10, y otra vez 2 de 3). `domain/capture/unread.ts` compara los montos del texto (con dos decimales, desde 1.00, sin fechas,
+teléfonos, referencias, porcentajes ni saldos) con los montos de los borradores y la pantalla de Captura avisa: «El lector no devolvió
+estos montos de tu texto: …». Solo señala; nunca agrega nada.
