@@ -11,6 +11,7 @@ import { TransactionService } from '../../../shared/services/transaction.service
 import { SettingsService } from '../../../shared/services/settings.service';
 import { CategoryService } from '../../../shared/services/category.service';
 import { AccountService } from '../../../shared/services/account.service';
+import { OtherBannerComponent } from '../../../shared/components/other-banner/other-banner';
 import { TranslateService } from '../../../shared/services/translate.service';
 
 interface DayGroup {
@@ -23,7 +24,7 @@ interface DayGroup {
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, TransactionItem, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, TransactionItem, TranslatePipe, OtherBannerComponent],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })

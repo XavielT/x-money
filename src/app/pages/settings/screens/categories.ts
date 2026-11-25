@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { OtherReviewComponent } from '../../../../shared/components/other-review/other-review';
 import { CategoryManagerComponent } from '../../../../shared/components/category-manager/category-manager';
 import { SettingsHeaderComponent } from '../../../../shared/components/settings-header/settings-header';
 
@@ -6,10 +7,11 @@ import { SettingsHeaderComponent } from '../../../../shared/components/settings-
 @Component({
   selector: 'app-settings-categories',
   standalone: true,
-  imports: [SettingsHeaderComponent, CategoryManagerComponent],
+  imports: [SettingsHeaderComponent, CategoryManagerComponent, OtherReviewComponent],
   template: `
     <div class="x-page settings">
       <app-settings-header title="Categories" />
+      <app-other-review />
       <app-category-manager />
     </div>
   `,

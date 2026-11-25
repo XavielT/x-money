@@ -23,6 +23,7 @@ import { GoalService } from './goal.service';
 import { IncomeService } from './income.service';
 import { LoanService } from './loan.service';
 import { StorageService } from './storage.service';
+import { TextRuleService } from './text-rule.service';
 import { TransactionService } from './transaction.service';
 
 const bank = account({ id: 'k1', name: 'Cuenta corriente Zorvex', type: 'bank', bankId: 'popular', last4: '7788', initialBalance: 100000 });
@@ -915,5 +916,46 @@ describe('the English description of a payroll notice finds the payroll source (
     s.drafts.add({ id: 'e1', createdAt: '2026-11-18T10:00:00Z', source: 'email', status: 'pending', kind: 'income', confidence: {}, doubts: ['amount-missing'], description: 'Payroll deposit credited to the account' });
     expect(s.capture.estimateWaitingIncome()).toBe(1);
     expect(s.drafts.byId('e1')).toMatchObject({ amountMinor: 3000000, resolvedIncomeSourceId: 'pay' });
+  });
+});
+
+describe('the category of a captured purchase (2.26.0)', () => {
+  const shell = (over: Record<string, unknown> = {}) => item({ amountText: 'RD$ 160.00', dateText: '16/11/2026', counterparty: 'SHELL AV LUPERON', accountLast4: '7788', ...over });
+
+  it('a gas station is Fuel even when the reader guessed another category', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(shell({ categoryCandidate: 'groceries' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0].resolvedCategoryId).toBe('cat-fuel');
+  });
+
+  it('the user\'s own rule for that place beats the built-in knowledge', async () => {
+    const s = session();
+    on(s.ai);
+    TestBed.inject(TextRuleService).learn('expense', 'SHELL AV LUPERON', 'cat-transport');
+    gateway.next = async () => reply(shell());
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts[0].resolvedCategoryId).toBe('cat-transport');
+  });
+
+  it('money from a person is filed as received from people, with no income source invented', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(item({ kind: 'income', amountText: 'RD$ 2,500.00', dateText: '14/11/2026', counterparty: 'MB desde 840660534 felix yoser', accountLast4: '7788' }));
+    const r = await s.capture.submit(image);
+    const d = r.ok ? r.drafts[0] : undefined;
+    expect(d).toMatchObject({ resolvedCategoryId: 'cat-received-people' });
+    expect(d!.resolvedIncomeSourceId).toBeUndefined();
+    expect(s.capture.approve(d!.id).ok).toBe(true);
+    expect(s.tx.transactions()[0]).toMatchObject({ type: 'income', categoryId: 'cat-received-people', amount: 2500 });
+  });
+
+  it('a place it does not know keeps the reader\'s candidate, and with none it stays for the user', async () => {
+    const s = session();
+    on(s.ai);
+    gateway.next = async () => reply(shell({ counterparty: 'CIRASOL SANTO DOMINGO', categoryCandidate: 'groceries' }), shell({ counterparty: 'AURELIA NABO' }));
+    const r = await s.capture.submit(image);
+    expect(r.ok && r.drafts.map((d) => d.resolvedCategoryId)).toEqual(['cat-groceries', undefined]);
   });
 });

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AiAssistService, Suggestion } from '../../ai/ai-assist.service';
 import { AiService } from '../../ai/ai.service';
 import { TranslatePipe } from '../../pipes/translate.pipe';
+import { hintFor } from '../../domain/merchant-categories';
 import { CategoryService } from '../../services/category.service';
 import { TextRuleService } from '../../services/text-rule.service';
 import { AiConsentSheetComponent } from '../ai-consent-sheet/ai-consent-sheet';
@@ -15,8 +16,9 @@ import { AiLabelComponent } from '../ai-label/ai-label';
   standalone: true,
   imports: [CommonModule, TranslatePipe, AiLabelComponent, AiConsentSheetComponent],
   template: `
-    <div class="hint" *ngIf="rule() || ai.prefs().enabled">
+    <div class="hint" *ngIf="rule() || builtin() || ai.prefs().enabled">
       <button type="button" class="hint-chip" *ngIf="rule() as r" (click)="pick(r.target)">💡 {{ r.label }} <small>({{ 'learned' | t }})</small></button>
+      <button type="button" class="hint-chip" *ngIf="!rule() && builtin() as b" (click)="pick(b.target)">💡 {{ b.label | t }} <small>({{ 'usual for this place' | t }})</small></button>
       <button type="button" class="hint-link" *ngIf="ai.prefs().enabled && moduleOn() && note.trim().length > 2" (click)="ask()" [disabled]="busy()">✨ {{ 'Suggest a category with AI' | t }}</button>
       <button type="button" class="hint-chip" *ngFor="let s of aiPicks()" (click)="pick(s.target)">{{ s.label }} <small>{{ s.confidence * 100 | number: '1.0-0' }}%</small></button>
       <app-ai-label *ngIf="aiPicks().length"></app-ai-label>
@@ -59,6 +61,7 @@ export class AiCategoryHintComponent implements OnChanges {
   @Output() picked = new EventEmitter<string>();
 
   rule = signal<Suggestion | null>(null);
+  builtin = signal<Suggestion | null>(null); // what the place is known for (no AI, no network)
   aiPicks = signal<Suggestion[]>([]);
   busy = signal(false);
   consent = signal(false);
@@ -78,6 +81,8 @@ export class AiCategoryHintComponent implements OnChanges {
   ngOnChanges(): void {
     const r = this.rules.match(this.note, 'expense');
     this.rule.set(r ? { source: 'rule', target: r.target, label: this.assistName(r.target), confidence: 1 } : null);
+    const known = r ? null : hintFor(this.note, 'expense');
+    this.builtin.set(known && this.categories.byId(known.categoryId) ? { source: 'rule', target: known.categoryId, label: this.assistName(known.categoryId), confidence: 1 } : null);
     this.aiPicks.set([]);
     this.message.set('');
   }

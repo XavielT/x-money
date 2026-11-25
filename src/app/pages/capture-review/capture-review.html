@@ -14,8 +14,9 @@
     <p>{{ 'No captures waiting.' | t }} <a routerLink="/capture">{{ 'Capture something' | t }}</a></p>
   </div>
 
-  <div class="review-bulk" *ngIf="marked().size > 0">
-    <button class="x-btn" (click)="approveMarked()">{{ 'Approve the marked' | t }} ({{ marked().size }})</button>
+  <div class="review-bulk" *ngIf="marked().size > 0 || readyIds().length > 1">
+    <button class="x-btn" *ngIf="readyIds().length > 1 && marked().size === 0" (click)="markReady()">✓ {{ 'Mark all ready' | t }} ({{ readyIds().length }})</button>
+    <button class="x-btn" *ngIf="marked().size > 0" (click)="approveMarked()">{{ 'Approve the marked' | t }} ({{ marked().size }})</button>
   </div>
 
   <article class="x-card review-item" *ngFor="let d of list(); trackBy: trackById" [class.dup]="d.status === 'duplicate'">
@@ -24,11 +25,17 @@
       <div class="review-main">
         <b>{{ d.counterparty || d.accountName || d.description || (d.status === 'duplicate' && d.kind === 'unknown' ? ('Same file as an earlier capture' | t) : (kindLabel(d.kind) | t)) }}</b>
         <small *ngIf="d.kind !== 'account_setup' && d.kind !== 'balance_check'">{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}<ng-container *ngIf="d.sender"> · {{ d.sender }}</ng-container></small>
+        <small class="review-chips" *ngIf="chipsOf(d) as chips">{{ chips }}</small>
         <small *ngIf="d.kind === 'account_setup'">{{ accountSub(d) }}</small>
         <small *ngIf="d.kind === 'balance_check'">{{ kindLabel(d.kind) | t }} · {{ d.occurredAt || '—' }}</small>
         <small *ngIf="d.kind === 'balance_check' && check(d) as c">{{ c.difference === 0 ? ('Matches your app' | t) : (('Difference' | t) + ': ' + money(c.difference, c.currency)) }}</small>
       </div>
       <strong class="review-amount" [class.doubt]="d.kind === 'account_setup' || d.kind === 'balance_check' ? d.balanceMinor === undefined : (!d.amountMinor || d.doubts.includes('amount-unverified'))">{{ amountLabel(d) }}</strong>
+    </div>
+
+    <div class="review-quick" *ngIf="isReady(d) && open() !== d.id">
+      <button class="x-btn" (click)="approve(d)">{{ 'Approve' | t }}</button>
+      <button class="x-btn x-btn-danger" (click)="reject(d)">{{ 'Reject' | t }}</button>
     </div>
 
     <ul class="review-doubts" *ngIf="d.doubts.length">

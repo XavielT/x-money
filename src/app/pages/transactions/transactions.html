@@ -1,6 +1,11 @@
 <div class="x-page transactions">
   <h1 class="x-page-title">{{ 'Transactions' | t }}</h1>
 
+  <!-- Expenses filed under "Other": one tap to put them where they belong -->
+  @defer (on idle) {
+    <app-other-banner />
+  }
+
   <!-- Month navigation -->
   <div class="transactions-month">
     <button (click)="prevMonth()" aria-label="Previous month">‹</button>

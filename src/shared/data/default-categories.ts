@@ -8,6 +8,7 @@ const BASE_CATEGORIES: CategoryModel[] = [
   { id: 'cat-groceries', name: 'Groceries', icon: '🛒', color: '#66bb6a', type: 'expense' },
   { id: 'cat-restaurants', name: 'Restaurants', icon: '🍽️', color: '#ffa726', type: 'expense' },
   { id: 'cat-transport', name: 'Transport', icon: '🚗', color: '#42a5f5', type: 'expense' },
+  { id: 'cat-fuel', name: 'Fuel', icon: '⛽', color: '#ef6c00', type: 'expense' },
   { id: 'cat-home', name: 'Home', icon: '🏠', color: '#ab47bc', type: 'expense' },
   { id: 'cat-bills', name: 'Bills', icon: '🧾', color: '#ffca28', type: 'expense' },
   { id: 'cat-subscriptions', name: 'Subscriptions', icon: '📺', color: '#5c6bc0', type: 'expense' },
@@ -43,6 +44,10 @@ const BASE_CATEGORIES: CategoryModel[] = [
   // Loans (2.14.0): the repaid principal and the money received are not spending or income; app-managed
   { id: 'cat-loan-principal', name: 'Loan principal repaid', icon: '🏦', color: '#8d6e63', type: 'expense', system: true },
   { id: 'cat-loan-disbursement', name: 'Loan received', icon: '🏦', color: '#8d6e63', type: 'income', system: true },
+  // Added in 2.26.0 from what a real month of spending was filed under "Other"
+  { id: 'cat-parking', name: 'Parking & tolls', icon: '🅿️', color: '#5c6bc0', type: 'expense' },
+  { id: 'cat-phone', name: 'Phone & top-ups', icon: '📱', color: '#26a69a', type: 'expense' },
+  { id: 'cat-sent-people', name: 'Sent to people', icon: '🤝', color: '#ec407a', type: 'expense' },
   { id: 'cat-other-expense', name: 'Other', icon: '📦', color: '#78909c', type: 'expense' },
   // Income categories
   { id: 'cat-salary', name: 'Salary', icon: '💼', color: '#22c55e', type: 'income' },
@@ -51,6 +56,8 @@ const BASE_CATEGORIES: CategoryModel[] = [
   { id: 'cat-investments', name: 'Investments', icon: '📈', color: '#26a69a', type: 'income' },
   { id: 'cat-refunds', name: 'Refunds', icon: '↩️', color: '#29b6f6', type: 'income' },
   { id: 'cat-gifts', name: 'Gifts', icon: '🎁', color: '#f06292', type: 'income' },
+  { id: 'cat-reimbursements', name: 'Reimbursements', icon: '🧾', color: '#4db6ac', type: 'income' },
+  { id: 'cat-received-people', name: 'Received from people', icon: '🤝', color: '#81c784', type: 'income' },
   { id: 'cat-other-income', name: 'Other', icon: '💰', color: '#9ccc65', type: 'income' },
 ];
 

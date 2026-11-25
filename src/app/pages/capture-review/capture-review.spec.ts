@@ -77,3 +77,56 @@ describe('review captures', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.review-amount')?.classList.contains('doubt')).toBe(false);
   });
 });
+
+describe('review captures: the list does the easy part (2.26.0)', () => {
+  beforeEach(() => vi.useRealTimers());
+
+  class Pair implements AiGateway {
+    async run(_: AiWireRequest): Promise<GatewayResult> {
+      const row = (who: string, amount: string) => ({ kind: 'expense', confidence: {}, amountText: amount, dateText: '16/11/2026', counterparty: who, accountLast4: '7788', currencyHint: 'DOP' });
+      return { ok: true, output: JSON.stringify({ transactions: [row('SHELL AV LUPERON', 'RD$ 160.00'), row('CIRASOL', 'RD$ 330.00')] }), usage: { inputTokens: 1, outputTokens: 1 }, model: 'm', requestId: 'x' };
+    }
+    async usage(): Promise<GatewayUsage> {
+      return { ok: true, usage: { requests: 0, tokens: 0, requestCap: 300, tokenCap: 400000, month: '2026-11' } };
+    }
+  }
+
+  async function pair() {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: StorageService, useValue: new MemoryStorage().seed({ accounts: [{ id: 'k1', name: 'Corriente', icon: 'x', type: 'bank', currency: 'DOP', initialBalance: 0, last4: '7788' }], transactions: [] }) as unknown as StorageService },
+        { provide: AuthService, useValue: { mode: signal('signed-in') } },
+        { provide: AI_GATEWAY, useValue: new Pair() },
+      ],
+    });
+    TestBed.inject(CategoryService);
+    TestBed.inject(AiService).setDocuments(true);
+    await TestBed.inject(CaptureService).submit({ source: 'image', payload: { mode: 'image', mediaType: 'image/jpeg', data: 'QUJD' }, original: { kind: 'image', thumb: 'data:image/jpeg;base64,QUJD' }, fingerprint: crypto.randomUUID() });
+    const fixture = TestBed.createComponent(CaptureReviewComponent);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('shows where each draft goes without opening it, and which ones are ready', async () => {
+    const fixture = await pair();
+    const c = fixture.componentInstance;
+    const drafts = c.list();
+    const shell = drafts.find((d) => d.counterparty === 'SHELL AV LUPERON')!;
+    const unknown = drafts.find((d) => d.counterparty === 'CIRASOL')!;
+    expect(c.chipsOf(shell)).toBe('Corriente ·7788 · Fuel');
+    expect(c.isReady(shell)).toBe(true); // the account and the category are settled and nothing is in doubt
+    expect(c.isReady(unknown)).toBe(false); // CIRASOL is not a place it knows: the category is the user's to choose
+    expect(c.readyIds()).toEqual([shell.id]);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.review-quick').length).toBe(1);
+  });
+
+  it('"mark all ready" only marks, and never a draft that is not ready; approving stays the user\'s tap', async () => {
+    const fixture = await pair();
+    const c = fixture.componentInstance;
+    c.markReady();
+    expect([...c.marked()]).toEqual(c.readyIds());
+    expect(c.capture.drafts.pending().every((d) => d.status === 'pending')).toBe(true); // nothing was registered
+  });
+});

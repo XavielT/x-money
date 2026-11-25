@@ -145,3 +145,20 @@ Hecha leyendo plantillas y estilos (un agente de solo lectura, verificada por m�
 | M | Ajustes | Buscador de ajustes arriba del menú (opcional, no se hizo en 2.23.0) | Con 9 filas todavía no hace falta; revisar si crecen |
 | M | Ajustes → Datos | La confirmación de «Delete all data» es un solo `confirm()`; podría pedir escribir la palabra | No se debilitó ni se cambió |
 | B | Bundle inicial | 593,05 kB: bajo el presupuesto de 600 kB por primera vez desde 2.21.0 (625,43 kB en 2.23.0). Se logró cargando `/add` y `/edit/:id` bajo demanda (el formulario nuevo habría subido el inicial a 644 kB) | La advertencia ya no sale |
+
+## Menos «Otros» y menos toques (2.26.0)
+
+Origen: Xaviel (25/11/2026): «muchas veces tengo que elegir "Otros", por ejemplo cuando gasto en combustible», y «que la app sea más fácil».
+
+- **Categorías nuevas desde su gasto real** (`data/default-categories.ts`; las instalaciones existentes las reciben solas): Combustible ⛽,
+  Parqueo y peajes 🅿️, Teléfono y recargas 📱, Enviado a personas 🤝; ingresos: Reintegros 🧾 y Recibido de personas 🤝. No se creó una
+  categoría «Colmado»: un colmado es Compras del supermercado.
+- **Lo que la app sabe de un lugar** (`domain/merchant-categories.ts`, puro, sin IA ni red): estaciones de combustible, cadenas de
+  supermercado, farmacias, luz, suscripciones, los cargos propios del banco (DGII, comisiones), parqueos, recargas y transferencias a
+  personas («MB a 0842… Daisy»). Orden de prioridad: **tu regla aprendida > lo conocido > la suposición del lector**. Lo que no conoce
+  lo deja vacío: nunca adivina.
+- **«Guardado en Otros»** (Ajustes → Categorías, y un aviso en Movimientos con 3 o más): agrupa por lugar, propone la categoría y un solo
+  toque en «Mover» corrige todos los movimientos del lugar (misma edición auditada de siempre, un movimiento conciliado se respeta, los saldos
+  no cambian) y la app lo recuerda para los siguientes.
+- **Bandeja de capturas**: cada borrador muestra «cuenta · categoría» sin abrirlo; si está listo (sin dudas y sin faltantes) se aprueba
+  o se rechaza desde la lista; «Marcar todas las listas» solo marca (aprobar sigue siendo tu toque, regla 11).

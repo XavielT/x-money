@@ -224,6 +224,30 @@ export class CaptureReviewComponent {
     return symbol + (d.amountMinor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // Nothing to check and nothing missing: it can be registered from the list itself. A draft with a doubt always gets opened.
+  isReady(d: CaptureDraft): boolean {
+    return d.status === 'pending' && d.kind !== 'unknown' && d.kind !== 'account_setup' && d.kind !== 'balance_check' && d.doubts.length === 0 && this.missing(d).length === 0;
+  }
+
+  readyIds = computed(() => this.list().filter((d) => this.isReady(d)).map((d) => d.id));
+
+  // The user still taps "Approve the marked": this only does the marking
+  markReady(): void {
+    this.marked.set(new Set(this.readyIds()));
+  }
+
+  // "Corriente ·6770 · Transport": where it goes and under what, visible without opening the draft
+  chipsOf(d: CaptureDraft): string {
+    if (d.kind === 'account_setup' || d.kind === 'balance_check') return '';
+    const name = (id?: string): string => {
+      const a = id ? this.accounts.byId(id) : undefined;
+      return a ? a.name + (a.last4 ? ' ·' + a.last4 : '') : '';
+    };
+    const category = d.resolvedCategoryId ? this.t(this.categories.byId(d.resolvedCategoryId)?.name ?? '') : '';
+    const accounts = [name(d.resolvedAccountId), name(d.resolvedToAccountId)].filter(Boolean).join(' → ');
+    return [accounts, category].filter(Boolean).join(' · ');
+  }
+
   missing(d: CaptureDraft): MissingField[] {
     return missingFor(d, { accounts: this.accounts.accounts(), confirmLarge: this.confirmLarge().has(d.id) });
   }

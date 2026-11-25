@@ -13,6 +13,7 @@ import { bankTaxInText } from '../domain/capture/fee';
 import { BankNotification, bankOfSender, localDateOf, readBankNotification, readBankText } from '../domain/capture/notification';
 import { foldBankCharges, isPayroll } from '../domain/capture/direction';
 import { rematchAccount, siblingAccountPatches } from '../domain/capture/rematch';
+import { hintFor } from '../domain/merchant-categories';
 import { combinePatch, findTransferPair } from '../domain/capture/transfer-pair';
 import { dedupeKey, findDuplicate, normalizeMerchant } from '../domain/capture/merchant';
 import { CaptureOp, MissingField, planApproval } from '../domain/capture/plan';
@@ -133,6 +134,11 @@ export class CaptureService {
     return target && this.categories.byId(target) ? target : undefined;
   };
 
+  private hintCategory = (text: string, type: 'expense' | 'income'): string | undefined => {
+    const h = hintFor(text, type);
+    return h && this.categories.byId(h.categoryId) ? h.categoryId : undefined;
+  };
+
   private incomeSourceFor = (text: string): string | undefined => {
     const target = this.rules.match(text, 'income-source')?.target;
     if (target && this.sources.byId(target)?.active) return target;
@@ -205,6 +211,7 @@ export class CaptureService {
         categoryFor: this.categoryFor,
         categoryByName: this.categoryByName,
         incomeSourceFor: this.incomeSourceFor,
+        hintCategory: this.hintCategory,
         usualIncomeMinor: this.usualIncomeMinor,
         bankIdOf: (name) => bankIdOf(name, BANKS_MOCK),
         text: extra.text,

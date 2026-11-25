@@ -25,6 +25,8 @@ export interface BuildContext {
   categoryFor: (text: string) => string | undefined;
   categoryByName: (name: string) => string | undefined;
   incomeSourceFor: (text: string) => string | undefined;
+  // the category the built-in knowledge of places proposes (merchant-categories.ts); the user's own rule always wins over it
+  hintCategory?: (text: string, type: 'expense' | 'income') => string | undefined;
   // the usual amount of an income source, in minor units (its expected net, else its last deposit): only ever a suggestion
   usualIncomeMinor?: (sourceId: string) => number | undefined;
   bankIdOf?: (name: string | undefined) => string | undefined; // the bank of the catalog a screenshot names
@@ -206,11 +208,14 @@ export function buildDraft(raw: RawTransaction, ctx: BuildContext): CaptureDraft
   const text = [counterparty, description].filter(Boolean).join(' ');
   let resolvedCategoryId: string | undefined;
   if (kind === 'expense' || kind === 'invoice_purchase') {
-    resolvedCategoryId = (text && ctx.categoryFor(text)) || (raw.categoryCandidate ? ctx.categoryByName(raw.categoryCandidate) : undefined);
+    // the user's own rule first, then what the place is known for (a gas station is Fuel), then the reader's guess
+    resolvedCategoryId = (text && ctx.categoryFor(text)) || (text && ctx.hintCategory?.(text, 'expense')) || (raw.categoryCandidate ? ctx.categoryByName(raw.categoryCandidate) : undefined);
     // what the bank takes by itself (DGII 0.20%, commissions, monthly charges) is a bank fee, whatever the model guessed
     if (!resolvedCategoryId && isBankCharge(text)) resolvedCategoryId = ctx.categoryByName('Bank fees');
   }
   const resolvedIncomeSourceId = kind === 'income' && text ? ctx.incomeSourceFor(text) : undefined;
+  // an income with no source of its own still gets the category its wording says (money from a person, a reimbursement)
+  if (kind === 'income' && !resolvedIncomeSourceId && text) resolvedCategoryId = ctx.hintCategory?.(text, 'income');
   // "Payroll deposit credited to the account" says NO amount (the bank's notice never does): the usual payroll is proposed as an
   // ESTIMATE, marked so it is checked against the bank (rule 10), never as if the notice had said it
   if (amountMinor === undefined && kind === 'income' && resolvedIncomeSourceId) {

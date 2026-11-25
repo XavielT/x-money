@@ -161,3 +161,14 @@
     font-size: 0.72rem;
   }
 }
+
+.review-chips {
+  color: var(--main-ultra-light);
+  font-size: 0.74rem;
+}
+
+.review-quick {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 2px;
+}
