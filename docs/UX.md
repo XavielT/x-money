@@ -162,3 +162,6 @@ Origen: Xaviel (25/11/2026): «muchas veces tengo que elegir "Otros", por ejempl
   no cambian) y la app lo recuerda para los siguientes.
 - **Bandeja de capturas**: cada borrador muestra «cuenta · categoría» sin abrirlo; si está listo (sin dudas y sin faltantes) se aprueba
   o se rechaza desde la lista; «Marcar todas las listas» solo marca (aprobar sigue siendo tu toque, regla 11).
+
+## Cuadrar con el banco cada mes (2.26.3)
+Inicio muestra un aviso cuando una cuenta de banco, de ahorro o una tarjeta de crédito lleva 30 días o más sin cuadrarse (o nunca se cuadró y ya tiene movimientos): nombra una cuenta a la vez, la que lleva más tiempo, y «Cuadrar con el banco» abre su pantalla. «Después» lo calla 7 días en el dispositivo. Solo recuerda; no crea ni cambia nada. Efectivo, tarjetas de débito, cuentas archivadas y cuentas sin movimientos nunca aparecen (`domain/match-due.ts`).

@@ -24,6 +24,7 @@ import { BucketKind } from '../../../shared/models/budget.model';
 import { ExpectedIncomeComponent } from '../../../shared/components/expected-income/expected-income';
 import { DashboardIndicatorsComponent } from '../../../shared/components/dashboard-indicators/dashboard-indicators';
 import { GetStartedComponent } from '../../../shared/components/get-started/get-started';
+import { MatchReminderComponent } from '../../../shared/components/match-reminder/match-reminder';
 import { BackupReminderComponent } from '../../../shared/components/backup-reminder/backup-reminder';
 import { ModuleService } from '../../../shared/services/module.service';
 import { ModuleId } from '../../../shared/domain/modules';
@@ -41,7 +42,7 @@ const HOME_LINKS: { id: ModuleId; icon: string; label: string; route: string }[]
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, BackupReminderComponent, GetStartedComponent, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent, HomeInsightsComponent],
+  imports: [CommonModule, RouterLink, BackupReminderComponent, MatchReminderComponent, GetStartedComponent, TransactionItem, BankBadge, TranslatePipe, ExpectedIncomeComponent, DashboardIndicatorsComponent, HomeInsightsComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
